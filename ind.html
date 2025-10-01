@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agrisiti IoT Farm Management System - UML Diagram</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            overflow-x: auto;
+        }
+        .container {
+            min-width: 1600px;
+            margin: 0 auto;
+        }
+        .diagram {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: visible;
+        }
+        .zoom-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .zoom-btn {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        .zoom-btn:hover {
+            background: #e9ecef;
+        }
+        .fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .fullscreen-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut()">-</button>
+        <span id="zoom-level">100%</span>
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="resetZoom()">Reset</button>
+    </div>
+    
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen</button>
+    
+    <div class="container">
+        <div class="diagram" id="diagram">
+            <svg viewBox="0 0 2000 1400" xmlns="http://www.w3.org/2000/svg" id="uml-svg">
+              <!-- Background -->
+              <rect width="2000" height="1400" fill="#f8f9fa"/>
+              
+              <!-- Title -->
+              <text x="1000" y="40" text-anchor="middle" font-size="32" font-weight="bold" fill="#2c3e50">Agrisiti IoT Farm Management System</text>
+              <text x="1000" y="75" text-anchor="middle" font-size="22" fill="#7f8c8d">Comprehensive UML Architecture Diagram</text>
+              
+              <!-- AWS Cloud Section -->
+              <rect x="80" y="100" width="1840" height="220" fill="#ff9900" fill-opacity="0.1" stroke="#ff9900" stroke-width="3"/>
+              <text x="100" y="130" font-size="22" font-weight="bold" fill="#ff9900">AWS Cloud Services</text>
+              
+              <!-- AWS IoT Core -->
+              <rect x="120" y="150" width="250" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="245" y="180" text-anchor="middle" font-size="18" font-weight="bold">AWS IoT Core</text>
+              <text x="245" y="205" text-anchor="middle" font-size="12">Device Management</text>
+              <text x="245" y="225" text-anchor="middle" font-size="12">Message Broker (MQTT)</text>
+              <text x="245" y="245" text-anchor="middle" font-size="12">Rules Engine</text>
+              
+              <!-- AWS Event Streaming -->
+              <rect x="400" y="150" width="250" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="525" y="180" text-anchor="middle" font-size="18" font-weight="bold">AWS Event Streaming</text>
+              <text x="525" y="205" text-anchor="middle" font-size="12">Kinesis Data Streams</text>
+              <text x="525" y="225" text-anchor="middle" font-size="12">Real-time Processing</text>
+              <text x="525" y="245" text-anchor="middle" font-size="12">Event Analytics</text>
+              
+              <!-- AWS Lambda -->
+              <rect x="680" y="150" width="200" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="780" y="180" text-anchor="middle" font-size="18" font-weight="bold">AWS Lambda</text>
+              <text x="780" y="205" text-anchor="middle" font-size="12">Data Processing</text>
+              <text x="780" y="225" text-anchor="middle" font-size="12">Alert Triggers</text>
+              <text x="780" y="245" text-anchor="middle" font-size="12">Automation Logic</text>
+              
+              <!-- AWS DynamoDB -->
+              <rect x="910" y="150" width="200" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="1010" y="180" text-anchor="middle" font-size="18" font-weight="bold">DynamoDB</text>
+              <text x="1010" y="205" text-anchor="middle" font-size="12">Sensor Data</text>
+              <text x="1010" y="225" text-anchor="middle" font-size="12">Historical Records</text>
+              <text x="1010" y="245" text-anchor="middle" font-size="12">Device State</text>
+              
+              <!-- AWS S3 -->
+              <rect x="1140" y="150" width="200" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="1240" y="180" text-anchor="middle" font-size="18" font-weight="bold">AWS S3</text>
+              <text x="1240" y="205" text-anchor="middle" font-size="12">Image Storage</text>
+              <text x="1240" y="225" text-anchor="middle" font-size="12">Video Archive</text>
+              <text x="1240" y="245" text-anchor="middle" font-size="12">Backup Data</text>
+              
+              <!-- CloudWatch -->
+              <rect x="1370" y="150" width="200" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="1470" y="180" text-anchor="middle" font-size="18" font-weight="bold">CloudWatch</text>
+              <text x="1470" y="205" text-anchor="middle" font-size="12">Monitoring</text>
+              <text x="1470" y="225" text-anchor="middle" font-size="12">Logs</text>
+              <text x="1470" y="245" text-anchor="middle" font-size="12">Alarms</text>
+              
+              <!-- API Gateway -->
+              <rect x="1600" y="150" width="200" height="110" fill="#ffffff" stroke="#ff9900" stroke-width="3"/>
+              <text x="1700" y="180" text-anchor="middle" font-size="18" font-weight="bold">API Gateway</text>
+              <text x="1700" y="205" text-anchor="middle" font-size="12">REST APIs</text>
+              <text x="1700" y="225" text-anchor="middle" font-size="12">Mobile App</text>
+              <text x="1700" y="245" text-anchor="middle" font-size="12">Web Dashboard</text>
+              
+              <!-- Local Network Section -->
+              <rect x="80" y="350" width="1840" height="320" fill="#3498db" fill-opacity="0.1" stroke="#3498db" stroke-width="3"/>
+              <text x="100" y="380" font-size="22" font-weight="bold" fill="#3498db">Local Network Area (LAN)</text>
+              
+              <!-- Raspberry Pi 4B -->
+              <rect x="850" y="400" width="300" height="180" fill="#ffffff" stroke="#e74c3c" stroke-width="4"/>
+              <text x="1000" y="435" text-anchor="middle" font-size="22" font-weight="bold" fill="#e74c3c">Raspberry Pi 4B</text>
+              <text x="1000" y="465" text-anchor="middle" font-size="16">Central Controller</text>
+              <text x="1000" y="490" text-anchor="middle" font-size="13">• Data Collection & Aggregation</text>
+              <text x="1000" y="510" text-anchor="middle" font-size="13">• Local Processing & Buffering</text>
+              <text x="1000" y="530" text-anchor="middle" font-size="13">• Device Control & Automation</text>
+              <text x="1000" y="550" text-anchor="middle" font-size="13">• AWS Communication (MQTT)</text>
+              <text x="1000" y="570" text-anchor="middle" font-size="13">• Local Network Management</text>
+              
+              <!-- Expansion Hat -->
+              <rect x="870" y="590" width="120" height="70" fill="#f39c12" stroke="#f39c12" stroke-width="2"/>
+              <text x="930" y="615" text-anchor="middle" font-size="14" font-weight="bold">Expansion Hat</text>
+              <text x="930" y="635" text-anchor="middle" font-size="11">GPIO Extension</text>
+              <text x="930" y="650" text-anchor="middle" font-size="11">I2C/SPI Interface</text>
+              
+              <!-- Breadboard -->
+              <rect x="1010" y="590" width="120" height="70" fill="#95a5a6" stroke="#95a5a6" stroke-width="2"/>
+              <text x="1070" y="615" text-anchor="middle" font-size="14" font-weight="bold">Breadboard</text>
+              <text x="1070" y="635" text-anchor="middle" font-size="11">Prototyping</text>
+              <text x="1070" y="650" text-anchor="middle" font-size="11">Connections</text>
+              
+              <!-- Network Switch -->
+              <rect x="120" y="450" width="200" height="100" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="220" y="480" text-anchor="middle" font-size="16" font-weight="bold">Network Switch</text>
+              <text x="220" y="505" text-anchor="middle" font-size="11">Ethernet Hub</text>
+              <text x="220" y="520" text-anchor="middle" font-size="11">WiFi Access Point</text>
+              <text x="220" y="535" text-anchor="middle" font-size="11">Local Communication</text>
+              
+              <!-- Power Management -->
+              <rect x="1600" y="450" width="200" height="100" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+              <text x="1700" y="480" text-anchor="middle" font-size="16" font-weight="bold">Power Management</text>
+              <text x="1700" y="505" text-anchor="middle" font-size="11">UPS System</text>
+              <text x="1700" y="520" text-anchor="middle" font-size="11">Power Distribution</text>
+              <text x="1700" y="535" text-anchor="middle" font-size="11">Backup Power</text>
+              
+              <!-- Farm Sections -->
+              
+              <!-- Poultry Section -->
+              <rect x="80" y="700" width="580" height="650" fill="#f1c40f" fill-opacity="0.1" stroke="#f1c40f" stroke-width="3"/>
+              <text x="100" y="730" font-size="20" font-weight="bold" fill="#f1c40f">Poultry Farm Management System</text>
+              
+              <!-- Poultry Environmental Sensors -->
+              <rect x="120" y="750" width="180" height="140" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="210" y="775" text-anchor="middle" font-size="14" font-weight="bold">Environmental</text>
+              <text x="210" y="795" text-anchor="middle" font-size="14" font-weight="bold">Sensors</text>
+              <text x="210" y="820" text-anchor="middle" font-size="11">• Temperature</text>
+              <text x="210" y="840" text-anchor="middle" font-size="11">• Humidity</text>
+              <text x="210" y="860" text-anchor="middle" font-size="11">• Air Quality</text>
+              <text x="210" y="880" text-anchor="middle" font-size="11">• Light Levels</text>
+              
+              <!-- Poultry Security -->
+              <rect x="320" y="750" width="180" height="140" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="410" y="775" text-anchor="middle" font-size="14" font-weight="bold">Security &</text>
+              <text x="410" y="795" text-anchor="middle" font-size="14" font-weight="bold">Detection</text>
+              <text x="410" y="820" text-anchor="middle" font-size="11">• Foreign Objects</text>
+              <text x="410" y="840" text-anchor="middle" font-size="11">• Motion Detection</text>
+              <text x="410" y="860" text-anchor="middle" font-size="11">• Intrusion Alerts</text>
+              <text x="410" y="880" text-anchor="middle" font-size="11">• Access Control</text>
+              
+              <!-- Poultry Camera System -->
+              <rect x="520" y="750" width="120" height="140" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="580" y="775" text-anchor="middle" font-size="14" font-weight="bold">Camera</text>
+              <text x="580" y="795" text-anchor="middle" font-size="14" font-weight="bold">System</text>
+              <text x="580" y="820" text-anchor="middle" font-size="11">• HD Recording</text>
+              <text x="580" y="840" text-anchor="middle" font-size="11">• Live Streaming</text>
+              <text x="580" y="860" text-anchor="middle" font-size="11">• Night Vision</text>
+              <text x="580" y="880" text-anchor="middle" font-size="11">• AI Analysis</text>
+              
+              <!-- Water Management -->
+              <rect x="120" y="910" width="320" height="120" fill="#ffffff" stroke="#27ae60" stroke-width="3"/>
+              <text x="280" y="940" text-anchor="middle" font-size="16" font-weight="bold" fill="#27ae60">Water Management System</text>
+              <text x="200" y="965" text-anchor="middle" font-size="11">• Automatic Filling</text>
+              <text x="280" y="965" text-anchor="middle" font-size="11">• Level Monitoring</text>
+              <text x="360" y="965" text-anchor="middle" font-size="11">• Flow Control</text>
+              <text x="200" y="985" text-anchor="middle" font-size="11">• Solenoid Valves</text>
+              <text x="280" y="985" text-anchor="middle" font-size="11">• Pressure Sensors</text>
+              <text x="360" y="985" text-anchor="middle" font-size="11">• Emergency Shutoff</text>
+              <text x="200" y="1005" text-anchor="middle" font-size="11">• Quality Testing</text>
+              <text x="360" y="1005" text-anchor="middle" font-size="11">• Usage Analytics</text>
+              
+              <!-- Water Quality Sensors -->
+              <rect x="120" y="1050" width="520" height="120" fill="#ffffff" stroke="#3498db" stroke-width="2"/>
+              <text x="380" y="1080" text-anchor="middle" font-size="16" font-weight="bold">Water Quality Monitoring</text>
+              <text x="180" y="1105" text-anchor="middle" font-size="11">• pH Level</text>
+              <text x="260" y="1105" text-anchor="middle" font-size="11">• Turbidity</text>
+              <text x="340" y="1105" text-anchor="middle" font-size="11">• Dissolved O2</text>
+              <text x="420" y="1105" text-anchor="middle" font-size="11">• TDS</text>
+              <text x="500" y="1105" text-anchor="middle" font-size="11">• Temperature</text>
+              <text x="580" y="1105" text-anchor="middle" font-size="11">• Conductivity</text>
+              <text x="180" y="1125" text-anchor="middle" font-size="11">• Chlorine</text>
+              <text x="260" y="1125" text-anchor="middle" font-size="11">• Bacteria Count</text>
+              <text x="340" y="1125" text-anchor="middle" font-size="11">• Chemical Balance</text>
+              <text x="420" y="1125" text-anchor="middle" font-size="11">• Flow Rate</text>
+              <text x="500" y="1125" text-anchor="middle" font-size="11">• Pressure</text>
+              <text x="580" y="1125" text-anchor="middle" font-size="11">• Contamination</text>
+              
+              <!-- Feeding System -->
+              <rect x="460" y="910" width="180" height="120" fill="#ffffff" stroke="#e67e22" stroke-width="2"/>
+              <text x="550" y="940" text-anchor="middle" font-size="14" font-weight="bold">Automated</text>
+              <text x="550" y="955" text-anchor="middle" font-size="14" font-weight="bold">Feeding</text>
+              <text x="550" y="980" text-anchor="middle" font-size="11">• Schedule Control</text>
+              <text x="550" y="1000" text-anchor="middle" font-size="11">• Portion Management</text>
+              <text x="550" y="1020" text-anchor="middle" font-size="11">• Inventory Tracking</text>
+              
+              <!-- Ventilation -->
+              <rect x="120" y="1190" width="520" height="80" fill="#ffffff" stroke="#9b59b6" stroke-width="2"/>
+              <text x="380" y="1215" text-anchor="middle" font-size="16" font-weight="bold">Ventilation & Climate Control</text>
+              <text x="200" y="1240" text-anchor="middle" font-size="11">• Exhaust Fans</text>
+              <text x="300" y="1240" text-anchor="middle" font-size="11">• Air Circulation</text>
+              <text x="400" y="1240" text-anchor="middle" font-size="11">• Heating/Cooling</text>
+              <text x="500" y="1240" text-anchor="middle" font-size="11">• Humidity Control</text>
+              <text x="200" y="1255" text-anchor="middle" font-size="11">• CO2 Monitoring</text>
+              <text x="300" y="1255" text-anchor="middle" font-size="11">• Ammonia Detection</text>
+              <text x="400" y="1255" text-anchor="middle" font-size="11">• Air Filtration</text>
+              <text x="500" y="1255" text-anchor="middle" font-size="11">• Emergency Venting</text>
+              
+              <!-- Fish Ponds Section -->
+              <rect x="680" y="700" width="640" height="650" fill="#3498db" fill-opacity="0.1" stroke="#3498db" stroke-width="3"/>
+              <text x="700" y="730" font-size="20" font-weight="bold" fill="#3498db">Aquaculture Management System (2 Ponds)</text>
+              
+              <!-- Pond 1 -->
+              <rect x="720" y="750" width="260" height="180" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="850" y="775" text-anchor="middle" font-size="16" font-weight="bold">Fish Pond 1</text>
+              <text x="850" y="800" text-anchor="middle" font-size="14" font-weight="bold">Water Quality Sensors</text>
+              <text x="780" y="825" text-anchor="middle" font-size="11">• pH Level</text>
+              <text x="850" y="825" text-anchor="middle" font-size="11">• Water Level</text>
+              <text x="920" y="825" text-anchor="middle" font-size="11">• Temperature</text>
+              <text x="780" y="845" text-anchor="middle" font-size="11">• Turbidity</text>
+              <text x="850" y="845" text-anchor="middle" font-size="11">• Dissolved O2</text>
+              <text x="920" y="845" text-anchor="middle" font-size="11">• TDS</text>
+              <text x="780" y="865" text-anchor="middle" font-size="11">• Ammonia</text>
+              <text x="850" y="865" text-anchor="middle" font-size="11">• Nitrites</text>
+              <text x="920" y="865" text-anchor="middle" font-size="11">• Nitrates</text>
+              <text x="780" y="885" text-anchor="middle" font-size="11">• Salinity</text>
+              <text x="850" y="885" text-anchor="middle" font-size="11">• Conductivity</text>
+              <text x="920" y="885" text-anchor="middle" font-size="11">• Hardness</text>
+              <text x="850" y="905" text-anchor="middle" font-size="11">• Fish Behavior Monitoring</text>
+              <text x="850" y="920" text-anchor="middle" font-size="11">• Feed Response Analysis</text>
+              
+              <!-- Pond 2 -->
+              <rect x="1000" y="750" width="260" height="180" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="1130" y="775" text-anchor="middle" font-size="16" font-weight="bold">Fish Pond 2</text>
+              <text x="1130" y="800" text-anchor="middle" font-size="14" font-weight="bold">Water Quality Sensors</text>
+              <text x="1060" y="825" text-anchor="middle" font-size="11">• pH Level</text>
+              <text x="1130" y="825" text-anchor="middle" font-size="11">• Water Level</text>
+              <text x="1200" y="825" text-anchor="middle" font-size="11">• Temperature</text>
+              <text x="1060" y="845" text-anchor="middle" font-size="11">• Turbidity</text>
+              <text x="1130" y="845" text-anchor="middle" font-size="11">• Dissolved O2</text>
+              <text x="1200" y="845" text-anchor="middle" font-size="11">• TDS</text>
+              <text x="1060" y="865" text-anchor="middle" font-size="11">• Ammonia</text>
+              <text x="1130" y="865" text-anchor="middle" font-size="11">• Nitrites</text>
+              <text x="1200" y="865" text-anchor="middle" font-size="11">• Nitrates</text>
+              <text x="1060" y="885" text-anchor="middle" font-size="11">• Salinity</text>
+              <text x="1130" y="885" text-anchor="middle" font-size="11">• Conductivity</text>
+              <text x="1200" y="885" text-anchor="middle" font-size="11">• Hardness</text>
+              <text x="1130" y="905" text-anchor="middle" font-size="11">• Fish Behavior Monitoring</text>
+              <text x="1130" y="920" text-anchor="middle" font-size="11">• Feed Response Analysis</text>
+              
+              <!-- Fish Pond Camera System -->
+              <rect x="720" y="950" width="260" height="100" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="850" y="975" text-anchor="middle" font-size="14" font-weight="bold">Underwater Camera System</text>
+              <text x="780" y="1000" text-anchor="middle" font-size="11">• HD Underwater</text>
+              <text x="850" y="1000" text-anchor="middle" font-size="11">• Fish Counting</text>
+              <text x="920" y="1000" text-anchor="middle" font-size="11">• Health Monitoring</text>
+              <text x="780" y="1020" text-anchor="middle" font-size="11">• Behavior Analysis</text>
+              <text x="850" y="1020" text-anchor="middle" font-size="11">• Growth Tracking</text>
+              <text x="920" y="1020" text-anchor="middle" font-size="11">• Disease Detection</text>
+              <text x="780" y="1040" text-anchor="middle" font-size="11">• Water Clarity</text>
+              <text x="920" y="1040" text-anchor="middle" font-size="11">• Feeding Patterns</text>
+              
+              <!-- Water Control for Fish -->
+              <rect x="1000" y="950" width="260" height="100" fill="#ffffff" stroke="#27ae60" stroke-width="3"/>
+              <text x="1130" y="975" text-anchor="middle" font-size="14" font-weight="bold" fill="#27ae60">Water Control & Circulation</text>
+              <text x="1060" y="1000" text-anchor="middle" font-size="11">• Inlet Valves</text>
+              <text x="1130" y="1000" text-anchor="middle" font-size="11">• Outlet Control</text>
+              <text x="1200" y="1000" text-anchor="middle" font-size="11">• Flow Regulation</text>
+              <text x="1060" y="1020" text-anchor="middle" font-size="11">• Water Exchange</text>
+              <text x="1130" y="1020" text-anchor="middle" font-size="11">• Emergency Drain</text>
+              <text x="1200" y="1020" text-anchor="middle" font-size="11">• Overflow Management</text>
+              <text x="1130" y="1040" text-anchor="middle" font-size="11">• Automated Cleaning Cycles</text>
+              
+              <!-- Aeration & Filtration System -->
+              <rect x="720" y="1070" width="540" height="120" fill="#ffffff" stroke="#e74c3c" stroke-width="2"/>
+              <text x="990" y="1100" text-anchor="middle" font-size="16" font-weight="bold">Aeration & Filtration System</text>
+              <text x="780" y="1125" text-anchor="middle" font-size="11">• Air Pumps</text>
+              <text x="860" y="1125" text-anchor="middle" font-size="11">• Oxygen Diffusers</text>
+              <text x="960" y="1125" text-anchor="middle" font-size="11">• Bubble Generation</text>
+              <text x="1060" y="1125" text-anchor="middle" font-size="11">• Water Circulation</text>
+              <text x="1160" y="1125" text-anchor="middle" font-size="11">• Bio Filters</text>
+              <text x="780" y="1145" text-anchor="middle" font-size="11">• Mechanical Filters</text>
+              <text x="860" y="1145" text-anchor="middle" font-size="11">• UV Sterilization</text>
+              <text x="960" y="1145" text-anchor="middle" font-size="11">• Protein Skimmers</text>
+              <text x="1060" y="1145" text-anchor="middle" font-size="11">• Backwash Control</text>
+              <text x="1160" y="1145" text-anchor="middle" font-size="11">• Filter Monitoring</text>
+              <text x="820" y="1165" text-anchor="middle" font-size="11">• Emergency Aeration</text>
+              <text x="990" y="1165" text-anchor="middle" font-size="11">• Automated Maintenance</text>
+              <text x="1120" y="1165" text-anchor="middle" font-size="11">• Performance Analytics</text>
+              
+              <!-- Feeding System for Fish -->
+              <rect x="720" y="1210" width="540" height="80" fill="#ffffff" stroke="#f39c12" stroke-width="2"/>
+              <text x="990" y="1235" text-anchor="middle" font-size="16" font-weight="bold">Automated Feeding System</text>
+              <text x="800" y="1260" text-anchor="middle" font-size="11">• Scheduled Feeding</text>
+              <text x="900" y="1260" text-anchor="middle" font-size="11">• Portion Control</text>
+              <text x="1000" y="1260" text-anchor="middle" font-size="11">• Feed Type Selection</text>
+              <text x="1100" y="1260" text-anchor="middle" font-size="11">• Growth Optimization</text>
+              <text x="1200" y="1260" text-anchor="middle" font-size="11">• Waste Monitoring</text>
+              <text x="800" y="1280" text-anchor="middle" font-size="11">• Response Analysis</text>
+              <text x="900" y="1280" text-anchor="middle" font-size="11">• Inventory Tracking</text>
+              <text x="1000" y="1280" text-anchor="middle" font-size="11">• Feed Quality Control</text>
+              <text x="1100" y="1280" text-anchor="middle" font-size="11">• Cost Analysis</text>
+              <text x="1200" y="1280" text-anchor="middle" font-size="11">• Nutritional Balance</text>
+              
+              <!-- Hydrofarm Section -->
+              <rect x="1340" y="700" width="580" height="650" fill="#27ae60" fill-opacity="0.1" stroke="#27ae60" stroke-width="3"/>
+              <text x="1360" y="730" font-size="20" font-weight="bold" fill="#27ae60">Hydroponic Farm Management System</text>
+              
+              <!-- Plant Monitoring Sensors -->
+              <rect x="1380" y="750" width="220" height="160" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="1490" y="775" text-anchor="middle" font-size="16" font-weight="bold">Plant Health Sensors</text>
+              <text x="1430" y="800" text-anchor="middle" font-size="11">• Soil Moisture</text>
+              <text x="1530" y="800" text-anchor="middle" font-size="11">• Root Zone pH</text>
+              <text x="1430" y="820" text-anchor="middle" font-size="11">• Light Intensity</text>
+              <text x="1530" y="820" text-anchor="middle" font-size="11">• PAR Values</text>
+              <text x="1430" y="840" text-anchor="middle" font-size="11">• Temperature</text>
+              <text x="1530" y="840" text-anchor="middle" font-size="11">• Humidity</text>
+              <text x="1430" y="860" text-anchor="middle" font-size="11">• CO2 Levels</text>
+              <text x="1530" y="860" text-anchor="middle" font-size="11">• Leaf Wetness</text>
+              <text x="1490" y="880" text-anchor="middle" font-size="11">• Plant Growth Rate</text>
+              <text x="1490" y="900" text-anchor="middle" font-size="11">• Stress Indicators</text>
+              
+              <!-- Nutrient Solution Management -->
+              <rect x="1620" y="750" width="220" height="160" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="1730" y="775" text-anchor="middle" font-size="16" font-weight="bold">Nutrient Solution</text>
+              <text x="1670" y="800" text-anchor="middle" font-size="11">• NPK Monitoring</text>
+              <text x="1770" y="800" text-anchor="middle" font-size="11">• Micro Nutrients</text>
+              <text x="1670" y="820" text-anchor="middle" font-size="11">• TDS/EC Control</text>
+              <text x="1770" y="820" text-anchor="middle" font-size="11">• pH Adjustment</text>
+              <text x="1670" y="840" text-anchor="middle" font-size="11">• Solution Temp</text>
+              <text x="1770" y="840" text-anchor="middle" font-size="11">• Dissolved O2</text>
+              <text x="1670" y="860" text-anchor="middle" font-size="11">• Flow Rate</text>
+              <text x="1770" y="860" text-anchor="middle" font-size="11">• Reservoir Level</text>
+              <text x="1730" y="880" text-anchor="middle" font-size="11">• Mixing & Circulation</text>
+              <text x="1730" y="900" text-anchor="middle" font-size="11">• Concentration Control</text>
+              
+              <!-- Hydrofarm Camera & AI -->
+              <rect x="1380" y="930" width="220" height="120" fill="#ffffff" stroke="#34495e" stroke-width="2"/>
+              <text x="1490" y="955" text-anchor="middle" font-size="14" font-weight="bold">AI Vision System</text>
+              <text x="1430" y="980" text-anchor="middle" font-size="11">• Growth Monitoring</text>
+              <text x="1550" y="980" text-anchor="middle" font-size="11">• Disease Detection</text>
+              <text x="1430" y="1000" text-anchor="middle" font-size="11">• Pest Identification</text>
+              <text x="1550" y="1000" text-anchor="middle" font-size="11">• Harvest Prediction</text>
+              <text x="1430" y="1020" text-anchor="middle" font-size="11">• Quality Analysis</text>
+              <text x="1550" y="1020" text-anchor="middle" font-size="11">• Yield Optimization</text>
+              <text x="1490" y="1040" text-anchor="middle" font-size="11">• 24/7 Time-lapse Recording</text>
+              
+              <!-- Environmental Control -->
+              <rect x="1620" y="930" width="220" height="120" fill="#ffffff" stroke="#e67e22" stroke-width="3"/>
+              <text x="1730" y="955" text-anchor="middle" font-size="14" font-weight="bold" fill="#e67e22">Environmental Control</text>
+              <text x="1670" y="980" text-anchor="middle" font-size="11">• LED Grow Lights</text>
+              <text x="1790" y="980" text-anchor="middle" font-size="11">• Light Spectrum</text>
+              <text x="1670" y="1000" text-anchor="middle" font-size="11">• Ventilation Fans</text>
+              <text x="1790" y="1000" text-anchor="middle" font-size="11">• Air Circulation</text>
+              <text x="1670" y="1020" text-anchor="middle" font-size="11">• Climate Control</text>
+              <text x="1790" y="1020" text-anchor="middle" font-size="11">• CO2 Injection</text>
+              <text x="1730" y="1040" text-anchor="middle" font-size="11">• Automated Day/Night Cycles</text>
+              
+              <!-- Irrigation & Dosing System -->
+              <rect x="1380" y="1070" width="460" height="140" fill="#ffffff" stroke="#27ae60" stroke-width="3"/>
+              <text x="1610" y="1100" text-anchor="middle" font-size="18" font-weight="bold" fill="#27ae60">Automated Irrigation & Nutrient Dosing System</text>
+              <text x="1440" y="1125" text-anchor="middle" font-size="11">• Precision Drip System</text>
+              <text x="1540" y="1125" text-anchor="middle" font-size="11">• Micro-spray Nozzles</text>
+              <text x="1640" y="1125" text-anchor="middle" font-size="11">• Misting Control</text>
+              <text x="1740" y="1125" text-anchor="middle" font-size="11">• Deep Water Culture</text>
+              <text x="1440" y="1145" text-anchor="middle" font-size="11">• Nutrient Dosing Pumps</text>
+              <text x="1540" y="1145" text-anchor="middle" font-size="11">• pH Up/Down Dosing</text>
+              <text x="1640" y="1145" text-anchor="middle" font-size="11">• Fertilizer Injection</text>
+              <text x="1740" y="1145" text-anchor="middle" font-size="11">• Water Recycling</text>
+              <text x="1440" y="1165" text-anchor="middle" font-size="11">• Zone Control</text>
+              <text x="1540" y="1165" text-anchor="middle" font-size="11">• Timing Schedules</text>
+              <text x="1640" y="1165" text-anchor="middle" font-size="11">• Flow Monitoring</text>
+              <text x="1740" y="1165" text-anchor="middle" font-size="11">• Leak Detection</text>
+              <text x="1490" y="1185" text-anchor="middle" font-size="11">• Pressure Regulation</text>
+              <text x="1610" y="1185" text-anchor="middle" font-size="11">• Automated Flushing</text>
+              <text x="1730" y="1185" text-anchor="middle" font-size="11">• System Diagnostics</text>
+              <text x="1610" y="1205" text-anchor="middle" font-size="11">• Multi-zone Management & Custom Growth Profiles</text>
+              
+              <!-- Seed & Harvest Management -->
+              <rect x="1380" y="1230" width="460" height="80" fill="#ffffff" stroke="#8e44ad" stroke-width="2"/>
+              <text x="1610" y="1255" text-anchor="middle" font-size="16" font-weight="bold">Seed to Harvest Management</text>
+              <text x="1450" y="1280" text-anchor="middle" font-size="11">• Germination Tracking</text>
+              <text x="1550" y="1280" text-anchor="middle" font-size="11">• Growth Stage Monitoring</text>
+              <text x="1650" y="1280" text-anchor="middle" font-size="11">• Harvest Scheduling</text>
+              <text x="1750" y="1280" text-anchor="middle" font-size="11">• Yield Prediction</text>
+              <text x="1450" y="1300" text-anchor="middle" font-size="11">• Crop Rotation Planning</text>
+              <text x="1550" y="1300" text-anchor="middle" font-size="11">• Quality Control</text>
+              <text x="1650" y="1300" text-anchor="middle" font-size="11">• Batch Tracking</text>
+              <text x="1750" y="1300" text-anchor="middle" font-size="11">• Performance Analytics</text>
+              
+              <!-- Connection Lines with Enhanced Visibility -->
+              <!-- Pi to AWS Services -->
+              <line x1="1000" y1="400" x2="245" y2="320" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1000" y1="400" x2="525" y2="320" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1000" y1="400" x2="780" y2="320" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1000" y1="400" x2="1010" y2="320" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1000" y1="400" x2="1240" y2="320" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              
+              <!-- Pi to Farm Sections -->
+              <line x1="850" y1="490" x2="370" y2="850" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1000" y1="580" x2="1000" y2="850" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              <line x1="1150" y1="490" x2="1630" y2="850" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
+              
+              <!-- Network Infrastructure Lines -->
+              <line x1="320" y1="500" x2="850" y2="500" stroke="#3498db" stroke-width="2"/>
+              <line x1="1150" y1="500" x2="1600" y2="500" stroke="#e67e22" stroke-width="2"/>
+              
+              <!-- Data Flow Labels with Better Positioning -->
+              <text x="500" y="360" font-size="12" fill="#2c3e50" font-weight="bold" transform="rotate(-20 500 360)">MQTT Data Stream</text>
+              <text x="650" y="350" font-size="12" fill="#2c3e50" font-weight="bold" transform="rotate(-15 650 350)">Real-time Events</text>
+              <text x="800" y="360" font-size="12" fill="#2c3e50" font-weight="bold" transform="rotate(-10 800 360)">Lambda Triggers</text>
+              <text x="950" y="360" font-size="12" fill="#2c3e50" font-weight="bold" transform="rotate(-5 950 360)">Data Storage</text>
+              <text x="1100" y="360" font-size="12" fill="#2c3e50" font-weight="bold" transform="rotate(5 1100 360)">Media Archive</text>
+              
+              <!-- System Status Indicators -->
+              <circle cx="1180" cy="410" r="8" fill="#27ae60"/>
+              <text x="1200" y="415" font-size="10" fill="#27ae60">System Online</text>
+              
+              <circle cx="1180" cy="430" r="8" fill="#f39c12"/>
+              <text x="1200" y="435" font-size="10" fill="#f39c12">Data Processing</text>
+              
+              <circle cx="1180" cy="450" r="8" fill="#e74c3c"/>
+              <text x="1200" y="455" font-size="10" fill="#e74c3c">Alert Status</text>
+              
+              <!-- Legend Enhanced -->
+              <rect x="80" y="1370" width="1840" height="25" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+              <text x="100" y="1390" font-size="14" font-weight="bold" fill="#2c3e50">System Data Flow: Multi-sensor Collection → Local Processing & Buffering → MQTT Transmission → AWS IoT Core → Real-time Analytics → Automated Control Response</text>
+              
+              <!-- Communication Protocols -->
+              <text x="1700" y="1390" font-size="12" fill="#7f8c8d" font-weight="bold">Protocols: I2C, SPI, GPIO, WiFi 6, MQTT 3.1.1, HTTP/2, WebSocket, SSL/TLS</text>
+              
+              <!-- Arrow marker definition -->
+              <defs>
+                <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+                  <polygon points="0 0, 12 4, 0 8" fill="#2c3e50"/>
+                </marker>
+              </defs>
+              
+            </svg>
+        </div>
+    </div>
+    
+    <script>
+        let currentZoom = 1;
+        const zoomStep = 0.1;
+        const minZoom = 0.5;
+        const maxZoom = 3.0;
+        
+        function updateZoom() {
+            const diagram = document.getElementById('diagram');
+            diagram.style.transform = `scale(${currentZoom})`;
+            diagram.style.transformOrigin = 'top left';
+            document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                updateZoom();
+            }
+        }
+        
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                updateZoom();
+            }
+        }
+        
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoom();
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Mouse wheel zoom
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        zoomIn();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomOut();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+            if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
