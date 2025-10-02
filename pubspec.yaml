@@ -1,11 +1,11 @@
-# Nylo - Micro-framework for Flutter.
+# Inspiritag - Micro-framework for Flutter.
 #
-# Website: https://nylo.dev
-# Official repository: https://github.com/nylo-core/nylo
+# Website: https://inspiritag.dev
+# Official repository: https://github.com/inspiritag-core/inspiritag
 # Author: Anthony Gordon <https://github.com/agordn52>
 
 name: flutter_app
-description: A new Nylo Flutter application.
+description: A new Inspiritag Flutter application.
 
 publish_to: 'none'
 
@@ -41,12 +41,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-# APP ICON - public/app_icon/icon.png
+# APP ICON - public/images/logo.png
 # Build icons: "dart run flutter_launcher_icons"
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "public/app_icon/icon.png"
+  image_path: "public/images/logo.png"
   remove_alpha_ios: true
 
 # RENAME YOUR PROJECT
@@ -63,6 +63,5 @@ flutter:
   assets:
     - public/fonts/
     - public/images/
-    - public/app_icon/
     - lang/
     - .env

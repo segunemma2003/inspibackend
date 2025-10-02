@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import '/app/services/auth_service.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -11,9 +12,17 @@ class Profile extends StatefulWidget {
 class _ProfileState extends NyState<Profile> {
   bool _isSidebarOpen = false;
   int _selectedTabIndex = 0;
+  Map<String, dynamic>? _userData;
 
   @override
-  get init => () {};
+  get init => () async {
+        await _loadUserData();
+      };
+
+  Future<void> _loadUserData() async {
+    _userData = await AuthService.instance.getUserProfile();
+    setState(() {});
+  }
 
   @override
   Widget view(BuildContext context) {
@@ -188,16 +197,25 @@ class _ProfileState extends NyState<Profile> {
       child: Column(
         children: [
           Text(
-            'Sarah Johnson',
+            _userData?['name'] ?? _userData?['full_name'] ?? 'User',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            '@${_userData?['username'] ?? 'username'}',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
-            'Bio: I love myself and whatever I want I receive and I don\'t listen to anyones opinion. Since then I have been happier, more fullfilled and peaceful. My advice would be do what you want, wear what you want and be who you want and then you will attract what you want.',
+            _userData?['bio'] ??
+                'Welcome to Inspiritag! Express yourself and inspire others.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.black87,
@@ -205,9 +223,50 @@ class _ProfileState extends NyState<Profile> {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 20),
+          // Logout Button
+          ElevatedButton(
+            onPressed: _logout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[50],
+              foregroundColor: Colors.red[700],
+              side: BorderSide(color: Colors.red[300]!),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Logout'),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _logout() async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await AuthService.instance.logout();
+      showToast(title: 'Success', description: 'Logged out successfully');
+      routeTo('/home');
+    }
   }
 
   Widget _buildCategoryIcons() {

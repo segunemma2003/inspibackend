@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '/app/networking/auth_api_service.dart';
 
 class SignInPage extends NyStatefulWidget {
   static RouteView path = ("/sign-in", (_) => SignInPage());
@@ -10,8 +11,10 @@ class SignInPage extends NyStatefulWidget {
 
 class _SignInPageState extends NyPage<SignInPage> {
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   get init => () {};
@@ -23,43 +26,46 @@ class _SignInPageState extends NyPage<SignInPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
 
-              // Logo Section
-              _buildLogoSection(),
+                // Logo Section
+                _buildLogoSection(),
 
-              // Tagline
-              _buildTagline(),
+                // Tagline
+                _buildTagline(),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Input Fields
-              _buildInputFields(),
+                // Input Fields
+                _buildInputFields(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Login Button
-              _buildLoginButton(),
+                // Login Button
+                _buildLoginButton(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Divider
-              _buildDivider(),
+                // Divider
+                _buildDivider(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Social Login Buttons
-              _buildSocialButtons(),
+                // Social Login Buttons
+                _buildSocialButtons(),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Sign Up Link
-              _buildSignUpLink(),
+                // Sign Up Link
+                _buildSignUpLink(),
 
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -135,6 +141,7 @@ class _SignInPageState extends NyPage<SignInPage> {
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          validator: _validateEmail,
           decoration: InputDecoration(
             labelText: 'Email',
             hintText: 'Enter your email address',
@@ -160,6 +167,7 @@ class _SignInPageState extends NyPage<SignInPage> {
         TextFormField(
           controller: _passwordController,
           obscureText: !_isPasswordVisible,
+          validator: _validatePassword,
           decoration: InputDecoration(
             labelText: 'Password',
             hintText: 'Enter your password',
@@ -196,11 +204,7 @@ class _SignInPageState extends NyPage<SignInPage> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {
-              showToastSuccess(
-                  title: "Forgot Password",
-                  description: "Navigate to forgot password");
-            },
+            onPressed: _forgotPassword,
             child: Text(
               'Forgot Password?',
               style: TextStyle(
@@ -219,25 +223,32 @@ class _SignInPageState extends NyPage<SignInPage> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: () {
-          showToastSuccess(description: "Login successful");
-          routeTo('/base');
-        },
+        onPressed: !_isLoading ? _signIn : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey[400],
+          backgroundColor:
+              !_isLoading ? const Color(0xFF00BFFF) : Colors.grey[400],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
-        child: const Text(
-          'Login',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Login',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
@@ -368,6 +379,154 @@ class _SignInPageState extends NyPage<SignInPage> {
         ),
       ),
     );
+  }
+
+  // Validation methods
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email is required';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    return null;
+  }
+
+  // API Integration
+  Future<void> _signIn() async {
+    // Validate form first
+    if (!_formKey.currentState!.validate()) {
+      showToast(
+          title: 'Validation Error',
+          description: 'Please fix the errors above');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await api<AuthApiService>(
+        (request) => request.login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
+
+      if (response != null && response['success'] == true) {
+        // Store user data and token for session management
+        if (response['data'] != null) {
+          final userData = response['data']['user'];
+          final token = response['data']['token'];
+          
+          print('🔐 SignIn: Storing authentication data...');
+          print('🔐 SignIn: Token: $token');
+          print('🔐 SignIn: User: $userData');
+
+          // Store authentication data for session management
+          await Auth.authenticate(data: {
+            'token': token,
+            'user': userData,
+            'authenticated_at': DateTime.now().toIso8601String(),
+          });
+          
+          print('🔐 SignIn: Authentication data stored successfully');
+
+          showToast(
+              title: 'Success',
+              description: 'Welcome back, ${userData['name'] ?? 'User'}!');
+        }
+
+        // Navigate to main app
+        routeTo('/base');
+      } else {
+        // Handle API validation errors
+        final message = response?['message'] ?? 'Failed to sign in';
+        final errors = response?['errors'];
+
+        if (errors != null && errors is Map<String, dynamic>) {
+          // Show specific field errors
+          final fieldErrors = <String>[];
+          errors.forEach((field, errorList) {
+            if (errorList is List && errorList.isNotEmpty) {
+              fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
+            }
+          });
+
+          if (fieldErrors.isNotEmpty) {
+            showToast(
+                title: 'Validation Error', description: fieldErrors.join('\n'));
+            return;
+          }
+        }
+
+        showToast(title: 'Error', description: message);
+      }
+    } catch (e) {
+      showToast(title: 'Error', description: 'Failed to sign in: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    if (_emailController.text.trim().isEmpty) {
+      showToast(
+          title: 'Error', description: 'Please enter your email address first');
+      return;
+    }
+
+    // Validate email format
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      showToast(
+          title: 'Error', description: 'Please enter a valid email address');
+      return;
+    }
+
+    try {
+      final response = await api<AuthApiService>(
+        (request) =>
+            request.forgotPassword(email: _emailController.text.trim()),
+      );
+
+      if (response != null && response['success'] == true) {
+        showToast(
+            title: 'Success',
+            description: 'Password reset link sent to your email');
+      } else {
+        // Handle API validation errors
+        final message = response?['message'] ?? 'Failed to send reset link';
+        final errors = response?['errors'];
+
+        if (errors != null && errors is Map<String, dynamic>) {
+          // Show specific field errors
+          final fieldErrors = <String>[];
+          errors.forEach((field, errorList) {
+            if (errorList is List && errorList.isNotEmpty) {
+              fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
+            }
+          });
+
+          if (fieldErrors.isNotEmpty) {
+            showToast(
+                title: 'Validation Error', description: fieldErrors.join('\n'));
+            return;
+          }
+        }
+
+        showToast(title: 'Error', description: message);
+      }
+    } catch (e) {
+      showToast(title: 'Error', description: 'Failed to send reset link: $e');
+    }
   }
 
   @override

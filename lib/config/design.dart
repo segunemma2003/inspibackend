@@ -8,7 +8,7 @@ import 'package:nylo_framework/nylo_framework.dart';
 
 /* Design
 |--------------------------------------------------------------------------
-| Contains App Font + Widgets used in the Nylo.
+| Contains App Font + Widgets used in the Inspiritag.
 | Learn more: https://nylo.dev/docs/6.x/themes-and-styling#design
 |-------------------------------------------------------------------------- */
 

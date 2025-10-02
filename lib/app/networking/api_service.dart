@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '/config/decoders.dart';
+import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 /* ApiService
@@ -23,7 +24,8 @@ class ApiService extends NyApiService {
         );
 
   @override
-  String get baseUrl => getEnv('API_BASE_URL');
+  String get baseUrl =>
+      getEnv('API_BASE_URL', defaultValue: 'http://38.180.244.178/api');
 
   @override
   get interceptors => {
@@ -37,12 +39,12 @@ class ApiService extends NyApiService {
     );
   }
 
-  /// Example to fetch the Nylo repository info from Github
+  /// Example to fetch the Inspiritag repository info from Github
   Future githubInfo() async {
     return await network(
-      request: (request) =>
-          request.get("https://api.github.com/repos/nylo-core/nylo"),
-      cacheKey: "github_nylo_info", // Optional: Cache the response
+      request: (request) => request
+          .get("https://api.github.com/repos/inspiritag-core/inspiritag"),
+      cacheKey: "github_inspiritag_info", // Optional: Cache the response
       cacheDuration: const Duration(hours: 1),
     );
   }
@@ -56,14 +58,15 @@ class ApiService extends NyApiService {
   | Authenticate your API requests using a bearer token or any other method
   |-------------------------------------------------------------------------- */
 
-  // @override
-  // Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-  //   String? myAuthToken = await Keys.bearerToken.read();
-  //   if (myAuthToken != null) {
-  //     headers.addBearerToken( myAuthToken );
-  //   }
-  //   return headers;
-  // }
+  @override
+  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
+    print('🌐 ApiService: Setting auth headers...');
+    final authHeaders = await AuthService.instance.getAuthHeaders();
+    print('🌐 ApiService: Auth headers received: $authHeaders');
+    headers.addAll(authHeaders);
+    print('🌐 ApiService: Final headers: ${headers.toString()}');
+    return headers;
+  }
 
   /* Should Refresh Token
   |--------------------------------------------------------------------------

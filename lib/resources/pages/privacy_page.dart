@@ -3,7 +3,7 @@ import 'package:nylo_framework/nylo_framework.dart';
 
 class PrivacyPage extends NyStatefulWidget {
   static RouteView path = ("/privacy", (_) => PrivacyPage());
-  
+
   PrivacyPage({super.key}) : super(child: () => _PrivacyPageState());
 }
 
@@ -20,14 +20,14 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
           children: [
             // Header
             _buildHeader(),
-            
+
             const SizedBox(height: 20),
-            
+
             // Logo Section
             _buildLogoSection(),
-            
+
             const SizedBox(height: 30),
-            
+
             // Privacy Content
             Expanded(
               child: _buildPrivacyContent(),
@@ -118,9 +118,9 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         Text(
           'Last updated: December 2024',
           style: TextStyle(
@@ -143,59 +143,59 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
           Icons.info_outline,
           'At inspirtag, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and safeguard your data when you use our beauty and wellness platform.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // Information We Collect
         _buildSection(
           'Information We Collect',
           Icons.data_usage,
           'We collect information you provide directly to us, such as when you create an account, update your profile, book appointments, or communicate with us. This may include your name, email address, phone number, location, photos, and preferences.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // How We Use Information
         _buildSection(
           'How We Use Your Information',
           Icons.settings,
           'We use your information to provide and improve our services, connect you with beauty professionals, process bookings, send notifications, and enhance your user experience. We may also use aggregated data for analytics and service improvement.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // Information Sharing
         _buildSection(
           'Information Sharing',
           Icons.share,
           'We do not sell your personal information. We may share your information with beauty professionals you choose to connect with, service providers who assist us, or when required by law. Your profile information is only shared with your consent.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // Data Security
         _buildSection(
           'Data Security',
           Icons.security,
           'We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // Your Rights
         _buildSection(
           'Your Rights',
           Icons.account_balance,
           'You have the right to access, update, or delete your personal information. You can manage your privacy settings in your account, opt out of certain communications, and request data portability. Contact us to exercise these rights.',
         ),
-        
+
         SizedBox(height: 20),
-        
+
         // Contact Information
         _buildContactSection(),
-        
+
         SizedBox(height: 32),
-        
+
         // Agreement
         Container(
           padding: EdgeInsets.all(16),
@@ -225,7 +225,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 20),
       ],
     );
@@ -367,5 +367,3 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
     );
   }
 }
-
-

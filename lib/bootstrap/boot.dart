@@ -11,7 +11,7 @@ import 'package:nylo_framework/nylo_framework.dart';
 |-------------------------------------------------------------------------- */
 
 class Boot {
-  /// This method is called to initialize Nylo.
+  /// This method is called to initialize Inspiritag.
   static Future<Nylo> nylo() async {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,7 +23,7 @@ class Boot {
     return await bootApplication(providers);
   }
 
-  /// This method is called after Nylo is initialized.
+  /// This method is called after Inspiritag is initialized.
   static Future<void> finished(Nylo nylo) async {
     await bootFinished(nylo, providers);
 

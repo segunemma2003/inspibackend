@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '/app/networking/auth_api_service.dart';
+import '/config/cache.dart';
 
 class SignUpPage extends NyStatefulWidget {
   static RouteView path = ("/sign-up", (_) => SignUpPage());
@@ -11,6 +14,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _agreeToTerms = false;
+  bool _isLoading = false;
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -18,9 +22,13 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   get init => () {};
+
+  @override
+  LoadingStyle get loadingStyle => LoadingStyle.normal();
 
   @override
   Widget view(BuildContext context) {
@@ -29,64 +37,77 @@ class _SignUpPageState extends NyPage<SignUpPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
 
-              // Back arrow at top left
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: Colors.black,
-                      size: 24,
+                // Back arrow at top left
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: Colors.black,
+                        size: 24,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Logo Section
-              _buildLogoSection(),
+                // Logo Section
+                _buildLogoSection(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Page Title
-              _buildPageTitle(),
+                // Page Title
+                _buildPageTitle(),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Tagline
-              _buildTagline(),
+                // Tagline
+                _buildTagline(),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Input Fields
-              _buildInputFields(),
+                // Input Fields
+                _buildInputFields(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Terms and Policy Checkbox
-              _buildTermsCheckbox(),
+                // Terms and Policy Checkbox
+                _buildTermsCheckbox(),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Create Account Button
-              _buildCreateAccountButton(),
+                // Create Account Button
+                _buildCreateAccountButton(),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-              // Sign In Link
-              _buildSignInLink(),
+                // Divider
+                _buildDivider(),
 
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 30),
+
+                // Social Login Buttons
+                _buildSocialButtons(),
+
+                const SizedBox(height: 30),
+
+                // Sign In Link
+                _buildSignInLink(),
+
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -175,6 +196,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         _buildTextField(
           controller: _fullNameController,
           hintText: 'Full Name',
+          validator: _validateFullName,
         ),
 
         const SizedBox(height: 20),
@@ -184,6 +206,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
           controller: _emailController,
           hintText: 'Email',
           keyboardType: TextInputType.emailAddress,
+          validator: _validateEmail,
         ),
 
         const SizedBox(height: 20),
@@ -192,6 +215,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         _buildTextField(
           controller: _usernameController,
           hintText: 'Username',
+          validator: _validateUsername,
         ),
 
         const SizedBox(height: 20),
@@ -201,6 +225,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
           controller: _passwordController,
           hintText: 'Password',
           isVisible: _isPasswordVisible,
+          validator: _validatePassword,
           onToggleVisibility: () {
             setState(() {
               _isPasswordVisible = !_isPasswordVisible;
@@ -215,6 +240,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
           controller: _confirmPasswordController,
           hintText: 'Confirm Password',
           isVisible: _isConfirmPasswordVisible,
+          validator: _validateConfirmPassword,
           onToggleVisibility: () {
             setState(() {
               _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
@@ -229,6 +255,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
     required TextEditingController controller,
     required String hintText,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -238,6 +265,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        validator: validator,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
@@ -262,6 +290,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
     required String hintText,
     required bool isVisible,
     required VoidCallback onToggleVisibility,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -271,6 +300,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
       child: TextFormField(
         controller: controller,
         obscureText: !isVisible,
+        validator: validator,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
@@ -356,27 +386,32 @@ class _SignUpPageState extends NyPage<SignUpPage> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _agreeToTerms
-            ? () {
-                showToastSuccess(description: "Account creation successful");
-                routeTo('/base');
-              }
-            : null,
+        onPressed: !_isLoading ? _createAccount : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _agreeToTerms ? Colors.grey[400] : Colors.grey[300],
+          backgroundColor:
+              !_isLoading ? const Color(0xFF00BFFF) : Colors.grey[400],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
-        child: Text(
-          'Create Account',
-          style: TextStyle(
-            color: Colors.grey[700],
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Create Account',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
@@ -408,6 +443,255 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Or continue with',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialButtons() {
+    return Column(
+      children: [
+        // Google and Apple buttons
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextButton.icon(
+                  onPressed: () {
+                    showToastSuccess(
+                        title: "Google", description: "Sign up with Google");
+                  },
+                  icon: Text(
+                    'G',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[600],
+                    ),
+                  ),
+                  label: const Text(
+                    'Google',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextButton.icon(
+                  onPressed: () {
+                    showToastSuccess(
+                        title: "Apple", description: "Sign up with Apple");
+                  },
+                  icon: Icon(
+                    FontAwesomeIcons.apple,
+                    size: 18,
+                    color: Colors.black,
+                  ),
+                  label: const Text(
+                    'Apple',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Validation methods
+  String? _validateFullName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Full name is required';
+    }
+    if (value.trim().length < 2) {
+      return 'Full name must be at least 2 characters';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email is required';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validateUsername(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Username is required';
+    }
+    if (value.trim().length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+    if (value.trim().length > 20) {
+      return 'Username must be less than 20 characters';
+    }
+    final usernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+    if (!usernameRegex.hasMatch(value.trim())) {
+      return 'Username can only contain letters, numbers, and underscores';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    if (value.length > 50) {
+      return 'Password must be less than 50 characters';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  // API Integration
+  Future<void> _createAccount() async {
+    // Validate form first
+    if (!_formKey.currentState!.validate()) {
+      showToast(
+          title: 'Validation Error',
+          description: 'Please fix the errors above');
+      return;
+    }
+
+    if (!_agreeToTerms) {
+      showToast(
+          title: 'Error',
+          description: 'Please agree to the terms and conditions');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await api<AuthApiService>(
+        (request) => request.register(
+          fullName: _fullNameController.text.trim(),
+          email: _emailController.text.trim(),
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+          passwordConfirmation: _confirmPasswordController.text,
+          termsAccepted: _agreeToTerms,
+        ),
+      );
+
+      if (response != null && response['success'] == true) {
+        // Store user data and token for session management
+        if (response['data'] != null) {
+          final userData = response['data']['user'];
+          final token = response['data']['token'];
+          
+          print('🔐 SignUp: Storing authentication data...');
+          print('🔐 SignUp: Token: $token');
+          print('🔐 SignUp: User: $userData');
+
+          // Store authentication data for session management
+          await Auth.authenticate(data: {
+            'token': token,
+            'user': userData,
+            'authenticated_at': DateTime.now().toIso8601String(),
+          });
+          
+          print('🔐 SignUp: Authentication data stored successfully');
+
+          showToast(
+              title: 'Success',
+              description:
+                  'Welcome to Inspiritag, ${userData['name'] ?? 'User'}!');
+        }
+
+        // Navigate to main app
+        routeTo('/base');
+      } else {
+        // Handle API validation errors
+        final message = response?['message'] ?? 'Failed to create account';
+        final errors = response?['errors'];
+
+        if (errors != null && errors is Map<String, dynamic>) {
+          // Show specific field errors
+          final fieldErrors = <String>[];
+          errors.forEach((field, errorList) {
+            if (errorList is List && errorList.isNotEmpty) {
+              fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
+            }
+          });
+
+          if (fieldErrors.isNotEmpty) {
+            showToast(
+                title: 'Validation Error', description: fieldErrors.join('\n'));
+            return;
+          }
+        }
+
+        showToast(title: 'Error', description: message);
+      }
+    } catch (e) {
+      showToast(title: 'Error', description: 'Failed to create account: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override

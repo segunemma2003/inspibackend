@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '/resources/widgets/safearea_widget.dart';
+import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 class HomePage extends NyStatefulWidget {
@@ -11,11 +12,12 @@ class HomePage extends NyStatefulWidget {
 class _HomePageState extends NyPage<HomePage> {
   @override
   get init => () async {
-        /// Uncomment the code below to fetch the number of stars for the Nylo repository
-        // Map<String, dynamic>? githubResponse = await api<ApiService>(
-        //         (request) => request.githubInfo(),
-        // );
-        // _stars = githubResponse?["stargazers_count"];
+        // Check if user is already authenticated
+        final isAuthenticated = await AuthService.instance.isAuthenticated();
+        if (isAuthenticated) {
+          // User is already logged in, redirect to main app
+          routeTo('/base');
+        }
       };
 
   @override

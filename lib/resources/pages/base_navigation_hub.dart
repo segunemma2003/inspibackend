@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/resources/widgets/profile_widget.dart';
-import 'package:flutter_app/resources/widgets/saved_widget.dart';
-import 'package:flutter_app/resources/widgets/upload_widget.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import '/resources/pages/home_page.dart';
 import '/resources/widgets/feed_widget.dart';
 import '/resources/widgets/upload_widget.dart';
 import '/resources/widgets/saved_widget.dart';
