@@ -18,6 +18,50 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>inspiritag.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>inspiritag</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Camera Access -->
+	<key>NSCameraUsageDescription</key>
+	<string>Inspiritag needs access to your camera to take photos for your inspiration collection.</string>
+	<!-- Photo Library Access -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Inspiritag needs access to your photo library to save and retrieve your inspiration images.</string>
+	<!-- Photo Library Add-Only Access (iOS 11+) -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Inspiritag needs permission to save photos to your photo library.</string>
+	<!-- Location Access -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Inspiritag uses your location to tag your inspirations with location data.</string>
+	<!-- Microphone Access (for video recording) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Inspiritag needs access to your microphone to record videos for your inspiration collection.</string>
+	<!-- Network Access -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>api.inspirtag.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
@@ -59,5 +103,26 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<!-- iOS 14+ App Tracking Transparency -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<!-- File Access (for file picker) -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<!-- Status Bar Style -->
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDefault</string>
+	<!-- Firebase Configuration -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<!-- Push Notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

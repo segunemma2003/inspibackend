@@ -9,6 +9,7 @@ import '/app/networking/post_api_service.dart';
 import '/app/networking/user_api_service.dart';
 import '/app/networking/auth_api_service.dart';
 import '/app/networking/search_api_service.dart';
+import '/app/networking/device_api_service.dart';
 import '/app/controllers/home_controller.dart';
 import '/app/models/user.dart';
 import '/app/networking/api_service.dart';
@@ -79,6 +80,7 @@ final Map<Type, dynamic> apiDecoders = {
   NotificationApiService: NotificationApiService(),
   CategoryApiService: CategoryApiService(),
   SearchApiService: SearchApiService(),
+  DeviceApiService: DeviceApiService(),
 };
 
 /* Controller Decoders

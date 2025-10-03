@@ -38,28 +38,29 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
     try {
       // Load user feed with caching
       final feedResponse = await api<PostApiService>(
-        (request) => request?.getFeed(perPage: 20, page: 1),
+        (request) => request.getFeed(perPage: 20, page: 1),
         cacheKey: CacheConfig.userFeedKey,
         cacheDuration: CacheConfig.userFeedCache,
       );
 
       // Load current user with caching
       currentUser = await api<AuthApiService>(
-        (request) => request?.getCurrentUser(),
+        (request) => request.getCurrentUser(),
         cacheKey: CacheConfig.currentUserKey,
         cacheDuration: CacheConfig.userProfileCache,
       );
 
       // Load categories with long-term caching
       categories = await api<CategoryApiService>(
-            (request) => request?.getCategories(),
+            (request) => request.getCategories(),
             cacheKey: CacheConfig.categoriesKey,
             cacheDuration: CacheConfig.categoriesCache,
           ) ??
           [];
 
-      if (feedResponse != null && feedResponse['data'] != null) {
-        posts = List<Post>.from(feedResponse['data']);
+      if (feedResponse != null && feedResponse['success'] == true) {
+        final List<dynamic> postsData = feedResponse['data']['data'] ?? [];
+        posts = postsData.map((json) => Post.fromJson(json)).toList();
       }
     } catch (e) {
       showToast(title: 'Error', description: 'Failed to load data: $e');
@@ -72,10 +73,10 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
   Future<void> _createPost() async {
     try {
       final newPost = await api<PostApiService>(
-        (request) => request?.createPost(
+        (request) => request.createPost(
           caption: "Check out this amazing hairstyle! #hair #beauty",
           media: "path/to/media/file.jpg",
-          categoryId: categories.isNotEmpty ? categories.first.id! : 1,
+          categoryId: categories.isNotEmpty ? (categories.first.id ?? 1) : 1,
           tags: ["hair", "beauty", "style"],
           location: "New York, NY",
         ),
@@ -99,7 +100,7 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
   Future<void> _toggleLike(Post post) async {
     try {
       final response = await api<PostApiService>(
-        (request) => request?.toggleLike(post.id!),
+        (request) => request.toggleLike(post.id ?? 0),
       );
 
       if (response != null) {
@@ -117,7 +118,7 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
   Future<void> _searchUsersByInterests(List<String> interests) async {
     try {
       final response = await api<UserApiService>(
-        (request) => request?.searchUsersByInterests(
+        (request) => request.searchUsersByInterests(
           interests: interests,
           perPage: 20,
         ),
@@ -138,7 +139,7 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
   Future<void> _loadBusinessAccounts() async {
     try {
       final response = await api<BusinessApiService>(
-        (request) => request?.getBusinessAccounts(
+        (request) => request.getBusinessAccounts(
           type: "hair",
           perPage: 20,
         ),
@@ -160,9 +161,9 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
   Future<void> _loadNotifications() async {
     try {
       final response = await api<NotificationApiService>(
-        (request) => request?.getNotifications(
+        (request) => request.getNotifications(
           perPage: 20,
-          unreadOnly: true,
+          isRead: false,
         ),
         cacheKey: "notifications_unread",
         cacheDuration: CacheConfig.notificationCountCache,
@@ -244,9 +245,9 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
                               spacing: 8,
                               children: categories
                                   .map((category) => Chip(
-                                        label: Text(category?.name ?? ''),
-                                        backgroundColor: category?.color != null
-                                            ? Color(int.parse(category!.color!
+                                        label: Text(category.name ?? ''),
+                                        backgroundColor: category.color != null
+                                            ? Color(int.parse(category.color!
                                                 .replaceFirst('#', '0xFF')))
                                             : null,
                                       ))
@@ -272,25 +273,25 @@ class _ApiUsageExampleState extends NyState<ApiUsageExample> {
                                     fontSize: 18, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             ...posts.take(3).map((post) => ListTile(
-                                  leading: post?.mediaUrl != null
-                                      ? Image.network(post!.mediaUrl!,
+                                  leading: post.mediaUrl != null
+                                      ? Image.network(post.mediaUrl!,
                                           width: 50,
                                           height: 50,
                                           fit: BoxFit.cover)
                                       : const Icon(Icons.image),
-                                  title: Text(post?.caption ?? ''),
+                                  title: Text(post.caption ?? ''),
                                   subtitle:
-                                      Text('${post?.likesCount ?? 0} likes'),
+                                      Text('${post.likesCount ?? 0} likes'),
                                   trailing: IconButton(
                                     icon: Icon(
-                                      post?.isLiked == true
+                                      post.isLiked == true
                                           ? Icons.favorite
                                           : Icons.favorite_border,
-                                      color: post?.isLiked == true
+                                      color: post.isLiked == true
                                           ? Colors.red
                                           : null,
                                     ),
-                                    onPressed: () => _toggleLike(post!),
+                                    onPressed: () => _toggleLike(post),
                                   ),
                                 )),
                           ],

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/models/post.dart';
 import '/app/models/category.dart';
-import '/app/models/user.dart';
 import '/app/networking/post_api_service.dart';
 import '/app/networking/category_api_service.dart';
 import '/app/networking/auth_api_service.dart';
 import '/config/cache.dart';
+import '/resources/widgets/smart_media_widget.dart';
 
 class Feed extends StatefulWidget {
   const Feed({super.key});
@@ -22,7 +22,6 @@ class _FeedState extends NyState<Feed> {
   int _currentPage = 1;
   bool _hasMorePosts = true;
   bool _isLoadingMore = false;
-  User? _currentUser;
 
   @override
   LoadingStyle get loadingStyle => LoadingStyle.skeletonizer(
@@ -36,8 +35,8 @@ class _FeedState extends NyState<Feed> {
 
   Future<void> _loadInitialData() async {
     try {
-      // Load current user
-      _currentUser = await api<AuthApiService>(
+      // Load current user (for authentication check)
+      await api<AuthApiService>(
         (request) => request.getCurrentUser(),
         cacheKey: CacheConfig.currentUserKey,
         cacheDuration: CacheConfig.userProfileCache,
@@ -89,8 +88,13 @@ class _FeedState extends NyState<Feed> {
         cacheDuration: CacheConfig.userFeedCache,
       );
 
-      if (feedResponse != null && feedResponse['data'] != null) {
-        final newPosts = List<Post>.from(feedResponse['data']);
+      if (feedResponse != null && feedResponse['success'] == true) {
+        final List<dynamic> postsData = feedResponse['data']['data'] ?? [];
+        final List<Post> newPosts =
+            postsData.map((json) => Post.fromJson(json)).toList();
+
+        print('📱 Feed: Loaded ${newPosts.length} posts from API');
+
         setState(() {
           if (isRefresh) {
             _feedItems = newPosts;
@@ -362,24 +366,17 @@ class _FeedState extends NyState<Feed> {
           if (post.mediaUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                post.mediaUrl!,
-                width: double.infinity,
+              child: SmartMediaWidget(
+                post: post,
                 height: 300,
+                width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 300,
-                    color: Colors.grey[300],
-                    child: Icon(Icons.error, size: 50),
-                  );
-                },
               ),
             ),
           SizedBox(height: 16),
-          // Action buttons
+          // Action buttons (Likes and Save only)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionButton(
                 post.isLiked == true ? Icons.favorite : Icons.favorite_border,
@@ -393,23 +390,6 @@ class _FeedState extends NyState<Feed> {
                 color: post.isSaved == true ? Colors.blue : Colors.grey[600],
                 onTap: () => _toggleSave(post),
               ),
-              _buildActionButton(
-                Icons.comment_outlined,
-                '${post.commentsCount ?? 0}',
-                color: Colors.grey[600],
-                onTap: () {
-                  // Navigate to comments
-                },
-              ),
-              if (post.location != null)
-                _buildActionButton(
-                  Icons.location_on,
-                  post.location!,
-                  color: Colors.grey[600],
-                  onTap: () {
-                    // Show location details
-                  },
-                ),
             ],
           ),
         ],

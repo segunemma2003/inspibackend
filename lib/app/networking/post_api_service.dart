@@ -75,7 +75,7 @@ class PostApiService extends NyApiService {
     );
   }
 
-  /// Get presigned URL for S3 upload (large files)
+  /// Get presigned URL for S3 upload (smart upload system)
   Future<Map<String, dynamic>?> getUploadUrl({
     required String filename,
     required String contentType,
@@ -90,21 +90,58 @@ class PostApiService extends NyApiService {
     );
   }
 
+  /// Get chunked upload URLs for large files
+  Future<Map<String, dynamic>?> getChunkedUploadUrl({
+    required String filename,
+    required String contentType,
+    required int totalSize,
+    required int chunkSize,
+  }) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.post("/posts/chunked-upload-url", data: {
+        "filename": filename,
+        "content_type": contentType,
+        "total_size": totalSize,
+        "chunk_size": chunkSize,
+      }),
+    );
+  }
+
+  /// Complete chunked upload
+  Future<Map<String, dynamic>?> completeChunkedUpload({
+    required String filePath,
+    required int totalChunks,
+  }) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) =>
+          request.post("/posts/complete-chunked-upload", data: {
+        "file_path": filePath,
+        "total_chunks": totalChunks,
+      }),
+    );
+  }
+
   /// Create post after S3 upload
   Future<Post?> createPostFromS3({
     required String filePath,
-    String? caption,
+    String? title,
+    String? description,
+    String? thumbnailPath,
     required int categoryId,
     List<String>? tags,
     String? location,
+    Map<String, dynamic>? mediaMetadata,
   }) async {
     return await network<Post>(
       request: (request) => request.post("/posts/create-from-s3", data: {
         "file_path": filePath,
-        if (caption != null) "caption": caption,
+        if (title != null) "title": title,
+        if (description != null) "description": description,
+        if (thumbnailPath != null) "thumbnail_path": thumbnailPath,
         "category_id": categoryId,
         if (tags != null) "tags": tags,
         if (location != null) "location": location,
+        if (mediaMetadata != null) "media_metadata": mediaMetadata,
       }),
     );
   }

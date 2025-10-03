@@ -21,19 +21,21 @@ class NotificationApiService extends NyApiService {
     return headers;
   }
 
-  /// Get notifications
+  /// Get notifications with filtering
   Future<Map<String, dynamic>?> getNotifications({
     int perPage = 20,
     int page = 1,
-    bool? unreadOnly,
+    String? type,
+    bool? isRead,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/notifications", queryParameters: {
         "per_page": perPage,
         "page": page,
-        if (unreadOnly != null) "unread_only": unreadOnly,
+        if (type != null) "type": type,
+        if (isRead != null) "is_read": isRead,
       }),
-      cacheKey: "notifications_${unreadOnly ?? 'all'}_$page",
+      cacheKey: "notifications_${type ?? 'all'}_${isRead ?? 'all'}_$page",
       cacheDuration: const Duration(minutes: 1),
     );
   }
@@ -97,6 +99,51 @@ class NotificationApiService extends NyApiService {
   Future<Map<String, dynamic>?> deleteNotification(int notificationId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/notifications/$notificationId"),
+    );
+  }
+
+  /// Mark notification as unread
+  Future<Map<String, dynamic>?> markNotificationAsUnread(
+      int notificationId) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) =>
+          request.put("/notifications/$notificationId/unread"),
+    );
+  }
+
+  /// Mark multiple notifications as read
+  Future<Map<String, dynamic>?> markMultipleAsRead(
+      List<int> notificationIds) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) =>
+          request.put("/notifications/mark-multiple-read", data: {
+        "notification_ids": notificationIds,
+      }),
+    );
+  }
+
+  /// Delete all notifications
+  Future<Map<String, dynamic>?> deleteAllNotifications() async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.delete("/notifications"),
+    );
+  }
+
+  /// Get notification statistics
+  Future<Map<String, dynamic>?> getNotificationStatistics() async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.get("/notifications/statistics"),
+      cacheKey: "notification_stats",
+      cacheDuration: const Duration(minutes: 5),
+    );
+  }
+
+  /// Send test notification
+  Future<Map<String, dynamic>?> sendTestNotification(String message) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.post("/notifications/test", data: {
+        "message": message,
+      }),
     );
   }
 }

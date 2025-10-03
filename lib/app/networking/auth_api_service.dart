@@ -30,6 +30,11 @@ class AuthApiService extends NyApiService {
     required String password,
     required String passwordConfirmation,
     required bool termsAccepted,
+    String? deviceToken,
+    String? deviceType,
+    String? deviceName,
+    String? appVersion,
+    String? osVersion,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/register", data: {
@@ -39,6 +44,11 @@ class AuthApiService extends NyApiService {
         "password": password,
         "password_confirmation": passwordConfirmation,
         "terms_accepted": termsAccepted,
+        if (deviceToken != null) "device_token": deviceToken,
+        if (deviceType != null) "device_type": deviceType,
+        if (deviceName != null) "device_name": deviceName,
+        if (appVersion != null) "app_version": appVersion,
+        if (osVersion != null) "os_version": osVersion,
       }),
       cacheKey: "register_${email}",
       cacheDuration: const Duration(minutes: 5),
@@ -49,11 +59,21 @@ class AuthApiService extends NyApiService {
   Future<Map<String, dynamic>?> login({
     required String email,
     required String password,
+    String? deviceToken,
+    String? deviceType,
+    String? deviceName,
+    String? appVersion,
+    String? osVersion,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/login", data: {
         "email": email,
         "password": password,
+        if (deviceToken != null) "device_token": deviceToken,
+        if (deviceType != null) "device_type": deviceType,
+        if (deviceName != null) "device_name": deviceName,
+        if (appVersion != null) "app_version": appVersion,
+        if (osVersion != null) "os_version": osVersion,
       }),
       cacheKey: "login_${email}",
       cacheDuration: const Duration(minutes: 5),
@@ -97,22 +117,18 @@ class AuthApiService extends NyApiService {
     );
   }
 
-  /// Firebase authentication
+  /// Verify Firebase token and create/update user
   Future<Map<String, dynamic>?> verifyFirebaseToken({
-    required String firebaseToken,
-    required String provider,
+    required String token,
     required String email,
     required String name,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/verify-firebase-token", data: {
-        "firebase_token": firebaseToken,
-        "provider": provider,
+        "firebase_token": token,
         "email": email,
         "name": name,
       }),
-      cacheKey: "firebase_auth_${email}",
-      cacheDuration: const Duration(minutes: 5),
     );
   }
 

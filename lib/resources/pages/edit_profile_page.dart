@@ -1,5 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import 'package:file_picker/file_picker.dart';
+import '/app/networking/user_api_service.dart';
+import '/app/networking/auth_api_service.dart';
+import '/app/networking/search_api_service.dart';
+import '/app/models/user.dart';
+import '/app/services/auth_service.dart';
 
 class EditProfilePage extends NyStatefulWidget {
   static RouteView path = ("/edit-profile", (_) => EditProfilePage());
@@ -11,34 +18,233 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _websiteController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _professionController = TextEditingController();
 
-  bool _isBusinessAccount = false;
+  // Profile picture
+  PlatformFile? _selectedProfilePicture;
+  String? _currentProfilePictureUrl;
+  bool _isUploadingPicture = false;
+
+  // User data
+  User? _currentUser;
+  bool _isLoadingUser = false;
+  bool _isSaving = false;
+
+  // Interests
+  List<String> _availableInterests = [];
+  List<String> _selectedInterests = [];
+  bool _isLoadingInterests = false;
 
   @override
-  get init => () {
-        // Initialize with sample data
-        _nameController.text = "Sarah Johnson";
-        _usernameController.text = "sarah_johnson";
-        _bioController.text =
-            "I love myself and whatever I want I receive and I don't listen to anyones opinion. Since then I have been happier, more fullfilled and peaceful. My advice would be do what you want, wear what you want and be who you want and then you will attract what you want.";
-        _websiteController.text = "sarahjohnson.com";
-        _phoneController.text = "+1 234 567 8900";
-        _isBusinessAccount = true;
+  get init => () async {
+        await _debugAuthData();
+        await _loadUserData();
+        await _loadInterests();
       };
+
+  Future<void> _debugAuthData() async {
+    try {
+      print('🔍 EditProfile: Debugging Auth data...');
+      final authData = await Auth.data();
+      print('🔍 EditProfile: Raw Auth.data(): $authData');
+      print('🔍 EditProfile: Auth data type: ${authData.runtimeType}');
+      if (authData != null) {
+        print('🔍 EditProfile: Auth data keys: ${authData.keys}');
+        if (authData.containsKey('user')) {
+          print('🔍 EditProfile: User data: ${authData['user']}');
+          print(
+              '🔍 EditProfile: User data type: ${authData['user'].runtimeType}');
+        }
+        if (authData.containsKey('token')) {
+          print('🔍 EditProfile: Token: ${authData['token']}');
+        }
+      }
+    } catch (e) {
+      print('❌ EditProfile: Error debugging auth data: $e');
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoadingUser = true);
+
+    try {
+      print('🔄 EditProfile: Loading user data...');
+
+      // First try to get user data from AuthService (cached data)
+      final cachedUserData = await AuthService.instance.getUserProfile();
+      print('📱 EditProfile: Cached user data: $cachedUserData');
+      print(
+          '📱 EditProfile: Cached user data type: ${cachedUserData.runtimeType}');
+      if (cachedUserData != null) {
+        print('📱 EditProfile: Cached user data keys: ${cachedUserData.keys}');
+        print('📱 EditProfile: Name field: ${cachedUserData['name']}');
+        print(
+            '📱 EditProfile: Full name field: ${cachedUserData['full_name']}');
+        print('📱 EditProfile: Username field: ${cachedUserData['username']}');
+      }
+
+      if (cachedUserData != null) {
+        _populateUserData(cachedUserData);
+        print('✅ EditProfile: Populated from cache');
+      }
+
+      // Then fetch fresh data from API
+      print('🌐 EditProfile: Fetching fresh data from API...');
+      final response = await api<AuthApiService>(
+        (request) => request.getCurrentUser(),
+      );
+
+      print('📡 EditProfile: API response: $response');
+      print('📡 EditProfile: Response type: ${response.runtimeType}');
+
+      if (response != null) {
+        // Handle different response structures
+        User? user;
+        if (response is User) {
+          user = response;
+          print('✅ EditProfile: Response is User object');
+        } else if (response is Map<String, dynamic>) {
+          print('📋 EditProfile: Response is Map, keys: ${response.keys}');
+          if (response.containsKey('data') &&
+              response['data'] is Map<String, dynamic>) {
+            final data = response['data'];
+            if (data.containsKey('user') &&
+                data['user'] is Map<String, dynamic>) {
+              user = User.fromJson(data['user']);
+              print('✅ EditProfile: Created user from response.data.user');
+            } else {
+              user = User.fromJson(data);
+              print('✅ EditProfile: Created user from response.data');
+            }
+          } else if (response.containsKey('user') &&
+              response['user'] is Map<String, dynamic>) {
+            user = User.fromJson(response['user']);
+            print('✅ EditProfile: Created user from response.user');
+          } else {
+            user = User.fromJson(response);
+            print('✅ EditProfile: Created user from response directly');
+          }
+        }
+
+        if (user != null) {
+          setState(() {
+            _currentUser = user;
+          });
+          _populateUserData({
+            'full_name': user.fullName,
+            'username': user.username,
+            'bio': user.bio,
+            'profession': user.profession,
+            'profile_picture': user.profilePicture,
+            'interests': user.interests,
+          });
+          print(
+              '✅ EditProfile: User data loaded successfully: ${user.fullName}');
+        } else {
+          print('❌ EditProfile: Failed to create user object');
+        }
+      } else {
+        print('❌ EditProfile: API response is null');
+      }
+    } catch (e, stackTrace) {
+      print('❌ EditProfile: Error loading user data: $e');
+      print('📍 EditProfile: Stack trace: $stackTrace');
+      showToast(title: 'Error', description: 'Failed to load profile data');
+    } finally {
+      setState(() => _isLoadingUser = false);
+    }
+  }
+
+  void _populateUserData(Map<String, dynamic> userData) {
+    print('🔄 EditProfile: Populating form with data: $userData');
+
+    // First create and store the User object (same as profile widget)
+    try {
+      final user = User.fromJson(userData);
+      print(
+          '🔄 EditProfile: Created user object - name: ${user.name}, fullName: ${user.fullName}');
+      setState(() {
+        _currentUser = user;
+      });
+      print('✅ EditProfile: User set in state: ${_currentUser?.fullName}');
+    } catch (e) {
+      print('Error parsing cached user data: $e');
+      // Fallback: create user with basic info
+      setState(() {
+        final user = User();
+        user.id = userData['id'];
+        user.fullName =
+            userData['full_name']?.toString() ?? userData['name']?.toString();
+        user.username = userData['username']?.toString();
+        user.email = userData['email']?.toString();
+        user.bio = userData['bio']?.toString();
+        user.profession = userData['profession']?.toString();
+        user.profilePicture = userData['profile_picture']?.toString();
+        user.interests = userData['interests'] is List
+            ? List<String>.from(userData['interests'])
+            : null;
+        _currentUser = user;
+      });
+    }
+
+    // Then populate the form controllers
+    setState(() {
+      _nameController.text = userData['full_name']?.toString() ??
+          userData['name']?.toString() ??
+          '';
+      _usernameController.text = userData['username']?.toString() ?? '';
+      _bioController.text = userData['bio']?.toString() ?? '';
+      _professionController.text = userData['profession']?.toString() ?? '';
+      _currentProfilePictureUrl = userData['profile_picture']?.toString();
+
+      if (userData['interests'] != null) {
+        if (userData['interests'] is List) {
+          _selectedInterests = List<String>.from(userData['interests']);
+        } else if (userData['interests'] is String) {
+          _selectedInterests = [userData['interests']];
+        }
+      }
+    });
+
+    print(
+        '✅ EditProfile: Form populated - Name: ${_nameController.text}, Username: ${_usernameController.text}');
+  }
+
+  Future<void> _loadInterests() async {
+    setState(() => _isLoadingInterests = true);
+
+    try {
+      final response = await api<SearchApiService>(
+        (request) => request.getInterests(),
+      );
+
+      if (response != null) {
+        setState(() {
+          _availableInterests = List<String>.from(response);
+        });
+      }
+    } catch (e) {
+      print('Error loading interests: $e');
+    } finally {
+      setState(() => _isLoadingInterests = false);
+    }
+  }
 
   @override
   Widget view(BuildContext context) {
+    print(
+        '🎨 EditProfile: Building UI - currentUser: ${_currentUser?.fullName}');
+    print(
+        '🎨 EditProfile: Building UI - form values: name="${_nameController.text}", username="${_usernameController.text}"');
+    print(
+        '🎨 EditProfile: Building UI - currentUser is null: ${_currentUser == null}');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       body: SafeArea(
         child: Column(
           children: [
-            // Custom App Bar
             _buildAppBar(context),
-
-            // Content
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -46,15 +252,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
                   child: Column(
                     children: [
                       const SizedBox(height: 30),
-
-                      // Logo Section
-                      _buildLogoSection(),
-
-                      const SizedBox(height: 30),
-
-                      // Edit Profile Card
                       _buildEditProfileCard(),
-
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -72,7 +270,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          // Back Button
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
@@ -95,10 +292,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
               ),
             ),
           ),
-
           const Spacer(),
-
-          // Title
           const Text(
             'Edit Profile',
             style: TextStyle(
@@ -107,30 +301,39 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
               color: Colors.black87,
             ),
           ),
-
           const Spacer(),
-
-          // Save Button
           GestureDetector(
-            onTap: _saveProfile,
+            onTap: _isSaving ? null : _saveProfile,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF69B4), Color(0xFF9C27B0)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
+                gradient: _isSaving
+                    ? null
+                    : const LinearGradient(
+                        colors: [Color(0xFFFF69B4), Color(0xFF9C27B0)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                color: _isSaving ? Colors.grey[400] : null,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                'SAVE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'SAVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -138,76 +341,21 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     );
   }
 
-  Widget _buildLogoSection() {
-    return Column(
-      children: [
-        // Logo placeholder
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Image.asset(
-            'logo.png',
-            width: 80,
-            height: 80,
-            fit: BoxFit.contain,
-          ).localAsset(),
-        ),
-
-        const SizedBox(height: 12),
-
-        // App name with colors
-        RichText(
-          text: const TextSpan(
-            children: [
-              TextSpan(
-                text: 'inspi',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFFF69B4), // Pink
-                  letterSpacing: -0.5,
-                  fontFamily: 'Roboto',
-                ),
-              ),
-              TextSpan(
-                text: 'r',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFFFD700), // Yellow
-                  letterSpacing: -0.5,
-                  fontFamily: 'Roboto',
-                ),
-              ),
-              TextSpan(
-                text: 'tag',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF00BFFF), // Blue
-                  letterSpacing: -0.5,
-                  fontFamily: 'Roboto',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildEditProfileCard() {
+    if (_isLoadingUser) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Section
         Row(
           children: [
-            // Profile icon with gradient border
             Container(
               width: 50,
               height: 50,
@@ -215,10 +363,10 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
                 borderRadius: BorderRadius.circular(12),
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFFFF69B4), // Pink
-                    Color(0xFFFFD700), // Yellow
-                    Color(0xFF9ACD32), // Green
-                    Color(0xFF00BFFF), // Blue
+                    Color(0xFFFF69B4),
+                    Color(0xFFFFD700),
+                    Color(0xFF9ACD32),
+                    Color(0xFF00BFFF),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -238,7 +386,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
               ),
             ),
             const SizedBox(width: 16),
-            // Title
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,52 +420,62 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
         Center(
           child: Column(
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFF69B4),
-                      Color(0xFFFFD700),
-                      Color(0xFF9ACD32),
-                      Color(0xFF00BFFF),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Container(
-                  margin: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  child: ClipOval(
+              Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFFFF69B4),
+                          Color(0xFFFFD700),
+                          Color(0xFF9ACD32),
+                          Color(0xFF00BFFF),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
                     child: Container(
-                      color: Colors.grey[200],
-                      child: Icon(
-                        Icons.person,
-                        size: 50,
-                        color: Colors.grey[400],
+                      margin: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: ClipOval(
+                        child: _buildProfileImage(),
                       ),
                     ),
                   ),
-                ),
+                  if (_isUploadingPicture)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withOpacity(0.5),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: () {
-                  showToastSuccess(
-                      title: "Change Photo",
-                      description: "Photo picker opened");
-                },
-                child: const Text(
-                  'Change profile photo',
+                onTap: _isUploadingPicture ? null : _pickProfilePicture,
+                child: Text(
+                  _isUploadingPicture ? 'Uploading...' : 'Change profile photo',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF7B68EE),
+                    color: _isUploadingPicture
+                        ? Colors.grey
+                        : const Color(0xFF7B68EE),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -331,7 +488,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
 
         // Form Fields
         _buildTextField(
-          label: 'Full Name',
+          label: 'Full Name *',
           controller: _nameController,
           icon: Icons.person_outline,
         ),
@@ -339,9 +496,17 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
         const SizedBox(height: 20),
 
         _buildTextField(
-          label: 'Username',
+          label: 'Username *',
           controller: _usernameController,
           icon: Icons.alternate_email,
+        ),
+
+        const SizedBox(height: 20),
+
+        _buildTextField(
+          label: 'Profession',
+          controller: _professionController,
+          icon: Icons.work_outline,
         ),
 
         const SizedBox(height: 20),
@@ -353,108 +518,51 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
           maxLines: 4,
         ),
 
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          label: 'Website',
-          controller: _websiteController,
-          icon: Icons.link,
-        ),
-
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          label: 'Phone',
-          controller: _phoneController,
-          icon: Icons.phone_outlined,
-        ),
-
         const SizedBox(height: 24),
 
-        // Business Account Toggle
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7B68EE).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.business,
-                  color: Color(0xFF7B68EE),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Business Account',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      'Get access to business features',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: _isBusinessAccount,
-                onChanged: (value) {
-                  setState(() {
-                    _isBusinessAccount = value;
-                  });
-                },
-                activeColor: const Color(0xFF7B68EE),
-              ),
-            ],
-          ),
-        ),
+        // Interests Section
+        _buildInterestsSection(),
 
         const SizedBox(height: 30),
-
-        // Additional Options
-        _buildOptionButton(
-          icon: Icons.lock_outline,
-          title: 'Privacy Settings',
-          onTap: () {
-            showToastSuccess(
-                title: "Privacy Settings",
-                description: "Navigate to privacy settings");
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        _buildOptionButton(
-          icon: Icons.notifications_outlined,
-          title: 'Notification Preferences',
-          onTap: () {
-            showToastSuccess(
-                title: "Notifications",
-                description: "Navigate to notification settings");
-          },
-        ),
       ],
     );
+  }
+
+  Widget _buildProfileImage() {
+    if (_selectedProfilePicture != null) {
+      return Image.file(
+        File(_selectedProfilePicture!.path!),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } else if (_currentProfilePictureUrl != null) {
+      return Image.network(
+        _currentProfilePictureUrl!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[200],
+            child: Icon(
+              Icons.person,
+              size: 50,
+              color: Colors.grey[400],
+            ),
+          );
+        },
+      );
+    } else {
+      return Container(
+        color: Colors.grey[200],
+        child: Icon(
+          Icons.person,
+          size: 50,
+          color: Colors.grey[400],
+        ),
+      );
+    }
   }
 
   Widget _buildTextField({
@@ -463,6 +571,9 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     required IconData icon,
     int maxLines = 1,
   }) {
+    print(
+        '🎨 EditProfile: _buildTextField "$label" - value: "${controller.text}"');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -499,7 +610,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
                 horizontal: 16,
                 vertical: 12,
               ),
-              hintText: 'Enter $label...',
+              hintText: 'Enter ${label.replaceAll('*', '').trim()}...',
               hintStyle: TextStyle(
                 color: Colors.grey[400],
                 fontSize: 14,
@@ -511,69 +622,205 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     );
   }
 
-  Widget _buildOptionButton({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+  Widget _buildInterestsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Interests',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7B68EE).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF7B68EE),
-                size: 20,
-              ),
+        const SizedBox(height: 12),
+        if (_isLoadingInterests)
+          const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select your interests (tap to toggle)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _availableInterests.map((interest) {
+                    final isSelected = _selectedInterests.contains(interest);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedInterests.remove(interest);
+                          } else {
+                            _selectedInterests.add(interest);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFFF69B4).withOpacity(0.1)
+                              : Colors.white,
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFFF69B4)
+                                : Colors.grey[300]!,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          interest,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color: isSelected
+                                ? const Color(0xFFFF69B4)
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                if (_selectedInterests.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Selected: ${_selectedInterests.length} interests',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-              size: 20,
-            ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
-  void _saveProfile() {
-    // Validate and save profile data
-    if (_nameController.text.isEmpty || _usernameController.text.isEmpty) {
-      showToastSuccess(description: "Name and username are required");
+  Future<void> _pickProfilePicture() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = result.files.single;
+
+        // Check file size (5MB limit for profile pictures)
+        if (file.size > 5 * 1024 * 1024) {
+          showToast(
+              title: 'File Too Large',
+              description: 'Please select an image smaller than 5MB');
+          return;
+        }
+
+        setState(() {
+          _selectedProfilePicture = file;
+        });
+      }
+    } catch (e) {
+      print('Error picking profile picture: $e');
+      showToast(title: 'Error', description: 'Failed to pick image');
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    // Validate required fields
+    if (_nameController.text.trim().isEmpty ||
+        _usernameController.text.trim().isEmpty) {
+      showToast(title: 'Error', description: 'Name and username are required');
       return;
     }
 
-    showToastSuccess(
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated");
+    setState(() => _isSaving = true);
 
-    // Navigate back or update state as needed
-    Navigator.of(context).pop();
+    try {
+      String? profilePictureUrl = _currentProfilePictureUrl;
+
+      // Upload profile picture if selected
+      if (_selectedProfilePicture != null) {
+        profilePictureUrl = await _uploadProfilePicture();
+        if (profilePictureUrl == null) {
+          throw Exception('Failed to upload profile picture');
+        }
+      }
+
+      // Update profile
+      final response = await api<UserApiService>(
+        (request) => request.updateProfile(
+          fullName: _nameController.text.trim(),
+          username: _usernameController.text.trim(),
+          bio: _bioController.text.trim(),
+          profession: _professionController.text.trim(),
+          profilePicture: profilePictureUrl,
+          interests: _selectedInterests,
+        ),
+      );
+
+      if (response != null && response['success'] == true) {
+        showToast(
+            title: 'Success', description: 'Profile updated successfully!');
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Failed to update profile');
+      }
+    } catch (e) {
+      print('Error saving profile: $e');
+      showToast(title: 'Error', description: 'Failed to update profile');
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  Future<String?> _uploadProfilePicture() async {
+    if (_selectedProfilePicture == null) return null;
+
+    setState(() => _isUploadingPicture = true);
+
+    try {
+      // This would typically use the same S3 upload flow as posts
+      // For now, we'll simulate the upload
+      await Future.delayed(const Duration(seconds: 2));
+
+      // In a real implementation, you would:
+      // 1. Get presigned URL for profile picture upload
+      // 2. Upload to S3
+      // 3. Return the final URL
+
+      return 'https://example.com/profile-pictures/${_selectedProfilePicture!.name}';
+    } catch (e) {
+      print('Error uploading profile picture: $e');
+      return null;
+    } finally {
+      setState(() => _isUploadingPicture = false);
+    }
   }
 
   @override
@@ -581,8 +828,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     _nameController.dispose();
     _usernameController.dispose();
     _bioController.dispose();
-    _websiteController.dispose();
-    _phoneController.dispose();
+    _professionController.dispose();
     super.dispose();
   }
 }

@@ -1,5 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import '/app/networking/post_api_service.dart';
+import '/app/networking/category_api_service.dart';
+import '/app/models/category.dart';
 
 class Upload extends StatefulWidget {
   const Upload({super.key});
@@ -9,50 +15,475 @@ class Upload extends StatefulWidget {
 }
 
 class _UploadState extends NyState<Upload> {
+  // File handling
+  PlatformFile? _selectedFile;
+  bool _isUploading = false;
+  bool _isUploadComplete = false;
+  String? _uploadedFileUrl;
+  double _uploadProgress = 0.0;
+
+  // Form controllers
+  final TextEditingController _captionController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _tagsController = TextEditingController();
+
+  // Form data
+  List<Category> _categories = [];
+  Category? _selectedCategory;
+  bool _isSubmitting = false;
+
   @override
-  get init => () {};
+  get init => () async {
+        await _loadCategories();
+      };
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    _locationController.dispose();
+    _tagsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final response = await api<CategoryApiService>(
+        (request) => request.getCategories(),
+      );
+
+      if (response != null && response['success'] == true) {
+        final List<dynamic> categoriesData = response['data'] ?? [];
+        setState(() {
+          _categories =
+              categoriesData.map((json) => Category.fromJson(json)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading categories: $e');
+      showToast(title: 'Error', description: 'Failed to load categories');
+    }
+  }
 
   @override
   Widget view(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
+        child: _selectedFile == null
+            ? _buildInitialUploadView()
+            : _buildFilePreviewAndForm(),
+      ),
+    );
+  }
 
-              // Logo Section
-              _buildLogoSection(),
+  Widget _buildInitialUploadView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          _buildLogoSection(),
+          const SizedBox(height: 40),
+          _buildTitleSection(),
+          const SizedBox(height: 40),
+          _buildDropZone(),
+          const SizedBox(height: 20),
+          _buildFileSupportInfo(),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
 
-              const SizedBox(height: 40),
+  Widget _buildFilePreviewAndForm() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Top bar with back button
+          _buildTopBar(),
 
-              // Title Section
-              _buildTitleSection(),
+          // File preview section
+          _buildFilePreview(),
 
-              const SizedBox(height: 40),
+          // Upload progress or form
+          if (_isUploading)
+            _buildUploadProgress()
+          else if (_isUploadComplete)
+            _buildPostForm()
+          else
+            _buildUploadButton(),
+        ],
+      ),
+    );
+  }
 
-              // Drop Zone
-              _buildDropZone(),
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedFile = null;
+                _isUploadComplete = false;
+                _uploadedFileUrl = null;
+                _uploadProgress = 0.0;
+                _captionController.clear();
+                _locationController.clear();
+                _tagsController.clear();
+                _selectedCategory = null;
+              });
+            },
+            icon: const Icon(Icons.arrow_back),
+          ),
+          const Expanded(
+            child: Text(
+              'Create Post',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 48), // Balance the back button
+        ],
+      ),
+    );
+  }
 
-              const SizedBox(height: 20), // Changed from Spacer to fixed height
+  Widget _buildFilePreview() {
+    if (_selectedFile == null) return const SizedBox.shrink();
 
-              // File Support Info
-              _buildFileSupportInfo(),
+    return Container(
+      margin: const EdgeInsets.all(16),
+      height: 300,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[100],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: _isImageFile(_selectedFile!)
+            ? Image.file(
+                File(_selectedFile!.path!),
+                fit: BoxFit.cover,
+                width: double.infinity,
+              )
+            : _buildVideoPreview(),
+      ),
+    );
+  }
 
-              const SizedBox(height: 40),
-            ],
+  Widget _buildVideoPreview() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.play_circle_filled,
+            color: Colors.white,
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _selectedFile!.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _formatFileSize(_selectedFile!.size),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadProgress() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Uploading...',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: _uploadProgress,
+            backgroundColor: Colors.grey[200],
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${(_uploadProgress * 100).toInt()}%',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadButton() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _uploadToS3,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFF69B4),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Upload File',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
 
+  Widget _buildPostForm() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Post Details',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Caption field
+          _buildTextField(
+            controller: _captionController,
+            label: 'Caption',
+            hint: 'Write a caption for your post...',
+            maxLines: 4,
+          ),
+          const SizedBox(height: 16),
+
+          // Category dropdown
+          _buildCategoryDropdown(),
+          const SizedBox(height: 16),
+
+          // Tags field
+          _buildTextField(
+            controller: _tagsController,
+            label: 'Tags',
+            hint: 'hair, beauty, style (comma separated)',
+          ),
+          const SizedBox(height: 16),
+
+          // Location field
+          _buildTextField(
+            controller: _locationController,
+            label: 'Location (Optional)',
+            hint: 'Add location...',
+          ),
+          const SizedBox(height: 24),
+
+          // Submit button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitPost,
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    _isSubmitting ? Colors.grey[400] : const Color(0xFFFF69B4),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Creating Post...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const Text(
+                      'Create Post',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFFF69B4)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Category *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<Category>(
+          value: _selectedCategory,
+          decoration: InputDecoration(
+            hintText: 'Select a category',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFFF69B4)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+          items: _categories.map((category) {
+            return DropdownMenuItem<Category>(
+              value: category,
+              child: Text(category.name ?? 'Unknown Category'),
+            );
+          }).toList(),
+          onChanged: (Category? value) {
+            setState(() {
+              _selectedCategory = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image - Fixed asset loading
         Container(
           width: 80,
           height: 80,
@@ -63,7 +494,7 @@ class _UploadState extends NyState<Upload> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.asset(
-              'logo.png', // Fixed path
+              'logo.png',
               width: 80,
               height: 80,
               fit: BoxFit.contain,
@@ -77,8 +508,6 @@ class _UploadState extends NyState<Upload> {
             ).localAsset(),
           ),
         ),
-
-        // App name with colors
         RichText(
           text: const TextSpan(
             children: [
@@ -87,9 +516,9 @@ class _UploadState extends NyState<Upload> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFFF69B4), // Pink
+                  color: Color(0xFFFF69B4),
                   letterSpacing: -0.5,
-                  fontFamily: 'Roboto', // Added font family
+                  fontFamily: 'Roboto',
                 ),
               ),
               TextSpan(
@@ -97,7 +526,7 @@ class _UploadState extends NyState<Upload> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFFFD700), // Yellow
+                  color: Color(0xFFFFD700),
                   letterSpacing: -0.5,
                   fontFamily: 'Roboto',
                 ),
@@ -107,7 +536,7 @@ class _UploadState extends NyState<Upload> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF00BFFF), // Blue
+                  color: Color(0xFF00BFFF),
                   letterSpacing: -0.5,
                   fontFamily: 'Roboto',
                 ),
@@ -122,7 +551,6 @@ class _UploadState extends NyState<Upload> {
   Widget _buildTitleSection() {
     return Column(
       children: [
-        // Main title
         RichText(
           textAlign: TextAlign.center,
           text: const TextSpan(
@@ -157,10 +585,7 @@ class _UploadState extends NyState<Upload> {
             ],
           ),
         ),
-
         const SizedBox(height: 16),
-
-        // Tagline
         Text(
           'Inspire others with your style journey',
           textAlign: TextAlign.center,
@@ -178,23 +603,21 @@ class _UploadState extends NyState<Upload> {
   Widget _buildDropZone() {
     return Container(
       width: double.infinity,
-      height: 300, // Fixed height instead of Expanded
+      height: 300,
       decoration: BoxDecoration(
         border: Border.all(
           color: Colors.grey[300]!,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(16),
-        color: Colors.grey[50], // Added subtle background
+        color: Colors.grey[50],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Image icon
               Container(
                 width: 60,
                 height: 60,
@@ -210,7 +633,6 @@ class _UploadState extends NyState<Upload> {
                 ),
               ),
               const SizedBox(width: 20),
-              // Video icon
               Container(
                 width: 60,
                 height: 60,
@@ -227,10 +649,7 @@ class _UploadState extends NyState<Upload> {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
-          // Drop text
           Text(
             'Drop your transformation here',
             style: TextStyle(
@@ -240,10 +659,7 @@ class _UploadState extends NyState<Upload> {
               fontFamily: 'Roboto',
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Or text
           Text(
             'or',
             style: TextStyle(
@@ -252,10 +668,7 @@ class _UploadState extends NyState<Upload> {
               fontFamily: 'Roboto',
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // Choose File Button
           Container(
             height: 50,
             decoration: BoxDecoration(
@@ -274,10 +687,7 @@ class _UploadState extends NyState<Upload> {
               ],
             ),
             child: ElevatedButton(
-              onPressed: () {
-                // Add file picker functionality here
-                _pickFile();
-              },
+              onPressed: _pickFile,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -315,7 +725,7 @@ class _UploadState extends NyState<Upload> {
 
   Widget _buildFileSupportInfo() {
     return Text(
-      'Supports images and videos up to 10MB',
+      'Supports images and videos up to 50MB',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontSize: 12,
@@ -325,24 +735,183 @@ class _UploadState extends NyState<Upload> {
     );
   }
 
-  // File picker method - you'll need to add file_picker dependency
+  // File picker method
   void _pickFile() async {
     try {
-      showToastSuccess(title: "Choose File", description: "File picker opened");
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.media,
+        allowMultiple: false,
+        allowedExtensions: null,
+      );
 
-      // TODO: Implement actual file picker
-      // Example:
-      // FilePickerResult? result = await FilePicker.platform.pickFiles(
-      //   type: FileType.media,
-      //   allowMultiple: false,
-      //   allowedExtensions: null,
-      // );
-      //
-      // if (result != null) {
-      //   // Handle selected file
-      // }
+      if (result != null && result.files.single.path != null) {
+        final file = result.files.single;
+
+        // Check file size (50MB limit)
+        if (file.size > 50 * 1024 * 1024) {
+          showToast(
+              title: 'File Too Large',
+              description: 'Please select a file smaller than 50MB');
+          return;
+        }
+
+        setState(() {
+          _selectedFile = file;
+        });
+      }
     } catch (e) {
-      print("sa");
+      print('Error picking file: $e');
+      showToast(title: 'Error', description: 'Failed to pick file');
     }
+  }
+
+  // S3 upload method
+  Future<void> _uploadToS3() async {
+    if (_selectedFile == null) return;
+
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
+
+    try {
+      // Get presigned URL
+      final uploadUrlResponse = await api<PostApiService>(
+        (request) => request.getUploadUrl(
+          filename: _selectedFile!.name,
+          contentType: _getContentType(_selectedFile!),
+          fileSize: _selectedFile!.size,
+        ),
+      );
+
+      if (uploadUrlResponse == null || uploadUrlResponse['success'] != true) {
+        throw Exception('Failed to get upload URL');
+      }
+
+      final uploadUrl = uploadUrlResponse['data']['upload_url'];
+      final fileUrl = uploadUrlResponse['data']['file_url'];
+
+      // Upload to S3
+      final file = File(_selectedFile!.path!);
+      final request = http.StreamedRequest('PUT', Uri.parse(uploadUrl));
+      request.headers['Content-Type'] = _getContentType(_selectedFile!);
+      request.contentLength = _selectedFile!.size;
+
+      final stream = file.openRead();
+      int uploaded = 0;
+
+      stream.listen(
+        (chunk) {
+          uploaded += chunk.length;
+          setState(() {
+            _uploadProgress = uploaded / _selectedFile!.size;
+          });
+          request.sink.add(chunk);
+        },
+        onDone: () => request.sink.close(),
+        onError: (error) => request.sink.addError(error),
+      );
+
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isUploading = false;
+          _isUploadComplete = true;
+          _uploadedFileUrl = fileUrl;
+        });
+        showToast(title: 'Success', description: 'File uploaded successfully!');
+      } else {
+        throw Exception('Upload failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Upload error: $e');
+      setState(() {
+        _isUploading = false;
+      });
+      showToast(title: 'Upload Failed', description: 'Please try again');
+    }
+  }
+
+  // Submit post method
+  Future<void> _submitPost() async {
+    if (_uploadedFileUrl == null || _selectedCategory == null) {
+      showToast(title: 'Error', description: 'Please select a category');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final tags = _tagsController.text
+          .split(',')
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toList();
+
+      final response = await api<PostApiService>(
+        (request) => request.createPostFromS3(
+          filePath: _uploadedFileUrl!,
+          title: _captionController.text.trim().isNotEmpty
+              ? _captionController.text.trim()
+              : null,
+          description: _captionController.text.trim().isNotEmpty
+              ? _captionController.text.trim()
+              : null,
+          categoryId: _selectedCategory!.id!,
+          tags: tags.isNotEmpty ? tags : null,
+          location: _locationController.text.trim().isNotEmpty
+              ? _locationController.text.trim()
+              : null,
+        ),
+      );
+
+      if (response != null && response['success'] == true) {
+        showToast(title: 'Success', description: 'Post created successfully!');
+        routeTo('/base'); // Navigate back to feed
+      } else {
+        throw Exception('Failed to create post');
+      }
+    } catch (e) {
+      print('Submit error: $e');
+      showToast(title: 'Error', description: 'Failed to create post');
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
+
+  // Helper methods
+  bool _isImageFile(PlatformFile file) {
+    final extension = file.extension?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(extension);
+  }
+
+  String _getContentType(PlatformFile file) {
+    final extension = file.extension?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
+      case 'avi':
+        return 'video/x-msvideo';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '/app/networking/auth_api_service.dart';
+import '/resources/widgets/social_login_buttons.dart';
 
 class SignInPage extends NyStatefulWidget {
   static RouteView path = ("/sign-in", (_) => SignInPage());
@@ -283,72 +283,13 @@ class _SignInPageState extends NyPage<SignInPage> {
   }
 
   Widget _buildSocialButtons() {
-    return Column(
-      children: [
-        // Google and Apple buttons
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextButton.icon(
-                  onPressed: () {
-                    showToastSuccess(
-                        title: "Google", description: "Sign in with Google");
-                  },
-                  icon: Text(
-                    'G',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[600],
-                    ),
-                  ),
-                  label: const Text(
-                    'Google',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextButton.icon(
-                  onPressed: () {
-                    showToastSuccess(
-                        title: "Apple", description: "Sign in with Apple");
-                  },
-                  icon: Icon(
-                    FontAwesomeIcons.apple,
-                    size: 18,
-                    color: Colors.black,
-                  ),
-                  label: const Text(
-                    'Apple',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return SocialLoginButtons(
+      onSuccess: () {
+        print('✅ Social login successful');
+      },
+      onError: () {
+        print('❌ Social login failed');
+      },
     );
   }
 
@@ -425,7 +366,7 @@ class _SignInPageState extends NyPage<SignInPage> {
         if (response['data'] != null) {
           final userData = response['data']['user'];
           final token = response['data']['token'];
-          
+
           print('🔐 SignIn: Storing authentication data...');
           print('🔐 SignIn: Token: $token');
           print('🔐 SignIn: User: $userData');
@@ -436,7 +377,7 @@ class _SignInPageState extends NyPage<SignInPage> {
             'user': userData,
             'authenticated_at': DateTime.now().toIso8601String(),
           });
-          
+
           print('🔐 SignIn: Authentication data stored successfully');
 
           showToast(
