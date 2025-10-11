@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import '/app/services/auth_service.dart';
-import '/app/networking/auth_api_service.dart';
+import '/app/services/user_service.dart';
 import '/app/networking/post_api_service.dart';
 import '/app/networking/user_api_service.dart';
 import '/app/models/user.dart';
@@ -98,110 +97,22 @@ class _ProfileState extends NyState<Profile> {
     try {
       print('🔄 Profile: Loading user data...');
 
-      // First try to get user data from AuthService (cached data)
-      final cachedUserData = await AuthService.instance.getUserProfile();
-      print('📱 Profile: Cached user data: $cachedUserData');
-      print('📱 Profile: Cached user data type: ${cachedUserData.runtimeType}');
-      if (cachedUserData != null) {
-        print('📱 Profile: Cached user data keys: ${cachedUserData.keys}');
-        print('📱 Profile: Name field: ${cachedUserData['name']}');
-        print('📱 Profile: Full name field: ${cachedUserData['full_name']}');
-        print('📱 Profile: Username field: ${cachedUserData['username']}');
-      }
+      // Use the new UserService with automatic auth check and fallback
+      final user = await UserService.getCurrentUserWithAuthCheck();
 
-      if (cachedUserData != null) {
-        _populateUserData(cachedUserData);
-        print('✅ Profile: Populated from cache');
-        print('🔍 Profile: Cache populated user: ${_currentUser?.fullName}');
-      }
-
-      // Then fetch fresh data from API
-      print('🌐 Profile: Fetching fresh data from API...');
-      final response = await api<AuthApiService>(
-        (request) => request.getCurrentUser(),
-      );
-
-      print('📡 Profile: API response: $response');
-      print('📡 Profile: Response type: ${response.runtimeType}');
-
-      if (response != null) {
-        // Handle different response structures
-        User? user;
-        if (response is User) {
-          user = response;
-          print('✅ Profile: Response is User object');
-        } else if (response is Map<String, dynamic>) {
-          print('📋 Profile: Response is Map, keys: ${response.keys}');
-          if (response.containsKey('data') &&
-              response['data'] is Map<String, dynamic>) {
-            final data = response['data'];
-            if (data.containsKey('user') &&
-                data['user'] is Map<String, dynamic>) {
-              user = User.fromJson(data['user']);
-              print('✅ Profile: Created user from response.data.user');
-            } else {
-              user = User.fromJson(data);
-              print('✅ Profile: Created user from response.data');
-            }
-          } else if (response.containsKey('user') &&
-              response['user'] is Map<String, dynamic>) {
-            user = User.fromJson(response['user']);
-            print('✅ Profile: Created user from response.user');
-          } else {
-            user = User.fromJson(response);
-            print('✅ Profile: Created user from response directly');
-          }
-        }
-
-        if (user != null) {
-          setState(() {
-            _currentUser = user;
-          });
-          print('✅ Profile: User data loaded successfully: ${user.fullName}');
-          print(
-              '🔍 Profile: User object - name: ${user.name}, fullName: ${user.fullName}, username: ${user.username}');
-        } else {
-          print('❌ Profile: Failed to create user object');
-        }
+      if (user != null) {
+        setState(() {
+          _currentUser = user;
+        });
+        print('✅ Profile: User loaded successfully: ${_currentUser?.fullName}');
       } else {
-        print('❌ Profile: API response is null');
+        print('❌ Profile: Failed to load user data');
+        // User will be automatically redirected to sign-in if not authenticated
       }
     } catch (e, stackTrace) {
       print('❌ Profile: Error loading user data: $e');
       print('📍 Profile: Stack trace: $stackTrace');
-      showToast(title: 'Error', description: 'Failed to load profile data');
-    }
-  }
-
-  void _populateUserData(Map<String, dynamic> userData) {
-    // Create a User object from cached data
-    print('🔄 Profile: _populateUserData called with: $userData');
-    try {
-      final user = User.fromJson(userData);
-      print(
-          '🔄 Profile: Created user object - name: ${user.name}, fullName: ${user.fullName}');
-      setState(() {
-        _currentUser = user;
-      });
-      print('✅ Profile: User set in state: ${_currentUser?.fullName}');
-    } catch (e) {
-      print('Error parsing cached user data: $e');
-      // Fallback: create user with basic info
-      setState(() {
-        final user = User();
-        user.id = userData['id'];
-        user.fullName =
-            userData['full_name']?.toString() ?? userData['name']?.toString();
-        user.username = userData['username']?.toString();
-        user.email = userData['email']?.toString();
-        user.bio = userData['bio']?.toString();
-        user.profession = userData['profession']?.toString();
-        user.profilePicture = userData['profile_picture']?.toString();
-        user.interests = userData['interests'] is List
-            ? List<String>.from(userData['interests'])
-            : null;
-        _currentUser = user;
-      });
+      // User will be automatically redirected to sign-in if there's an error
     }
   }
 
@@ -263,83 +174,122 @@ class _ProfileState extends NyState<Profile> {
   }
 
   Future<void> _loadUserPosts() async {
-    if (_currentUser == null) return;
+    if (_currentUser == null) {
+      print('❌ Profile: Cannot load user posts - user is null');
+      return;
+    }
 
-    final response = await api<UserApiService>(
-      (request) => request.getUserProfile(_currentUser!.id!),
-    );
+    try {
+      print('📱 Profile: Loading user posts for user ${_currentUser!.id}');
 
-    if (response != null && response['success'] == true) {
-      final userData = response['data'];
-      final List<dynamic> postsData = userData['posts'] ?? [];
-      final List<Post> newPosts =
-          postsData.map((json) => Post.fromJson(json)).toList();
+      final response = await api<UserApiService>(
+        (request) => request.getUser(_currentUser!.id!),
+      );
 
-      setState(() {
-        if (_currentPage == 1) {
-          _userPosts = newPosts;
-        } else {
-          _userPosts.addAll(newPosts);
+      if (response != null && response['success'] == true) {
+        final userData = response['data'];
+        final List<dynamic> postsData = userData['posts'] ?? [];
+        final List<Post> newPosts =
+            postsData.map((json) => Post.fromJson(json)).toList();
+
+        print('📱 Profile: Loaded ${newPosts.length} user posts');
+
+        setState(() {
+          if (_currentPage == 1) {
+            _userPosts = newPosts;
+          } else {
+            _userPosts.addAll(newPosts);
+          }
+          _hasMorePosts = newPosts.length == 20;
+          _currentPage++;
+        });
+
+        // Load categories after posts are loaded
+        if (_currentPage == 2) {
+          // Only on first load
+          await _loadUserCategories();
         }
-        _hasMorePosts = newPosts.length == 20;
-        _currentPage++;
-      });
-
-      // Load categories after posts are loaded
-      if (_currentPage == 2) {
-        // Only on first load
-        await _loadUserCategories();
+      } else {
+        throw Exception(
+            'Failed to load user posts: ${response?['message'] ?? 'Unknown error'}');
       }
+    } catch (e) {
+      print('❌ Profile: Error loading user posts: $e');
+      showToast(title: 'Error', description: 'Failed to load user posts: $e');
     }
   }
 
   Future<void> _loadLikedPosts() async {
-    final response = await api<PostApiService>(
-      (request) => request.getLikedPosts(
-        page: _currentPage,
-        perPage: 20,
-      ),
-    );
+    try {
+      print('❤️ Profile: Loading liked posts (page: $_currentPage)');
 
-    if (response != null && response['success'] == true) {
-      final List<dynamic> postsData = response['data']['data'] ?? [];
-      final List<Post> newPosts =
-          postsData.map((json) => Post.fromJson(json)).toList();
+      final response = await api<PostApiService>(
+        (request) => request.getLikedPosts(
+          page: _currentPage,
+          perPage: 20,
+        ),
+      );
 
-      setState(() {
-        if (_currentPage == 1) {
-          _likedPosts = newPosts;
-        } else {
-          _likedPosts.addAll(newPosts);
-        }
-        _hasMorePosts = newPosts.length == 20;
-        _currentPage++;
-      });
+      if (response != null && response['success'] == true) {
+        final List<dynamic> postsData = response['data']['data'] ?? [];
+        final List<Post> newPosts =
+            postsData.map((json) => Post.fromJson(json)).toList();
+
+        print('❤️ Profile: Loaded ${newPosts.length} liked posts');
+
+        setState(() {
+          if (_currentPage == 1) {
+            _likedPosts = newPosts;
+          } else {
+            _likedPosts.addAll(newPosts);
+          }
+          _hasMorePosts = newPosts.length == 20;
+          _currentPage++;
+        });
+      } else {
+        throw Exception(
+            'Failed to load liked posts: ${response?['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('❌ Profile: Error loading liked posts: $e');
+      showToast(title: 'Error', description: 'Failed to load liked posts: $e');
     }
   }
 
   Future<void> _loadSavedPosts() async {
-    final response = await api<PostApiService>(
-      (request) => request.getSavedPosts(
-        page: _currentPage,
-        perPage: 20,
-      ),
-    );
+    try {
+      print('📚 Profile: Loading saved posts (page: $_currentPage)');
 
-    if (response != null && response['success'] == true) {
-      final List<dynamic> postsData = response['data']['data'] ?? [];
-      final List<Post> newPosts =
-          postsData.map((json) => Post.fromJson(json)).toList();
+      final response = await api<PostApiService>(
+        (request) => request.getSavedPosts(
+          page: _currentPage,
+          perPage: 20,
+        ),
+      );
 
-      setState(() {
-        if (_currentPage == 1) {
-          _savedPosts = newPosts;
-        } else {
-          _savedPosts.addAll(newPosts);
-        }
-        _hasMorePosts = newPosts.length == 20;
-        _currentPage++;
-      });
+      if (response != null && response['success'] == true) {
+        final List<dynamic> postsData = response['data']['data'] ?? [];
+        final List<Post> newPosts =
+            postsData.map((json) => Post.fromJson(json)).toList();
+
+        print('📚 Profile: Loaded ${newPosts.length} saved posts');
+
+        setState(() {
+          if (_currentPage == 1) {
+            _savedPosts = newPosts;
+          } else {
+            _savedPosts.addAll(newPosts);
+          }
+          _hasMorePosts = newPosts.length == 20;
+          _currentPage++;
+        });
+      } else {
+        throw Exception(
+            'Failed to load saved posts: ${response?['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('❌ Profile: Error loading saved posts: $e');
+      showToast(title: 'Error', description: 'Failed to load saved posts: $e');
     }
   }
 
@@ -617,7 +567,7 @@ class _ProfileState extends NyState<Profile> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           border: Border.all(color: color, width: 1),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -928,7 +878,7 @@ class _ProfileState extends NyState<Profile> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -959,7 +909,7 @@ class _ProfileState extends NyState<Profile> {
 
   Widget _buildSidebarOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.6),
+      color: Colors.black.withValues(alpha: 0.6),
       child: Row(
         children: [
           Container(
@@ -1020,7 +970,7 @@ class _ProfileState extends NyState<Profile> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -1040,9 +990,9 @@ class _ProfileState extends NyState<Profile> {
                             height: 50,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                                 width: 2,
                               ),
                             ),
@@ -1068,7 +1018,7 @@ class _ProfileState extends NyState<Profile> {
                                 Text(
                                   _currentUser?.username ?? 'username',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -1149,7 +1099,7 @@ class _ProfileState extends NyState<Profile> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: isHighlighted
-                  ? const Color(0xFF00BFFF).withOpacity(0.1)
+                  ? const Color(0xFF00BFFF).withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1159,7 +1109,7 @@ class _ProfileState extends NyState<Profile> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(

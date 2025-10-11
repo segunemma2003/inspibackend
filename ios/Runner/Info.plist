@@ -18,6 +18,18 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>Inspiritag</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -29,22 +41,14 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Camera Access -->
-	<key>NSCameraUsageDescription</key>
-	<string>Inspiritag needs access to your camera to take photos for your inspiration collection.</string>
-	<!-- Photo Library Access -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Inspiritag needs access to your photo library to save and retrieve your inspiration images.</string>
-	<!-- Photo Library Add-Only Access (iOS 11+) -->
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Inspiritag needs permission to save photos to your photo library.</string>
-	<!-- Location Access -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Inspiritag uses your location to tag your inspirations with location data.</string>
-	<!-- Microphone Access (for video recording) -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Inspiritag needs access to your microphone to record videos for your inspiration collection.</string>
-	<!-- Network Access -->
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -62,22 +66,18 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>en</string>
-	</array>
-	<key>CFBundleName</key>
-	<string>Inspiritag</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Inspiritag needs access to your camera to take photos for your inspiration collection.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Inspiritag uses your location to tag your inspirations with location data.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Inspiritag needs access to your microphone to record videos for your inspiration collection.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Inspiritag needs permission to save photos to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Inspiritag needs access to your photo library to save and retrieve your inspiration images.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -86,43 +86,26 @@
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIStatusBarStyle</key>
+	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<!-- iOS 14+ App Tracking Transparency -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
-	<!-- File Access (for file picker) -->
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<!-- Status Bar Style -->
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleDefault</string>
-	<!-- Firebase Configuration -->
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
-	<!-- Push Notifications -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>processing</string>
-		<string>remote-notification</string>
-	</array>
 </dict>
 </plist>

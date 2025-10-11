@@ -1,8 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '/config/decoders.dart';
-import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import '/app/models/business_account.dart';
+import '/app/services/auth_service.dart';
+import '/config/decoders.dart';
 
 class BusinessApiService extends NyApiService {
   BusinessApiService({BuildContext? buildContext})
@@ -22,98 +22,89 @@ class BusinessApiService extends NyApiService {
     return headers;
   }
 
-  /// Get business accounts
+  /// Get business accounts with pagination
   Future<Map<String, dynamic>?> getBusinessAccounts({
-    String? query,
-    String? type,
     int perPage = 20,
     int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/business-accounts", queryParameters: {
-        if (query != null) "q": query,
-        if (type != null) "type": type,
         "per_page": perPage,
         "page": page,
       }),
-      cacheKey: "business_accounts_${query ?? 'all'}_${type ?? 'all'}_$page",
-      cacheDuration: const Duration(minutes: 3),
-    );
-  }
-
-  /// Create business account
-  Future<BusinessAccount?> createBusinessAccount({
-    required String businessName,
-    required String businessDescription,
-    required String businessType,
-    String? website,
-    String? phone,
-    String? email,
-    String? address,
-    String? city,
-    String? state,
-    String? country,
-    String? postalCode,
-    String? instagramHandle,
-    String? facebookUrl,
-    String? tiktokHandle,
-    String? linkedinUrl,
-    String? whatsappNumber,
-    String? xHandle,
-    Map<String, String>? businessHours,
-    List<String>? services,
-  }) async {
-    return await network<BusinessAccount>(
-      request: (request) => request.post("/business-accounts", data: {
-        "business_name": businessName,
-        "business_description": businessDescription,
-        "business_type": businessType,
-        if (website != null) "website": website,
-        if (phone != null) "phone": phone,
-        if (email != null) "email": email,
-        if (address != null) "address": address,
-        if (city != null) "city": city,
-        if (state != null) "state": state,
-        if (country != null) "country": country,
-        if (postalCode != null) "postal_code": postalCode,
-        if (instagramHandle != null) "instagram_handle": instagramHandle,
-        if (facebookUrl != null) "facebook_url": facebookUrl,
-        if (tiktokHandle != null) "tiktok_handle": tiktokHandle,
-        if (linkedinUrl != null) "linkedin_url": linkedinUrl,
-        if (whatsappNumber != null) "whatsapp_number": whatsappNumber,
-        if (xHandle != null) "x_handle": xHandle,
-        if (businessHours != null) "business_hours": businessHours,
-        if (services != null) "services": services,
-      }),
-    );
-  }
-
-  /// Get business account details
-  Future<BusinessAccount?> getBusinessAccountDetails(
-      int businessAccountId) async {
-    return await network<BusinessAccount>(
-      request: (request) =>
-          request.get("/business-accounts/$businessAccountId"),
-      cacheKey: "business_account_$businessAccountId",
+      cacheKey: "business_accounts_$page",
       cacheDuration: const Duration(minutes: 5),
     );
   }
 
-  /// Update business account
-  Future<BusinessAccount?> updateBusinessAccount({
-    required int businessAccountId,
-    String? businessName,
-    String? businessDescription,
-    bool? acceptsBookings,
+  /// Create business account
+  Future<Map<String, dynamic>?> createBusinessAccount({
+    required String name,
+    required String description,
+    required Map<String, dynamic> contactInfo,
+    String? website,
+    String? address,
+    File? logo,
   }) async {
-    return await network<BusinessAccount>(
+    final formData = FormData();
+
+    formData.fields.add(MapEntry('name', name));
+    formData.fields.add(MapEntry('description', description));
+    formData.fields.add(MapEntry('contact_info', contactInfo.toString()));
+    if (website != null) formData.fields.add(MapEntry('website', website));
+    if (address != null) formData.fields.add(MapEntry('address', address));
+    if (logo != null) {
+      formData.files.add(MapEntry(
+          'logo', MultipartFile.fromFileSync(logo.path, filename: 'logo.jpg')));
+    }
+
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.post("/business-accounts", data: formData),
+      cacheKey: "business_account_create",
+      cacheDuration: const Duration(minutes: 1),
+    );
+  }
+
+  /// Get specific business account
+  Future<Map<String, dynamic>?> getBusinessAccount(
+      int businessAccountId) async {
+    return await network<Map<String, dynamic>>(
       request: (request) =>
-          request.put("/business-accounts/$businessAccountId", data: {
-        if (businessName != null) "business_name": businessName,
-        if (businessDescription != null)
-          "business_description": businessDescription,
-        if (acceptsBookings != null) "accepts_bookings": acceptsBookings,
-      }),
+          request.get("/business-accounts/$businessAccountId"),
+      cacheKey: "business_account_$businessAccountId",
+      cacheDuration: const Duration(minutes: 10),
+    );
+  }
+
+  /// Update business account
+  Future<Map<String, dynamic>?> updateBusinessAccount(
+    int businessAccountId, {
+    String? name,
+    String? description,
+    Map<String, dynamic>? contactInfo,
+    String? website,
+    String? address,
+    File? logo,
+  }) async {
+    final formData = FormData();
+
+    if (name != null) formData.fields.add(MapEntry('name', name));
+    if (description != null)
+      formData.fields.add(MapEntry('description', description));
+    if (contactInfo != null)
+      formData.fields.add(MapEntry('contact_info', contactInfo.toString()));
+    if (website != null) formData.fields.add(MapEntry('website', website));
+    if (address != null) formData.fields.add(MapEntry('address', address));
+    if (logo != null) {
+      formData.files.add(MapEntry(
+          'logo', MultipartFile.fromFileSync(logo.path, filename: 'logo.jpg')));
+    }
+
+    return await network<Map<String, dynamic>>(
+      request: (request) =>
+          request.put("/business-accounts/$businessAccountId", data: formData),
+      cacheKey: "business_account_update_$businessAccountId",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
@@ -123,47 +114,45 @@ class BusinessApiService extends NyApiService {
     return await network<Map<String, dynamic>>(
       request: (request) =>
           request.delete("/business-accounts/$businessAccountId"),
+      cacheKey: "business_account_delete_$businessAccountId",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
-  /// Create booking
-  Future<Booking?> createBooking({
-    required int businessAccountId,
-    required String serviceName,
-    required String description,
-    required DateTime appointmentDate,
+  /// Create booking for business account
+  Future<Map<String, dynamic>?> createBooking(
+    int businessAccountId, {
+    required DateTime dateTime,
     String? notes,
-    String? contactPhone,
-    String? contactEmail,
+    Map<String, dynamic>? additionalData,
   }) async {
-    return await network<Booking>(
+    return await network<Map<String, dynamic>>(
       request: (request) =>
           request.post("/business-accounts/$businessAccountId/bookings", data: {
-        "service_name": serviceName,
-        "description": description,
-        "appointment_date": appointmentDate.toIso8601String(),
+        "date_time": dateTime.toIso8601String(),
         if (notes != null) "notes": notes,
-        if (contactPhone != null) "contact_phone": contactPhone,
-        if (contactEmail != null) "contact_email": contactEmail,
+        if (additionalData != null) "additional_data": additionalData,
       }),
+      cacheKey: "booking_create_$businessAccountId",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
-  /// Get business bookings
-  Future<Map<String, dynamic>?> getBusinessBookings({
-    required int businessAccountId,
-    int page = 1,
+  /// Get bookings for business account
+  Future<Map<String, dynamic>?> getBusinessBookings(
+    int businessAccountId, {
     int perPage = 20,
+    int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get(
           "/business-accounts/$businessAccountId/bookings",
           queryParameters: {
-            "page": page,
             "per_page": perPage,
+            "page": page,
           }),
-      cacheKey: "business_bookings_${businessAccountId}_$page",
-      cacheDuration: const Duration(minutes: 3),
+      cacheKey: "business_bookings_$businessAccountId" + "_$page",
+      cacheDuration: const Duration(minutes: 5),
     );
   }
 }

@@ -24,11 +24,18 @@ class CategoryApiService extends NyApiService {
 
   /// Get all categories
   Future<List<Category>?> getCategories() async {
-    return await network<List<Category>>(
+    final response = await network<Map<String, dynamic>>(
       request: (request) => request.get("/categories"),
       cacheKey: "categories_list",
       cacheDuration: const Duration(hours: 1),
     );
+
+    if (response != null && response['success'] == true) {
+      final List<dynamic> categoriesData = response['data'] ?? [];
+      return categoriesData.map((json) => Category.fromJson(json)).toList();
+    }
+
+    return null;
   }
 
   /// Create category (Admin only)

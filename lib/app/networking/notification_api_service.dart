@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '/config/decoders.dart';
-import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import '/app/services/auth_service.dart';
+import '/config/decoders.dart';
 
 class NotificationApiService extends NyApiService {
   NotificationApiService({BuildContext? buildContext})
@@ -21,7 +21,7 @@ class NotificationApiService extends NyApiService {
     return headers;
   }
 
-  /// Get notifications with filtering
+  /// Get notifications with pagination
   Future<Map<String, dynamic>?> getNotifications({
     int perPage = 20,
     int page = 1,
@@ -35,8 +35,9 @@ class NotificationApiService extends NyApiService {
         if (type != null) "type": type,
         if (isRead != null) "is_read": isRead,
       }),
-      cacheKey: "notifications_${type ?? 'all'}_${isRead ?? 'all'}_$page",
-      cacheDuration: const Duration(minutes: 1),
+      cacheKey:
+          "notifications_$page" + "_${type ?? 'all'}" + "_${isRead ?? 'all'}",
+      cacheDuration: const Duration(minutes: 2),
     );
   }
 
@@ -44,61 +45,9 @@ class NotificationApiService extends NyApiService {
   Future<Map<String, dynamic>?> markNotificationAsRead(
       int notificationId) async {
     return await network<Map<String, dynamic>>(
-      request: (request) => request.post("/notifications/$notificationId/read"),
-    );
-  }
-
-  /// Mark all notifications as read
-  Future<Map<String, dynamic>?> markAllNotificationsAsRead() async {
-    return await network<Map<String, dynamic>>(
-      request: (request) => request.post("/notifications/read-all"),
-    );
-  }
-
-  /// Get unread count
-  Future<Map<String, dynamic>?> getUnreadCount() async {
-    return await network<Map<String, dynamic>>(
-      request: (request) => request.get("/notifications/unread-count"),
-      cacheKey: "unread_count",
+      request: (request) => request.put("/notifications/$notificationId/read"),
+      cacheKey: "notification_read_$notificationId",
       cacheDuration: const Duration(minutes: 1),
-    );
-  }
-
-  /// Update notification preferences
-  Future<Map<String, dynamic>?> updateNotificationPreferences({
-    bool? notificationsEnabled,
-    bool? likeNotifications,
-    bool? followNotifications,
-    bool? postNotifications,
-    bool? bookingNotifications,
-  }) async {
-    return await network<Map<String, dynamic>>(
-      request: (request) => request.put("/notifications/preferences", data: {
-        if (notificationsEnabled != null)
-          "notifications_enabled": notificationsEnabled,
-        if (likeNotifications != null) "like_notifications": likeNotifications,
-        if (followNotifications != null)
-          "follow_notifications": followNotifications,
-        if (postNotifications != null) "post_notifications": postNotifications,
-        if (bookingNotifications != null)
-          "booking_notifications": bookingNotifications,
-      }),
-    );
-  }
-
-  /// Update FCM token for push notifications
-  Future<Map<String, dynamic>?> updateFcmToken(String fcmToken) async {
-    return await network<Map<String, dynamic>>(
-      request: (request) => request.post("/notifications/fcm-token", data: {
-        "fcm_token": fcmToken,
-      }),
-    );
-  }
-
-  /// Delete notification
-  Future<Map<String, dynamic>?> deleteNotification(int notificationId) async {
-    return await network<Map<String, dynamic>>(
-      request: (request) => request.delete("/notifications/$notificationId"),
     );
   }
 
@@ -108,6 +57,17 @@ class NotificationApiService extends NyApiService {
     return await network<Map<String, dynamic>>(
       request: (request) =>
           request.put("/notifications/$notificationId/unread"),
+      cacheKey: "notification_unread_$notificationId",
+      cacheDuration: const Duration(minutes: 1),
+    );
+  }
+
+  /// Mark all notifications as read
+  Future<Map<String, dynamic>?> markAllNotificationsAsRead() async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.put("/notifications/mark-all-read"),
+      cacheKey: "notifications_mark_all_read",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
@@ -119,13 +79,17 @@ class NotificationApiService extends NyApiService {
           request.put("/notifications/mark-multiple-read", data: {
         "notification_ids": notificationIds,
       }),
+      cacheKey: "notifications_mark_multiple_read",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
-  /// Delete all notifications
-  Future<Map<String, dynamic>?> deleteAllNotifications() async {
+  /// Get unread count
+  Future<Map<String, dynamic>?> getUnreadCount() async {
     return await network<Map<String, dynamic>>(
-      request: (request) => request.delete("/notifications"),
+      request: (request) => request.get("/notifications/unread-count"),
+      cacheKey: "notifications_unread_count",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
@@ -133,17 +97,35 @@ class NotificationApiService extends NyApiService {
   Future<Map<String, dynamic>?> getNotificationStatistics() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/notifications/statistics"),
-      cacheKey: "notification_stats",
+      cacheKey: "notifications_statistics",
       cacheDuration: const Duration(minutes: 5),
     );
   }
 
-  /// Send test notification
-  Future<Map<String, dynamic>?> sendTestNotification(String message) async {
+  /// Delete notification
+  Future<Map<String, dynamic>?> deleteNotification(int notificationId) async {
     return await network<Map<String, dynamic>>(
-      request: (request) => request.post("/notifications/test", data: {
-        "message": message,
-      }),
+      request: (request) => request.delete("/notifications/$notificationId"),
+      cacheKey: "notification_delete_$notificationId",
+      cacheDuration: const Duration(minutes: 1),
+    );
+  }
+
+  /// Delete all notifications
+  Future<Map<String, dynamic>?> deleteAllNotifications() async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.delete("/notifications/"),
+      cacheKey: "notifications_delete_all",
+      cacheDuration: const Duration(minutes: 1),
+    );
+  }
+
+  /// Send test notification
+  Future<Map<String, dynamic>?> sendTestNotification() async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.post("/notifications/test"),
+      cacheKey: "notifications_test",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 }

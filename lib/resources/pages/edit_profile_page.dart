@@ -762,16 +762,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     setState(() => _isSaving = true);
 
     try {
-      String? profilePictureUrl = _currentProfilePictureUrl;
-
-      // Upload profile picture if selected
-      if (_selectedProfilePicture != null) {
-        profilePictureUrl = await _uploadProfilePicture();
-        if (profilePictureUrl == null) {
-          throw Exception('Failed to upload profile picture');
-        }
-      }
-
       // Update profile
       final response = await api<UserApiService>(
         (request) => request.updateProfile(
@@ -779,7 +769,9 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
           username: _usernameController.text.trim(),
           bio: _bioController.text.trim(),
           profession: _professionController.text.trim(),
-          profilePicture: profilePictureUrl,
+          profilePicture: _selectedProfilePicture != null
+              ? File(_selectedProfilePicture!.path!)
+              : null, // Only pass File if there's a new picture
           interests: _selectedInterests,
         ),
       );
@@ -796,30 +788,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
       showToast(title: 'Error', description: 'Failed to update profile');
     } finally {
       setState(() => _isSaving = false);
-    }
-  }
-
-  Future<String?> _uploadProfilePicture() async {
-    if (_selectedProfilePicture == null) return null;
-
-    setState(() => _isUploadingPicture = true);
-
-    try {
-      // This would typically use the same S3 upload flow as posts
-      // For now, we'll simulate the upload
-      await Future.delayed(const Duration(seconds: 2));
-
-      // In a real implementation, you would:
-      // 1. Get presigned URL for profile picture upload
-      // 2. Upload to S3
-      // 3. Return the final URL
-
-      return 'https://example.com/profile-pictures/${_selectedProfilePicture!.name}';
-    } catch (e) {
-      print('Error uploading profile picture: $e');
-      return null;
-    } finally {
-      setState(() => _isUploadingPicture = false);
     }
   }
 

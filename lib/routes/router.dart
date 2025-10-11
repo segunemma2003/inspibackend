@@ -1,3 +1,5 @@
+import 'package:flutter_app/routes/guards/auth_route_guard.dart';
+
 import '/resources/pages/about_page.dart';
 import '/resources/pages/base_navigation_hub.dart';
 import '/resources/pages/businessprofile_page.dart';
@@ -39,24 +41,24 @@ appRouter() => nyRoutes((router) {
       // router.add(NewPage.path, transitionType: TransitionType.fade());
 
       // Example using grouped routes
-      // router.group(() => {
-      //   "route_guards": [AuthRouteGuard()],
-      //   "prefix": "/dashboard"
-      // }, (router) {
-      //
-      // });
+      router.group(
+          () => {
+                "route_guards": [AuthRouteGuard()],
+                "prefix": "/dashboard"
+              }, (router) {
+        router.add(DeleteAccountPage.path);
+        router.add(SignUpPage.path);
+        router.add(EditProfilePage.path);
+        router.add(TagsPage.path);
+        router.add(BaseNavigationHub.path);
+        router.add(NotificationPage.path);
+        router.add(AboutPage.path);
+        router.add(TermsPage.path);
+        router.add(PrivacyPage.path);
+        router.add(BusinessprofilePage.path);
+        router.add(SettingsPage.path);
+        router.add(SupportPage.path);
+      });
       router.add(NotFoundPage.path).unknownRoute();
       router.add(SignInPage.path);
-      router.add(DeleteAccountPage.path);
-      router.add(SignUpPage.path);
-      router.add(EditProfilePage.path);
-      router.add(TagsPage.path);
-      router.add(BaseNavigationHub.path);
-      router.add(NotificationPage.path);
-      router.add(AboutPage.path);
-      router.add(TermsPage.path);
-      router.add(PrivacyPage.path);
-      router.add(BusinessprofilePage.path);
-      router.add(SettingsPage.path);
-      router.add(SupportPage.path);
     });

@@ -1,3 +1,5 @@
+import 'package:flutter_app/resources/pages/base_navigation_hub.dart';
+
 import '/resources/pages/home_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
@@ -22,7 +24,7 @@ class AuthRouteGuard extends NyRouteGuard {
 
     bool isLoggedIn = (await Auth.isAuthenticated());
     if (!isLoggedIn) {
-      return redirect(HomePage.path);
+      return redirect(BaseNavigationHub.path);
     }
 
     return pageRequest;

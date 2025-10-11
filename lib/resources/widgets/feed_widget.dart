@@ -16,17 +16,9 @@ class Feed extends StatefulWidget {
 }
 
 class _FeedState extends NyState<Feed> {
-  List<Post> _feedItems = [];
   List<Category> _categories = [];
   String _selectedCategory = 'ALL';
-  int _currentPage = 1;
-  bool _hasMorePosts = true;
-  bool _isLoadingMore = false;
-
-  @override
-  LoadingStyle get loadingStyle => LoadingStyle.skeletonizer(
-        child: _buildSkeletonLoader(),
-      );
+  int _refreshTrigger = 0; // Used to force refresh
 
   @override
   get init => () async {
@@ -44,9 +36,6 @@ class _FeedState extends NyState<Feed> {
 
       // Load categories
       await _loadCategories();
-
-      // Load feed posts
-      await _loadFeedPosts();
     } catch (e) {
       showToast(title: 'Error', description: 'Failed to load data: $e');
     }
@@ -61,6 +50,7 @@ class _FeedState extends NyState<Feed> {
       );
 
       if (categories != null) {
+        print('📱 Feed: Loaded ${categories.length} categories');
         setState(() {
           _categories = categories;
         });
@@ -70,45 +60,63 @@ class _FeedState extends NyState<Feed> {
     }
   }
 
-  Future<void> _loadFeedPosts({bool isRefresh = false}) async {
-    if (_isLoadingMore && !isRefresh) return;
-
-    if (isRefresh) {
-      _currentPage = 1;
-      _hasMorePosts = true;
-      _feedItems.clear();
-    }
-
-    setState(() => _isLoadingMore = true);
-
+  Future<List<Post>> _loadFeedPosts(int page) async {
     try {
+      print(
+          '📱 Feed: Loading posts (page: $page, category: $_selectedCategory)');
+
+      // Build query parameters
+      List<String>? categoryFilter;
+
+      // Add category filter if not "ALL"
+      if (_selectedCategory != 'ALL') {
+        Category? selectedCat;
+        for (var cat in _categories) {
+          if (cat.name?.trim() == _selectedCategory.trim()) {
+            selectedCat = cat;
+            break;
+          }
+        }
+
+        if (selectedCat != null && selectedCat.id != null) {
+          categoryFilter = [selectedCat.id.toString()];
+          print(
+              '📱 Feed: Filtering by category: ${selectedCat.name} (ID: ${selectedCat.id})');
+        }
+      }
+
       final feedResponse = await api<PostApiService>(
-        (request) => request.getFeed(perPage: 20, page: _currentPage),
-        cacheKey: "feed_${_selectedCategory}_$_currentPage",
-        cacheDuration: CacheConfig.userFeedCache,
+        (request) => request.getFeed(
+          perPage: 20,
+          page: page,
+          categories: categoryFilter,
+        ),
       );
 
       if (feedResponse != null && feedResponse['success'] == true) {
         final List<dynamic> postsData = feedResponse['data']['data'] ?? [];
-        final List<Post> newPosts =
+        final List<Post> posts =
             postsData.map((json) => Post.fromJson(json)).toList();
 
-        print('📱 Feed: Loaded ${newPosts.length} posts from API');
+        final currentPage = feedResponse['data']['current_page'] ?? 1;
+        final lastPage = feedResponse['data']['last_page'] ?? 1;
 
-        setState(() {
-          if (isRefresh) {
-            _feedItems = newPosts;
-          } else {
-            _feedItems.addAll(newPosts);
-          }
-          _hasMorePosts = newPosts.length == 20;
-          _currentPage++;
-        });
+        print(
+            '📱 Feed: Loaded ${posts.length} posts (page $currentPage of $lastPage)');
+
+        // Return empty list if no more posts (this stops pagination)
+        if (posts.isEmpty) {
+          print('📱 Feed: No posts found, stopping pagination');
+        }
+
+        return posts;
+      } else {
+        throw Exception('Failed to load feed posts');
       }
     } catch (e) {
+      print('❌ Feed: Error loading posts: $e');
       showToast(title: 'Error', description: 'Failed to load posts: $e');
-    } finally {
-      setState(() => _isLoadingMore = false);
+      return [];
     }
   }
 
@@ -118,17 +126,24 @@ class _FeedState extends NyState<Feed> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Logo and App Name Section
           _buildHeaderSection(),
-
-          // Category Buttons
           _buildCategorySection(),
-
-          // Feed Content
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _loadFeedPosts(isRefresh: true),
-              child: _buildFeedList(),
+            child: NyPullToRefresh.grid(
+              key: ValueKey('feed_list_$_refreshTrigger'),
+              stateName: 'feed_list',
+              crossAxisCount: 1,
+              child: (context, post) => _buildPostCard(post as Post),
+              data: (int iteration) async {
+                print('📱 Feed: NyPullToRefresh iteration: $iteration');
+
+                // IMPORTANT: iteration starts at 1 for first load, not 0
+                // So we need to use iteration directly as the page number
+                int page = iteration;
+
+                return await _loadFeedPosts(page);
+              },
+              empty: _buildEmptyState(),
             ),
           ),
         ],
@@ -141,17 +156,13 @@ class _FeedState extends NyState<Feed> {
       padding: EdgeInsets.only(top: 50, bottom: 20),
       child: Column(
         children: [
-          // Logo image
           Image.asset(
             'logo.png',
             width: 80,
             height: 80,
             fit: BoxFit.contain,
           ).localAsset(),
-
           const SizedBox(height: 10),
-
-          // App name with second 'i' in yellow and 'r' in blue
           RichText(
             text: TextSpan(
               children: [
@@ -160,7 +171,7 @@ class _FeedState extends NyState<Feed> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFFF69B4), // Bright pink
+                    color: Color(0xFFFF69B4),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -169,7 +180,7 @@ class _FeedState extends NyState<Feed> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFFFD700), // Yellow
+                    color: Color(0xFFFFD700),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -178,7 +189,7 @@ class _FeedState extends NyState<Feed> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF00BFFF), // Blue
+                    color: Color(0xFF00BFFF),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -191,7 +202,6 @@ class _FeedState extends NyState<Feed> {
   }
 
   Widget _buildCategorySection() {
-    // Add "ALL" category at the beginning
     final allCategories = [
       'ALL',
       ..._categories
@@ -213,20 +223,17 @@ class _FeedState extends NyState<Feed> {
             margin: EdgeInsets.only(right: 12),
             child: ElevatedButton(
               onPressed: () {
+                print('📱 Feed: Category selected: $category');
                 setState(() {
                   _selectedCategory = category;
+                  _refreshTrigger++; // Change key to force widget rebuild
                 });
-                _loadFeedPosts(isRefresh: true);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSelected ? Color(0xFF00BFFF) : Colors.white,
-                side: BorderSide(
-                  color: Color(0xFF00BFFF),
-                  width: 1,
-                ),
+                side: BorderSide(color: Color(0xFF00BFFF), width: 1),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                    borderRadius: BorderRadius.circular(20)),
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 elevation: 0,
               ),
@@ -245,17 +252,37 @@ class _FeedState extends NyState<Feed> {
     );
   }
 
-  Widget _buildFeedList() {
-    return ListView.builder(
-      itemCount: _feedItems.length + (_hasMorePosts ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _feedItems.length) {
-          return _buildLoadMoreIndicator();
-        }
-
-        final post = _feedItems[index];
-        return _buildPostCard(post);
-      },
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.image_not_supported_outlined,
+                size: 80, color: Colors.grey[400]),
+            SizedBox(height: 20),
+            Text(
+              _selectedCategory == 'ALL'
+                  ? 'No posts yet'
+                  : 'No posts in $_selectedCategory category',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Text(
+              _selectedCategory == 'ALL'
+                  ? 'Be the first to share something amazing!'
+                  : 'Try selecting a different category or check back later.',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -268,7 +295,7 @@ class _FeedState extends NyState<Feed> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: Offset(0, 2),
@@ -278,7 +305,6 @@ class _FeedState extends NyState<Feed> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User info
           Row(
             children: [
               CircleAvatar(
@@ -291,10 +317,9 @@ class _FeedState extends NyState<Feed> {
                     ? Text(
                         post.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14),
                       )
                     : null,
               ),
@@ -305,48 +330,36 @@ class _FeedState extends NyState<Feed> {
                   children: [
                     Text(
                       post.user?.name ?? 'Unknown User',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     Text(
                       post.user?.username ?? '',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              // Category tag
               if (post.category != null)
                 GestureDetector(
-                  onTap: () {
-                    routeTo('/tags');
-                  },
+                  onTap: () => routeTo('/tags'),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color(0xFFFF69B4), // Pink
+                      color: Color(0xFFFF69B4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          '💄', // Category emoji
-                          style: TextStyle(fontSize: 12),
-                        ),
+                        Text('💄', style: TextStyle(fontSize: 12)),
                         SizedBox(width: 4),
                         Text(
                           post.category!.name?.toLowerCase() ?? '',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -355,14 +368,9 @@ class _FeedState extends NyState<Feed> {
             ],
           ),
           SizedBox(height: 16),
-          // Content
           if (post.caption != null && post.caption!.isNotEmpty)
-            Text(
-              post.caption!,
-              style: TextStyle(fontSize: 14),
-            ),
+            Text(post.caption!, style: TextStyle(fontSize: 14)),
           SizedBox(height: 16),
-          // Media
           if (post.mediaUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -374,7 +382,6 @@ class _FeedState extends NyState<Feed> {
               ),
             ),
           SizedBox(height: 16),
-          // Action buttons (Likes and Save only)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -397,20 +404,6 @@ class _FeedState extends NyState<Feed> {
     );
   }
 
-  Widget _buildLoadMoreIndicator() {
-    if (!_hasMorePosts) return SizedBox.shrink();
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: _isLoadingMore
-          ? Center(child: CircularProgressIndicator())
-          : TextButton(
-              onPressed: () => _loadFeedPosts(),
-              child: Text('Load More'),
-            ),
-    );
-  }
-
   Widget _buildActionButton(IconData icon, String label,
       {Color? color, VoidCallback? onTap}) {
     return GestureDetector(
@@ -419,181 +412,68 @@ class _FeedState extends NyState<Feed> {
         children: [
           Icon(icon, color: color ?? Colors.grey[600], size: 20),
           SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color ?? Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(color: color ?? Colors.grey[600], fontSize: 12)),
         ],
       ),
     );
   }
 
-  // API Actions
   Future<void> _toggleLike(Post post) async {
     try {
-      final response = await api<PostApiService>(
-        (request) => request.toggleLike(post.id!),
-      );
+      final wasLiked = post.isLiked ?? false;
+      final oldLikesCount = post.likesCount ?? 0;
 
-      if (response != null) {
+      setState(() {
+        post.isLiked = !wasLiked;
+        post.likesCount = wasLiked ? oldLikesCount - 1 : oldLikesCount + 1;
+      });
+
+      final response =
+          await api<PostApiService>((request) => request.toggleLike(post.id!));
+
+      if (response != null && response['success'] == true) {
         setState(() {
-          post.isLiked = response['liked'];
-          post.likesCount = response['likes_count'];
+          post.isLiked = response['data']['liked'] ?? !wasLiked;
+          post.likesCount = response['data']['likes_count'] ?? oldLikesCount;
+        });
+      } else {
+        setState(() {
+          post.isLiked = wasLiked;
+          post.likesCount = oldLikesCount;
         });
       }
     } catch (e) {
-      showToast(title: 'Error', description: 'Failed to like post: $e');
+      print('❌ Feed: Error toggling like: $e');
     }
   }
 
   Future<void> _toggleSave(Post post) async {
     try {
-      final response = await api<PostApiService>(
-        (request) => request.toggleSave(post.id!),
-      );
+      final wasSaved = post.isSaved ?? false;
+      final oldSavesCount = post.savesCount ?? 0;
 
-      if (response != null) {
+      setState(() {
+        post.isSaved = !wasSaved;
+        post.savesCount = wasSaved ? oldSavesCount - 1 : oldSavesCount + 1;
+      });
+
+      final response =
+          await api<PostApiService>((request) => request.toggleSave(post.id!));
+
+      if (response != null && response['success'] == true) {
         setState(() {
-          post.isSaved = response['saved'];
-          post.savesCount = response['saves_count'];
+          post.isSaved = response['data']['saved'] ?? !wasSaved;
+          post.savesCount = response['data']['saves_count'] ?? oldSavesCount;
+        });
+      } else {
+        setState(() {
+          post.isSaved = wasSaved;
+          post.savesCount = oldSavesCount;
         });
       }
     } catch (e) {
-      showToast(title: 'Error', description: 'Failed to save post: $e');
+      print('❌ Feed: Error toggling save: $e');
     }
-  }
-
-  // Skeleton loader
-  Widget _buildSkeletonLoader() {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      itemCount: 5,
-      itemBuilder: (context, index) => _buildSkeletonPostCard(),
-    );
-  }
-
-  Widget _buildSkeletonPostCard() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // User info skeleton
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 16,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Container(
-                      height: 12,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          // Caption skeleton
-          Container(
-            height: 16,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          SizedBox(height: 8),
-          Container(
-            height: 16,
-            width: 200,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          SizedBox(height: 16),
-          // Media skeleton
-          Container(
-            height: 300,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          SizedBox(height: 16),
-          // Actions skeleton
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Container(
-                height: 24,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              Container(
-                height: 24,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              Container(
-                height: 24,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }

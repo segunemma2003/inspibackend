@@ -12,97 +12,6 @@ class Saved extends StatefulWidget {
 }
 
 class _SavedState extends NyState<Saved> {
-  List<Post> _savedPosts = [];
-  bool _isLoading = false;
-  int _currentPage = 1;
-  bool _hasMorePosts = true;
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  get init => () async {
-        await _loadSavedPosts();
-        _scrollController.addListener(_onScroll);
-      };
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoading &&
-        _hasMorePosts) {
-      _loadMorePosts();
-    }
-  }
-
-  Future<void> _loadSavedPosts({bool refresh = false}) async {
-    if (refresh) {
-      setState(() {
-        _currentPage = 1;
-        _hasMorePosts = true;
-        _savedPosts.clear();
-      });
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await api<PostApiService>(
-        (request) => request.getSavedPosts(
-          page: _currentPage,
-          perPage: 20,
-        ),
-      );
-
-      if (response != null && response['success'] == true) {
-        final List<dynamic> postsData = response['data']['data'] ?? [];
-        final List<Post> newPosts =
-            postsData.map((json) => Post.fromJson(json)).toList();
-
-        setState(() {
-          if (refresh) {
-            _savedPosts = newPosts;
-          } else {
-            _savedPosts.addAll(newPosts);
-          }
-          _hasMorePosts = newPosts.length == 20;
-          _currentPage++;
-        });
-      }
-    } catch (e) {
-      print('Error loading saved posts: $e');
-      showToast(title: 'Error', description: 'Failed to load saved posts');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadMorePosts() async {
-    await _loadSavedPosts();
-  }
-
-  Future<void> _unsavePost(Post post) async {
-    try {
-      final response = await api<PostApiService>(
-        (request) => request.toggleSave(post.id!),
-      );
-
-      if (response != null && response['success'] == true) {
-        setState(() {
-          _savedPosts.removeWhere((p) => p.id == post.id);
-        });
-        showToast(title: 'Success', description: 'Post removed from saved');
-      }
-    } catch (e) {
-      print('Error unsaving post: $e');
-      showToast(title: 'Error', description: 'Failed to unsave post');
-    }
-  }
-
   @override
   Widget view(BuildContext context) {
     return Scaffold(
@@ -110,9 +19,51 @@ class _SavedState extends NyState<Saved> {
       body: SafeArea(
         child: Column(
           children: [
+            // Header
             _buildHeader(),
+
+            // Saved Posts with NyPullToRefresh
             Expanded(
-              child: _buildContent(),
+              child: NyPullToRefresh.separated(
+                child: (BuildContext context, dynamic data) {
+                  return _buildSavedPostCard(data);
+                },
+                data: (int iteration) async {
+                  print('📱 Saved: Loading saved posts - page: $iteration');
+
+                  try {
+                    final response = await api<PostApiService>(
+                      (request) => request.getSavedPosts(
+                        perPage: 20,
+                        page:
+                            iteration, // Use iteration directly as page number
+                      ),
+                    );
+
+                    if (response != null && response['success'] == true) {
+                      final List<dynamic> postsData =
+                          response['data']['data'] ?? [];
+                      final posts =
+                          postsData.map((json) => Post.fromJson(json)).toList();
+
+                      print('📱 Saved: Loaded ${posts.length} saved posts');
+                      return posts;
+                    } else {
+                      print(
+                          '❌ Saved: Failed to load saved posts: ${response?['message']}');
+                      return [];
+                    }
+                  } catch (e) {
+                    print('❌ Saved: Error loading saved posts: $e');
+                    return [];
+                  }
+                },
+                separatorBuilder: (BuildContext context, int index) {
+                  return const SizedBox(height: 16);
+                },
+                stateName: "saved_posts_list",
+                empty: _buildEmptyState(),
+              ),
             ),
           ],
         ),
@@ -122,339 +73,376 @@ class _SavedState extends NyState<Saved> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+      padding: const EdgeInsets.all(16),
+      child: Row(
         children: [
-          // Logo Section
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                'logo.png',
-                width: 60,
-                height: 60,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.image_not_supported,
-                    size: 30,
-                    color: Colors.grey[400],
-                  );
-                },
-              ).localAsset(),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // App Name
-          RichText(
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: 'inspi',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFF69B4),
-                    letterSpacing: -0.5,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-                TextSpan(
-                  text: 'r',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFFD700),
-                    letterSpacing: -0.5,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-                TextSpan(
-                  text: 'tag',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF00BFFF),
-                    letterSpacing: -0.5,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Saved Posts Title
           const Text(
             'Saved Posts',
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
+          const Spacer(),
+          IconButton(
+            onPressed: () {
+              // Refresh the saved posts
+              setState(() {});
+            },
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh saved posts',
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_isLoading && _savedPosts.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
-        ),
-      );
-    }
-
-    if (_savedPosts.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => _loadSavedPosts(refresh: true),
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _savedPosts.length + (_hasMorePosts ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _savedPosts.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
-                ),
-              ),
-            );
-          }
-
-          final post = _savedPosts[index];
-          return _buildPostCard(post);
-        },
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.bookmark_border,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Saved Posts',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.bookmark_border,
+              size: 80,
+              color: Colors.grey[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Posts you save will appear here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
+            const SizedBox(height: 20),
+            Text(
+              'No saved posts yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Posts you save will appear here',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPostCard(Post post) {
+  Widget _buildSavedPostCard(Post post) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post Header (User info)
+          // User info
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // User Avatar
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: Colors.grey[200],
                   backgroundImage: post.user?.profilePicture != null
                       ? NetworkImage(post.user!.profilePicture!)
                       : null,
+                  backgroundColor: const Color(0xFF9ACD32),
                   child: post.user?.profilePicture == null
-                      ? Icon(
-                          Icons.person,
-                          color: Colors.grey[400],
-                          size: 20,
+                      ? Text(
+                          post.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         )
                       : null,
                 ),
                 const SizedBox(width: 12),
-
-                // User Name and Time
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         post.user?.fullName ??
-                            post.user?.username ??
+                            post.user?.name ??
                             'Unknown User',
                         style: const TextStyle(
-                          fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          fontSize: 16,
                         ),
                       ),
                       Text(
                         '@${post.user?.username ?? 'unknown'}',
                         style: TextStyle(
-                          fontSize: 12,
                           color: Colors.grey[600],
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Unsave Button
-                GestureDetector(
-                  onTap: () => _unsavePost(post),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'unsave') {
+                      await _unsavePost(post);
+                    } else if (value == 'share') {
+                      await _sharePost(post);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'unsave',
+                      child: Row(
+                        children: [
+                          Icon(Icons.bookmark_remove, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Unsave'),
+                        ],
+                      ),
                     ),
-                    child: Icon(
-                      Icons.bookmark,
-                      color: Colors.red[400],
-                      size: 20,
+                    const PopupMenuItem(
+                      value: 'share',
+                      child: Row(
+                        children: [
+                          Icon(Icons.share, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Share'),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          // Post Media
+          // Media content
           if (post.mediaUrl != null)
-            Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16),
-                ),
-                child: SmartMediaWidget(
-                  post: post,
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SmartMediaWidget(
+                post: post,
+                height: 300,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
 
-          // Post Caption
+          // Caption
           if (post.caption != null && post.caption!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
                 post.caption!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                  height: 1.4,
-                ),
+                style: const TextStyle(fontSize: 16),
               ),
             ),
 
-          // Post Stats and Actions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                // Likes
-                Row(
-                  children: [
-                    Icon(
-                      Icons.favorite_border,
-                      size: 20,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.likesCount ?? 0}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
+          // Tags
+          if (post.tags != null && post.tags!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Wrap(
+                spacing: 8,
+                children: post.tags!
+                    .map((tag) => Chip(
+                          label: Text('#$tag'),
+                          backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                          labelStyle: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 12,
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
 
-                // Category
-                if (post.category != null)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF69B4).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      post.category!.name ?? 'Category',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFFFF69B4),
-                      ),
+          // Location
+          if (post.location != null && post.location!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    post.location!,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
                     ),
                   ),
-
-                const Spacer(),
-
-                // Saved indicator
-                Icon(
-                  Icons.bookmark,
-                  size: 16,
-                  color: Colors.grey[400],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButton(
+    IconData icon,
+    String label, {
+    Color? color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime? timestamp) {
+    if (timestamp == null) return '';
+
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  Future<void> _handlePostAction(String action, Post post) async {
+    switch (action) {
+      case 'unsave':
+        await _unsavePost(post);
+        break;
+      case 'share':
+        await _sharePost(post);
+        break;
+    }
+  }
+
+  Future<void> _toggleLike(Post post) async {
+    try {
+      print('❤️ Saved: Toggling like for post ${post.id}');
+
+      // Optimistic update
+      final wasLiked = post.isLiked ?? false;
+      final oldLikesCount = post.likesCount ?? 0;
+
+      setState(() {
+        post.isLiked = !wasLiked;
+        post.likesCount = wasLiked ? oldLikesCount - 1 : oldLikesCount + 1;
+      });
+
+      final response = await api<PostApiService>(
+        (request) => request.toggleLike(post.id!),
+      );
+
+      if (response != null && response['success'] == true) {
+        setState(() {
+          post.isLiked = response['data']['liked'] ?? !wasLiked;
+          post.likesCount = response['data']['likes_count'] ?? oldLikesCount;
+        });
+      } else {
+        // Revert on failure
+        setState(() {
+          post.isLiked = wasLiked;
+          post.likesCount = oldLikesCount;
+        });
+        showToast(
+          title: 'Error',
+          description: 'Failed to like post',
+        );
+      }
+    } catch (e) {
+      print('❌ Saved: Error toggling like: $e');
+      showToast(
+        title: 'Error',
+        description: 'Failed to like post',
+      );
+    }
+  }
+
+  Future<void> _unsavePost(Post post) async {
+    try {
+      print('📱 Saved: Unsaving post ${post.id}');
+
+      final response = await api<PostApiService>(
+        (request) => request.toggleSave(post.id!),
+      );
+
+      if (response != null && response['success'] == true) {
+        showToast(
+          title: 'Success',
+          description: 'Post removed from saved',
+        );
+        // Refresh the list
+        setState(() {});
+      } else {
+        showToast(
+          title: 'Error',
+          description: 'Failed to unsave post',
+        );
+      }
+    } catch (e) {
+      print('❌ Saved: Error unsaving post: $e');
+      showToast(
+        title: 'Error',
+        description: 'Failed to unsave post',
+      );
+    }
+  }
+
+  Future<void> _sharePost(Post post) async {
+    try {
+      print('📱 Saved: Sharing post ${post.id}');
+      showToast(
+        title: 'Share',
+        description: 'Sharing functionality coming soon!',
+      );
+    } catch (e) {
+      print('❌ Saved: Error sharing post: $e');
+      showToast(
+        title: 'Error',
+        description: 'Failed to share post',
+      );
+    }
   }
 }

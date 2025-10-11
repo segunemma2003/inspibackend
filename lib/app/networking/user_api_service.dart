@@ -1,8 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '/config/decoders.dart';
-import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/models/user.dart';
+import '/app/services/auth_service.dart';
+import '/config/decoders.dart';
 
 class UserApiService extends NyApiService {
   UserApiService({BuildContext? buildContext})
@@ -39,12 +40,12 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Get user profile by ID
-  Future<User?> getUserProfile(int userId) async {
+  /// Get specific user by ID
+  Future<User?> getUser(int userId) async {
     return await network<User>(
       request: (request) => request.get("/users/$userId"),
-      cacheKey: "user_profile_$userId",
-      cacheDuration: const Duration(minutes: 5),
+      cacheKey: "user_$userId",
+      cacheDuration: const Duration(minutes: 10),
     );
   }
 
@@ -54,18 +55,32 @@ class UserApiService extends NyApiService {
     String? username,
     String? bio,
     String? profession,
-    String? profilePicture,
     List<String>? interests,
+    File? profilePicture,
   }) async {
+    final formData = FormData();
+
+    if (fullName != null) formData.fields.add(MapEntry('full_name', fullName));
+    if (username != null) formData.fields.add(MapEntry('username', username));
+    if (bio != null) formData.fields.add(MapEntry('bio', bio));
+    if (profession != null)
+      formData.fields.add(MapEntry('profession', profession));
+    if (interests != null) {
+      for (String interest in interests) {
+        formData.fields.add(MapEntry('interests[]', interest));
+      }
+    }
+    if (profilePicture != null) {
+      formData.files.add(MapEntry(
+          'profile_picture',
+          MultipartFile.fromFileSync(profilePicture.path,
+              filename: 'profile.jpg')));
+    }
+
     return await network<User>(
-      request: (request) => request.put("/users/profile", data: {
-        if (fullName != null) "full_name": fullName,
-        if (username != null) "username": username,
-        if (bio != null) "bio": bio,
-        if (profession != null) "profession": profession,
-        if (profilePicture != null) "profile_picture": profilePicture,
-        if (interests != null) "interests": interests,
-      }),
+      request: (request) => request.put("/users/profile", data: formData),
+      cacheKey: "user_profile",
+      cacheDuration: const Duration(minutes: 5),
     );
   }
 
@@ -73,6 +88,8 @@ class UserApiService extends NyApiService {
   Future<Map<String, dynamic>?> followUser(int userId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/users/$userId/follow"),
+      cacheKey: "follow_$userId",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
@@ -80,49 +97,42 @@ class UserApiService extends NyApiService {
   Future<Map<String, dynamic>?> unfollowUser(int userId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/users/$userId/unfollow"),
+      cacheKey: "unfollow_$userId",
+      cacheDuration: const Duration(minutes: 1),
     );
   }
 
   /// Get user followers
-  Future<Map<String, dynamic>?> getUserFollowers({
-    required int userId,
-    int page = 1,
+  Future<Map<String, dynamic>?> getUserFollowers(
+    int userId, {
     int perPage = 20,
+    int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) =>
           request.get("/users/$userId/followers", queryParameters: {
-        "page": page,
         "per_page": perPage,
+        "page": page,
       }),
-      cacheKey: "user_followers_${userId}_$page",
-      cacheDuration: const Duration(minutes: 3),
+      cacheKey: "followers_$userId" + "_$page",
+      cacheDuration: const Duration(minutes: 5),
     );
   }
 
   /// Get user following
-  Future<Map<String, dynamic>?> getUserFollowing({
-    required int userId,
-    int page = 1,
+  Future<Map<String, dynamic>?> getUserFollowing(
+    int userId, {
     int perPage = 20,
+    int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) =>
           request.get("/users/$userId/following", queryParameters: {
-        "page": page,
         "per_page": perPage,
+        "page": page,
       }),
-      cacheKey: "user_following_${userId}_$page",
-      cacheDuration: const Duration(minutes: 3),
-    );
-  }
-
-  /// Get interests list
-  Future<List<String>?> getInterests() async {
-    return await network<List<String>>(
-      request: (request) => request.get("/interests"),
-      cacheKey: "interests_list",
-      cacheDuration: const Duration(hours: 1),
+      cacheKey: "following_$userId" + "_$page",
+      cacheDuration: const Duration(minutes: 5),
     );
   }
 
@@ -130,13 +140,15 @@ class UserApiService extends NyApiService {
   Future<Map<String, dynamic>?> searchUsersByInterests({
     required List<String> interests,
     int perPage = 20,
+    int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/users/search/interests", data: {
         "interests": interests,
         "per_page": perPage,
+        "page": page,
       }),
-      cacheKey: "users_by_interests_${interests.join('_')}",
+      cacheKey: "search_interests_${interests.join('_')}_$page",
       cacheDuration: const Duration(minutes: 5),
     );
   }
@@ -146,15 +158,31 @@ class UserApiService extends NyApiService {
     required String profession,
     String? username,
     int perPage = 20,
+    int page = 1,
   }) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/users/search/profession", data: {
         "profession": profession,
         if (username != null) "username": username,
         "per_page": perPage,
+        "page": page,
       }),
-      cacheKey: "users_by_profession_${profession}_${username ?? 'all'}",
+      cacheKey: "search_profession_$profession" + "_$page",
       cacheDuration: const Duration(minutes: 5),
     );
+  }
+
+  /// Get available interests
+  Future<List<String>?> getInterests() async {
+    final response = await network<Map<String, dynamic>>(
+      request: (request) => request.get("/interests"),
+      cacheKey: "interests_list",
+      cacheDuration: const Duration(hours: 1),
+    );
+
+    if (response != null && response['success'] == true) {
+      return List<String>.from(response['data'] ?? []);
+    }
+    return null;
   }
 }

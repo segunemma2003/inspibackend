@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
+import '/app/networking/notification_api_service.dart';
+import '/app/models/notification.dart' as app_models;
 
 class NotificationPage extends NyStatefulWidget {
   static RouteView path = ("/notification", (_) => NotificationPage());
@@ -8,47 +10,15 @@ class NotificationPage extends NyStatefulWidget {
 }
 
 class _NotificationPageState extends NyPage<NotificationPage> {
-  List<Map<String, dynamic>> notifications = [
-    {
-      'title': 'New Connection Request',
-      'message': 'James Williams wants to connect with you',
-      'time': '2 minutes ago',
-      'type': 'connection',
-      'isRead': false,
-    },
-    {
-      'title': 'Profile View',
-      'message': 'Claudia Hill viewed your business profile',
-      'time': '15 minutes ago',
-      'type': 'profile_view',
-      'isRead': false,
-    },
-    {
-      'title': 'New Message',
-      'message': 'You have a new message from Maria Park',
-      'time': '1 hour ago',
-      'type': 'message',
-      'isRead': true,
-    },
-    {
-      'title': 'Booking Confirmed',
-      'message':
-          'Your appointment with Luis Rodriguez is confirmed for tomorrow',
-      'time': '2 hours ago',
-      'type': 'booking',
-      'isRead': true,
-    },
-    {
-      'title': 'New Review',
-      'message': 'Emma West left you a 5-star review',
-      'time': '1 day ago',
-      'type': 'review',
-      'isRead': true,
-    },
-  ];
+  List<app_models.Notification> notifications = [];
+  bool _isLoading = false;
+  int _currentPage = 1;
+  bool _hasMoreNotifications = true;
 
   @override
-  get init => () {};
+  get init => () async {
+        await _loadNotifications();
+      };
 
   @override
   Widget view(BuildContext context) {
@@ -69,7 +39,9 @@ class _NotificationPageState extends NyPage<NotificationPage> {
 
             // Notifications List
             Expanded(
-              child: _buildNotificationsList(),
+              child: _isLoading && notifications.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildNotificationsList(),
             ),
           ],
         ),
@@ -197,11 +169,12 @@ class _NotificationPageState extends NyPage<NotificationPage> {
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> notification, int index) {
+  Widget _buildNotificationCard(
+      app_models.Notification notification, int index) {
     IconData iconData;
     Color iconColor;
 
-    switch (notification['type']) {
+    switch (notification.type) {
       case 'connection':
         iconData = Icons.person_add;
         iconColor = Color(0xFF00BFFF);
@@ -227,90 +200,95 @@ class _NotificationPageState extends NyPage<NotificationPage> {
         iconColor = Colors.grey;
     }
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: notification['isRead'] ? Colors.grey[50] : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: notification['isRead'] ? Colors.grey[200]! : Color(0xFF00BFFF),
-          width: notification['isRead'] ? 1 : 2,
+    return GestureDetector(
+      onTap: () => _markAsRead(notification),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: notification.readAt != null ? Colors.grey[50] : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: notification.readAt != null
+                ? Colors.grey[200]!
+                : Color(0xFF00BFFF),
+            width: notification.readAt != null ? 1 : 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Notification Icon
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              iconData,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          SizedBox(width: 16),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: notification['isRead']
-                        ? FontWeight.w500
-                        : FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  notification['message'],
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.3,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  notification['time'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Unread indicator
-          if (!notification['isRead'])
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Notification Icon
             Container(
-              width: 8,
-              height: 8,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Color(0xFF00BFFF),
+                color: iconColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
+              child: Icon(
+                iconData,
+                color: iconColor,
+                size: 20,
+              ),
             ),
-        ],
+            SizedBox(width: 16),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notification.title ?? 'Notification',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: notification.readAt != null
+                          ? FontWeight.w500
+                          : FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    notification.message ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      height: 1.3,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    _formatTimestamp(notification.createdAt),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Unread indicator
+            if (notification.readAt == null)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Color(0xFF00BFFF),
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -355,5 +333,92 @@ class _NotificationPageState extends NyPage<NotificationPage> {
         ],
       ),
     );
+  }
+
+  String _formatTimestamp(DateTime? timestamp) {
+    if (timestamp == null) return 'Unknown time';
+
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  // API Methods
+  Future<void> _loadNotifications({bool refresh = false}) async {
+    if (refresh) {
+      _currentPage = 1;
+      _hasMoreNotifications = true;
+      notifications.clear();
+    }
+
+    if (_isLoading || !_hasMoreNotifications) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      print('📱 Notifications: Loading page $_currentPage...');
+
+      final response = await api<NotificationApiService>(
+        (request) => request.getNotifications(
+          perPage: 20,
+          page: _currentPage,
+        ),
+      );
+
+      if (response != null && response['success'] == true) {
+        final List<dynamic> notificationsData = response['data']['data'] ?? [];
+        final List<app_models.Notification> newNotifications = notificationsData
+            .map((json) => app_models.Notification.fromJson(json))
+            .toList();
+
+        setState(() {
+          if (refresh) {
+            notifications = newNotifications;
+          } else {
+            notifications.addAll(newNotifications);
+          }
+          _currentPage++;
+          _hasMoreNotifications =
+              newNotifications.length == 20; // Assuming 20 per page
+        });
+
+        print(
+            '📱 Notifications: Loaded ${newNotifications.length} notifications');
+      } else {
+        print('❌ Notifications: Failed to load - ${response?['message']}');
+        _hasMoreNotifications = false;
+      }
+    } catch (e) {
+      print('❌ Notifications: Error loading: $e');
+      _hasMoreNotifications = false;
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markAsRead(app_models.Notification notification) async {
+    try {
+      final response = await api<NotificationApiService>(
+        (request) => request.markNotificationAsRead(notification.id!),
+      );
+
+      if (response != null && response['success'] == true) {
+        setState(() {
+          notification.readAt = DateTime.now();
+        });
+        print('✅ Notification marked as read');
+      }
+    } catch (e) {
+      print('❌ Error marking notification as read: $e');
+    }
   }
 }

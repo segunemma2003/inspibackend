@@ -3,14 +3,14 @@ import '/config/decoders.dart';
 import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/models/user.dart';
+import '/app/networking/api_config.dart';
 
 class AuthApiService extends NyApiService {
   AuthApiService({BuildContext? buildContext})
       : super(buildContext, decoders: modelDecoders);
 
   @override
-  String get baseUrl =>
-      getEnv('API_BASE_URL', defaultValue: 'https://api.inspirtag.com/api');
+  String get baseUrl => ApiConfig.baseUrl;
 
   @override
   Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
@@ -120,6 +120,7 @@ class AuthApiService extends NyApiService {
   /// Verify Firebase token and create/update user
   Future<Map<String, dynamic>?> verifyFirebaseToken({
     required String token,
+    required String provider,
     required String email,
     required String name,
   }) async {
@@ -127,6 +128,7 @@ class AuthApiService extends NyApiService {
       request: (request) => request.post("/verify-firebase-token", data: {
         "firebase_token": token,
         "email": email,
+        "provider": provider,
         "name": name,
       }),
     );
