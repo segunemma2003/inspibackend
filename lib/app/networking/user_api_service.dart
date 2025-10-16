@@ -113,7 +113,7 @@ class UserApiService extends NyApiService {
             ));
           }
         }
-      formData.files.add(MapEntry(
+        formData.files.add(MapEntry(
           'profile_picture',
           await MultipartFile.fromFile(
             profilePicture.path,
@@ -122,7 +122,7 @@ class UserApiService extends NyApiService {
         ));
 
         final rawResponse = await network<dynamic>(
-          request: (request) => request.put("/users/profile", data: formData),
+          request: (request) => request.post("/users/profile", data: formData),
         );
 
         print(
@@ -159,7 +159,7 @@ class UserApiService extends NyApiService {
 
       // Otherwise, use regular JSON
       final rawResponse = await network<dynamic>(
-        request: (request) => request.put("/users/profile",
+        request: (request) => request.post("/users/profile",
             data: data
               ..remove('profile_picture')
               ..['interests'] =

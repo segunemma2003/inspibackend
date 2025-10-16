@@ -715,45 +715,65 @@ class _UploadState extends NyState<Upload> {
           ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<Category>(
-          value: _selectedCategory,
-          decoration: InputDecoration(
-            hintText: 'Select a category',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+        Container(
+          decoration: BoxDecoration(
+            border:
+                Border.all(color: Colors.black87), // Match other form fields
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              focusColor: Colors.blue.withOpacity(0.1),
+              hoverColor: Colors.grey.withOpacity(0.1),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFFF69B4), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+            child: DropdownButtonFormField<Category>(
+              value: _selectedCategory,
+              decoration: InputDecoration(
+                hintText: 'Select a category',
+                filled: true,
+                fillColor: Colors.white,
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                // Remove border definitions from InputDecoration to avoid conflicts
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none, // Remove error border as well
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a category';
+                }
+                return null;
+              },
+              dropdownColor: Colors.white, // Set dropdown background to white
+              isExpanded: true,
+              style: TextStyle(
+                  color: Colors
+                      .black), // Explicitly set text color for selected item
+              items: _categories.map((category) {
+                return DropdownMenuItem<Category>(
+                  value: category,
+                  child: Text(category.name ?? 'Unknown Category',
+                      style: TextStyle(color: Colors.black)),
+                );
+              }).toList(),
+              selectedItemBuilder: (BuildContext context) {
+                return _categories.map<Widget>((Category category) {
+                  return Text(category.name ?? 'Unknown Category',
+                      style: TextStyle(color: Colors.black));
+                }).toList();
+              },
+              onChanged: (Category? value) {
+                setState(() {
+                  _selectedCategory = value;
+                });
+              },
             ),
           ),
-          validator: (value) {
-            if (value == null) {
-              return 'Please select a category';
-            }
-            return null;
-          },
-          items: _categories.map((category) {
-            return DropdownMenuItem<Category>(
-              value: category,
-              child: Text(category.name ?? 'Unknown Category'),
-            );
-          }).toList(),
-          onChanged: (Category? value) {
-            setState(() {
-              _selectedCategory = value;
-            });
-          },
         ),
       ],
     );
