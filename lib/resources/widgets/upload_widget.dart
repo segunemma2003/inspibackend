@@ -22,6 +22,7 @@ class _UploadState extends NyState<Upload> {
   PlatformFile? _selectedFile;
   bool _isUploading = false;
   bool _isUploadComplete = false;
+  bool _showLoadingOverlay = false;
   String? _uploadedFileUrl;
   double _uploadProgress = 0.0;
   String _uploadStatus = '';
@@ -75,13 +76,32 @@ class _UploadState extends NyState<Upload> {
 
   @override
   Widget view(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: _selectedFile == null
-            ? _buildInitialUploadView()
-            : _buildFilePreviewAndForm(),
-      ),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: _selectedFile == null
+                ? _buildInitialUploadView()
+                : _buildFilePreviewAndForm(),
+          ),
+        ),
+        if (_showLoadingOverlay) _buildLoadingOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Stack(
+      children: [
+        const ModalBarrier(dismissible: false, color: Colors.black54),
+        Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1034,6 +1054,9 @@ class _UploadState extends NyState<Upload> {
   }
 
   void _pickFile() async {
+    setState(() {
+      _showLoadingOverlay = true; // Show overlay when file picking starts
+    });
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.media,
@@ -1056,10 +1079,18 @@ class _UploadState extends NyState<Upload> {
             '📁 File size: ${file.size} bytes (${(file.size / 1024 / 1024).toStringAsFixed(2)} MB)');
         print('📁 File extension: ${file.extension}');
         print('📁 File path: ${file.path}');
+      } else {
+        // User cancelled the picker
+        print('📁 File picking cancelled');
       }
     } catch (e) {
       print('Error picking file: $e');
       showToast(title: 'Error', description: 'Failed to pick file');
+    } finally {
+      setState(() {
+        _showLoadingOverlay =
+            false; // Hide overlay when file picking finishes or errors
+      });
     }
   }
 
@@ -1461,15 +1492,18 @@ class _UploadState extends NyState<Upload> {
         // Wait a moment for the toast to show
         await Future.delayed(const Duration(milliseconds: 500));
 
-        // Navigate back to feed tab
-        if (mounted) {
-          // First pop the current screen
-          Navigator.of(context).pop(true);
+        // Check if widget is still mounted before navigation
+        if (!mounted) return;
 
-          // Then navigate to the BaseNavigationHub with feed tab selected using Nylo's routeTo
-          routeTo(BaseNavigationHub.path,
-              navigationType: NavigationType.pushAndRemoveUntil, tabIndex: 0);
-        }
+        // Navigate to BaseNavigationHub with feed tab (index 0)
+        // Use pushAndRemoveUntil to clear the navigation stack
+
+        // Alternative: If you want to use Nylo's routeTo (uncomment this and comment above)
+        routeTo(
+          BaseNavigationHub.path,
+          navigationType: NavigationType.pushAndForgetAll,
+          tabIndex: 0,
+        );
       } else {
         throw Exception(
             'Failed to create post: ${response?['message'] ?? 'Unknown error'}');
@@ -1488,16 +1522,22 @@ class _UploadState extends NyState<Upload> {
         errorMessage = 'Invalid data. Please check your inputs';
       }
 
-      showToast(
-        title: 'Error',
-        description: errorMessage,
-        style: ToastNotificationStyleType.danger,
-      );
+      // Only show toast if widget is still mounted
+      if (mounted) {
+        showToast(
+          title: 'Error',
+          description: errorMessage,
+          style: ToastNotificationStyleType.danger,
+        );
+      }
     } finally {
-      setState(() {
-        _isSubmitting = false;
-        _uploadStatus = '';
-      });
+      // Only update state if widget is still mounted
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _uploadStatus = '';
+        });
+      }
     }
   }
 

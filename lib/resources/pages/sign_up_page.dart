@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/networking/auth_api_service.dart';
 import '/resources/widgets/social_login_buttons.dart';
+import 'package:flutter_app/config/keys.dart';
 
 class SignUpPage extends NyStatefulWidget {
   static RouteView path = ("/sign-up", (_) => SignUpPage());
@@ -24,10 +25,9 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
 
   @override
-  get init => () {};
-
-  @override
-  LoadingStyle get loadingStyle => LoadingStyle.normal();
+  get init => () {
+        // Empty init - no async operations needed on page load
+      };
 
   @override
   Widget view(BuildContext context) {
@@ -550,6 +550,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   Future<void> _createAccount() async {
     // Validate form first
     if (!_formKey.currentState!.validate()) {
+      print('⚠️ SignUp Toast: Validation Error - Please fix the errors above');
       showToast(
           title: 'Validation Error',
           description: 'Please fix the errors above');
@@ -557,6 +558,8 @@ class _SignUpPageState extends NyPage<SignUpPage> {
     }
 
     if (!_agreeToTerms) {
+      print(
+          '⚠️ SignUp Toast: Error - Please agree to the terms and conditions');
       showToast(
           title: 'Error',
           description: 'Please agree to the terms and conditions');
@@ -577,61 +580,132 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         ),
       );
 
-      if (response != null && response['success'] == true) {
-        // Store user data and token for session management
-        if (response['data'] != null) {
-          final userData = response['data']['user'];
-          final token = response['data']['token'];
+      print('🔐 SignUp: Raw API response type: ${response.runtimeType}');
+      print('🔐 SignUp: Raw API response content: $response');
 
-          print('🔐 SignUp: Storing authentication data...');
-          print('🔐 SignUp: Token: $token');
-          print('🔐 SignUp: User: $userData');
-
-          // Store authentication data for session management
-          await Auth.authenticate(data: {
-            'token': token,
-            'user': userData,
-            'authenticated_at': DateTime.now().toIso8601String(),
-          });
-
-          print('🔐 SignUp: Authentication data stored successfully');
-
-          showToast(
-              title: 'Success',
-              description:
-                  'Welcome to Inspiritag, ${userData['name'] ?? 'User'}!');
+      // Check if response is valid
+      if (response == null || !(response is Map<String, dynamic>)) {
+        print(
+            '⚠️ SignUp Toast: Error - An unexpected server response was received');
+        if (mounted) {
+          showToastNotification(
+            context,
+            title: "Error".tr(),
+            description:
+                "An unexpected server response was received. Please try again."
+                    .tr(),
+            style: ToastNotificationStyleType.danger,
+          );
         }
+        return;
+      }
 
-        // Navigate to main app
-        routeTo('/base');
+      // Process successful response
+      if (response['success'] == true) {
+        print('✅ SignUp: Registration successful, navigating to OTP...');
+
+        if (mounted) {
+          showToastNotification(
+            context,
+            title: "Registration Successful".tr(),
+            description:
+                'Please check your email (${_emailController.text.trim()}) for an OTP.'
+                    .tr(),
+            style: ToastNotificationStyleType.success,
+          );
+
+          // Small delay for toast visibility
+          await Future.delayed(Duration(milliseconds: 800));
+
+          // Navigate to OTP verification using Nylo route
+          if (mounted) {
+            routeTo(
+              '/verify-otp',
+              navigationType: NavigationType.pushReplace,
+              queryParameters: {
+                EmailKey: _emailController.text.trim(),
+                OtpTypeKey: OtpTypeKey_Registration
+              },
+            );
+          }
+        }
+        return;
       } else {
         // Handle API validation errors
-        final message = response?['message'] ?? 'Failed to create account';
-        final errors = response?['errors'];
+        final message = response['message'] ?? 'Failed to create account'.tr();
+        final errors = response['errors'];
 
-        if (errors != null && errors is Map<String, dynamic>) {
+        if (errors != null && mounted) {
           // Show specific field errors
           final fieldErrors = <String>[];
-          errors.forEach((field, errorList) {
+          (errors as Map<String, dynamic>).forEach((field, errorList) {
             if (errorList is List && errorList.isNotEmpty) {
               fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
             }
           });
 
           if (fieldErrors.isNotEmpty) {
-            showToast(
-                title: 'Validation Error', description: fieldErrors.join('\n'));
+            print(
+                '❌ SignUp Toast: Validation Error - ${fieldErrors.join(', ')}');
+            showToastNotification(
+              context,
+              title: "Validation Error".tr(),
+              description: fieldErrors.join('\n'),
+              style: ToastNotificationStyleType.danger,
+            );
             return;
           }
         }
 
-        showToast(title: 'Error', description: message);
+        if (mounted) {
+          print('❌ SignUp Toast: Error - $message');
+          showToastNotification(
+            context,
+            title: "Error".tr(),
+            description: message,
+            style: ToastNotificationStyleType.danger,
+          );
+        }
+      }
+    } on TypeError catch (e) {
+      print('❌ SignUp TypeError: $e');
+      if (mounted) {
+        showToastNotification(
+          context,
+          title: "Error".tr(),
+          description:
+              "An unexpected data format was received. Please try again.".tr(),
+          style: ToastNotificationStyleType.danger,
+        );
       }
     } catch (e) {
-      showToast(title: 'Error', description: 'Failed to create account: $e');
+      print('❌ SignUp Error: $e');
+      if (mounted) {
+        showToastNotification(
+          context,
+          title: "Error".tr(),
+          description: 'Failed to create account: ${e.toString()}'.tr(),
+          style: ToastNotificationStyleType.danger,
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _clearFormFields() {
+    _fullNameController.clear();
+    _emailController.clear();
+    _usernameController.clear();
+    _passwordController.clear();
+    _confirmPasswordController.clear();
+    setState(() {
+      _agreeToTerms = false;
+      _isPasswordVisible = false;
+      _isConfirmPasswordVisible = false;
+    });
   }
 
   @override

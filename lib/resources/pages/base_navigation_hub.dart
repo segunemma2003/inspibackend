@@ -29,7 +29,7 @@ class _BaseNavigationHubState extends NavigationHub<BaseNavigationHub> {
 
   /// Should the state be maintained
   @override
-  bool get maintainState => true;
+  bool get maintainState => false;
 
   /// Navigation pages
   _BaseNavigationHubState()

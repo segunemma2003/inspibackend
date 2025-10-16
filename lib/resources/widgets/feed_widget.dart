@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nylo_framework/metro/ny_cli.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/models/post.dart';
 import '/app/models/category.dart';
@@ -18,7 +19,15 @@ class Feed extends StatefulWidget {
 class _FeedState extends NyState<Feed> {
   List<Category> _categories = [];
   String _selectedCategory = 'ALL';
-  int _refreshTrigger = 0; // Used to force refresh
+  int _refreshTrigger = 0;
+
+  // Store posts locally for immediate UI updates
+  Map<int, Post> _postsCache = {};
+
+  // Pagination state
+  bool _hasMorePages = true;
+  int _currentPage = 1;
+  int _lastPage = 1;
 
   @override
   get init => () async {
@@ -27,15 +36,15 @@ class _FeedState extends NyState<Feed> {
 
   Future<void> _loadInitialData() async {
     try {
-      // Load current user (for authentication check)
       await api<AuthApiService>(
         (request) => request.getCurrentUser(),
         cacheKey: CacheConfig.currentUserKey,
         cacheDuration: CacheConfig.userProfileCache,
       );
 
-      // Load categories
       await _loadCategories();
+      await _loadFeedPosts(1,
+          forceRefresh: true); // Load initial feed posts with force refresh
     } catch (e) {
       showToast(title: 'Error', description: 'Failed to load data: $e');
     }
@@ -60,28 +69,32 @@ class _FeedState extends NyState<Feed> {
     }
   }
 
-  Future<List<Post>> _loadFeedPosts(int page) async {
+  Future<List<Post>> _loadFeedPosts(int page,
+      {bool forceRefresh = false}) async {
     try {
       print(
-          '📱 Feed: Loading posts (page: $page, category: $_selectedCategory)');
+          '📱 Feed: Loading posts (page: $page, category: $_selectedCategory, forceRefresh: $forceRefresh)');
 
-      // Build query parameters
+      // Check if we've already reached the last page
+      if (page > _lastPage && _lastPage > 0) {
+        print(
+            '📱 Feed: Already at last page ($_lastPage), returning empty list');
+        return [];
+      }
+
       List<String>? categoryFilter;
 
-      // Add category filter if not "ALL"
       if (_selectedCategory != 'ALL') {
-        Category? selectedCat;
-        for (var cat in _categories) {
-          if (cat.name?.trim() == _selectedCategory.trim()) {
-            selectedCat = cat;
-            break;
-          }
-        }
+        Category? selectedCat = _categories.firstWhereOrNull(
+          (cat) => cat.name?.trim() == _selectedCategory.trim(),
+        );
 
-        if (selectedCat != null && selectedCat.id != null) {
-          categoryFilter = [selectedCat.id.toString()];
+        if (selectedCat?.id != null) {
+          categoryFilter = [selectedCat!.id.toString()];
           print(
               '📱 Feed: Filtering by category: ${selectedCat.name} (ID: ${selectedCat.id})');
+        } else {
+          print('⚠️ Feed: Selected category not found in categories list');
         }
       }
 
@@ -90,6 +103,7 @@ class _FeedState extends NyState<Feed> {
           perPage: 20,
           page: page,
           categories: categoryFilter,
+          forceRefresh: forceRefresh, // Pass forceRefresh here
         ),
       );
 
@@ -98,25 +112,54 @@ class _FeedState extends NyState<Feed> {
         final List<Post> posts =
             postsData.map((json) => Post.fromJson(json)).toList();
 
-        final currentPage = feedResponse['data']['current_page'] ?? 1;
-        final lastPage = feedResponse['data']['last_page'] ?? 1;
+        // Cache posts for immediate UI updates
+        for (var post in posts) {
+          if (post.id != null) {
+            _postsCache[post.id!] = post;
+          }
+        }
+
+        // Update pagination state
+        _currentPage = feedResponse['data']['current_page'] ?? page;
+        _lastPage = feedResponse['data']['last_page'] ?? 1;
+        _hasMorePages = _currentPage < _lastPage;
 
         print(
-            '📱 Feed: Loaded ${posts.length} posts (page $currentPage of $lastPage)');
+            '📱 Feed: Loaded ${posts.length} posts (page $_currentPage of $_lastPage)');
+        print('📱 Feed: Has more pages: $_hasMorePages');
 
-        // Return empty list if no more posts (this stops pagination)
+        // Return empty list if no posts to stop pagination
         if (posts.isEmpty) {
           print('📱 Feed: No posts found, stopping pagination');
+          _hasMorePages = false;
         }
 
         return posts;
       } else {
+        print('⚠️ Feed: Response not successful or null');
         throw Exception('Failed to load feed posts');
       }
     } catch (e) {
       print('❌ Feed: Error loading posts: $e');
       showToast(title: 'Error', description: 'Failed to load posts: $e');
       return [];
+    }
+  }
+
+  void _onCategorySelected(String category) {
+    print('📱 Feed: Category selected: $category');
+    if (_selectedCategory != category) {
+      setState(() {
+        _selectedCategory = category;
+        _refreshTrigger++;
+        _postsCache.clear(); // Clear cache when changing category
+
+        // Reset pagination state
+        _hasMorePages = true;
+        _currentPage = 1;
+        _lastPage = 1;
+      });
+      print('📱 Feed: Refresh trigger updated to $_refreshTrigger');
     }
   }
 
@@ -131,19 +174,17 @@ class _FeedState extends NyState<Feed> {
           Expanded(
             child: NyPullToRefresh.grid(
               key: ValueKey('feed_list_$_refreshTrigger'),
-              stateName: 'feed_list',
+              stateName: 'feed_list_$_refreshTrigger',
               crossAxisCount: 1,
               child: (context, post) => _buildPostCard(post as Post),
               data: (int iteration) async {
                 print('📱 Feed: NyPullToRefresh iteration: $iteration');
-
-                // IMPORTANT: iteration starts at 1 for first load, not 0
-                // So we need to use iteration directly as the page number
-                int page = iteration;
-
-                return await _loadFeedPosts(page);
+                return await _loadFeedPosts(iteration,
+                    forceRefresh: true); // Force refresh on pull-to-refresh
               },
               empty: _buildEmptyState(),
+              // These properties control when to load more
+              transform: (data) => data, // Pass through the data as-is
             ),
           ),
         ],
@@ -222,13 +263,7 @@ class _FeedState extends NyState<Feed> {
           return Container(
             margin: EdgeInsets.only(right: 12),
             child: ElevatedButton(
-              onPressed: () {
-                print('📱 Feed: Category selected: $category');
-                setState(() {
-                  _selectedCategory = category;
-                  _refreshTrigger++; // Change key to force widget rebuild
-                });
-              },
+              onPressed: () => _onCategorySelected(category),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSelected ? Color(0xFF00BFFF) : Colors.white,
                 side: BorderSide(color: Color(0xFF00BFFF), width: 1),
@@ -287,6 +322,9 @@ class _FeedState extends NyState<Feed> {
   }
 
   Widget _buildPostCard(Post post) {
+    // Use cached post if available for real-time updates
+    final displayPost = _postsCache[post.id] ?? post;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
@@ -309,13 +347,16 @@ class _FeedState extends NyState<Feed> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundImage: post.user?.profilePicture != null
-                    ? NetworkImage(post.user!.profilePicture!)
+                backgroundImage: displayPost.user?.profilePicture != null
+                    ? NetworkImage(displayPost.user!.profilePicture!)
                     : null,
                 backgroundColor: Color(0xFF9ACD32),
-                child: post.user?.profilePicture == null
+                child: displayPost.user?.profilePicture == null
                     ? Text(
-                        post.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                        displayPost.user?.fullName
+                                ?.substring(0, 1)
+                                .toUpperCase() ??
+                            'U',
                         style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -329,18 +370,18 @@ class _FeedState extends NyState<Feed> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post.user?.name ?? 'Unknown User',
+                      displayPost.user?.fullName ?? 'Unknown User',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     Text(
-                      post.user?.username ?? '',
+                      displayPost.user?.username ?? '',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              if (post.category != null)
+              if (displayPost.category != null)
                 GestureDetector(
                   onTap: () => routeTo('/tags'),
                   child: Container(
@@ -355,7 +396,7 @@ class _FeedState extends NyState<Feed> {
                         Text('💄', style: TextStyle(fontSize: 12)),
                         SizedBox(width: 4),
                         Text(
-                          post.category!.name?.toLowerCase() ?? '',
+                          displayPost.category!.name?.toLowerCase() ?? '',
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -368,14 +409,14 @@ class _FeedState extends NyState<Feed> {
             ],
           ),
           SizedBox(height: 16),
-          if (post.caption != null && post.caption!.isNotEmpty)
-            Text(post.caption!, style: TextStyle(fontSize: 14)),
+          if (displayPost.caption != null && displayPost.caption!.isNotEmpty)
+            Text(displayPost.caption!, style: TextStyle(fontSize: 14)),
           SizedBox(height: 16),
-          if (post.mediaUrl != null)
+          if (displayPost.mediaUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: SmartMediaWidget(
-                post: post,
+                post: displayPost,
                 height: 300,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -386,16 +427,23 @@ class _FeedState extends NyState<Feed> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionButton(
-                post.isLiked == true ? Icons.favorite : Icons.favorite_border,
-                '${post.likesCount ?? 0}',
-                color: post.isLiked == true ? Colors.red : Colors.grey[600],
-                onTap: () => _toggleLike(post),
+                displayPost.isLiked == true
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                '${displayPost.likesCount ?? 0}',
+                color:
+                    displayPost.isLiked == true ? Colors.red : Colors.grey[600],
+                onTap: () => _toggleLike(displayPost),
               ),
               _buildActionButton(
-                post.isSaved == true ? Icons.bookmark : Icons.bookmark_border,
+                displayPost.isSaved == true
+                    ? Icons.bookmark
+                    : Icons.bookmark_border,
                 'Save',
-                color: post.isSaved == true ? Colors.blue : Colors.grey[600],
-                onTap: () => _toggleSave(post),
+                color: displayPost.isSaved == true
+                    ? Colors.blue
+                    : Colors.grey[600],
+                onTap: () => _toggleSave(displayPost),
               ),
             ],
           ),
@@ -406,74 +454,131 @@ class _FeedState extends NyState<Feed> {
 
   Widget _buildActionButton(IconData icon, String label,
       {Color? color, VoidCallback? onTap}) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: color ?? Colors.grey[600], size: 20),
-          SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(color: color ?? Colors.grey[600], fontSize: 12)),
-        ],
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: color ?? Colors.grey[600], size: 22),
+            SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: color ?? Colors.grey[600],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _toggleLike(Post post) async {
+    if (post.id == null) return;
+
+    // OPTIMISTIC UPDATE: Update UI immediately
+    final wasLiked = post.isLiked ?? false;
+    final oldLikesCount = post.likesCount ?? 0;
+
+    setState(() {
+      post.isLiked = !wasLiked;
+      post.likesCount = wasLiked ? oldLikesCount - 1 : oldLikesCount + 1;
+      _postsCache[post.id!] = post;
+    });
+
+    // Then sync with backend in background
     try {
-      final wasLiked = post.isLiked ?? false;
-      final oldLikesCount = post.likesCount ?? 0;
-
-      setState(() {
-        post.isLiked = !wasLiked;
-        post.likesCount = wasLiked ? oldLikesCount - 1 : oldLikesCount + 1;
-      });
-
       final response =
           await api<PostApiService>((request) => request.toggleLike(post.id!));
 
       if (response != null && response['success'] == true) {
+        // Update with actual server values
         setState(() {
           post.isLiked = response['data']['liked'] ?? !wasLiked;
-          post.likesCount = response['data']['likes_count'] ?? oldLikesCount;
+          post.likesCount = response['data']['likes_count'] ?? post.likesCount;
+          _postsCache[post.id!] = post;
         });
       } else {
+        // Revert on failure
         setState(() {
           post.isLiked = wasLiked;
           post.likesCount = oldLikesCount;
+          _postsCache[post.id!] = post;
         });
+        showToast(
+          title: 'Error',
+          description: 'Failed to ${wasLiked ? 'unlike' : 'like'} post',
+          style: ToastNotificationStyleType.warning,
+        );
       }
     } catch (e) {
       print('❌ Feed: Error toggling like: $e');
+      // Revert on error
+      setState(() {
+        post.isLiked = wasLiked;
+        post.likesCount = oldLikesCount;
+        _postsCache[post.id!] = post;
+      });
+      showToast(
+        title: 'Error',
+        description: 'Network error. Please try again.',
+        style: ToastNotificationStyleType.danger,
+      );
     }
   }
 
   Future<void> _toggleSave(Post post) async {
+    if (post.id == null) return;
+
+    // OPTIMISTIC UPDATE: Update UI immediately
+    final wasSaved = post.isSaved ?? false;
+    final oldSavesCount = post.savesCount ?? 0;
+
+    setState(() {
+      post.isSaved = !wasSaved;
+      post.savesCount = wasSaved ? oldSavesCount - 1 : oldSavesCount + 1;
+      _postsCache[post.id!] = post;
+    });
+
+    // Then sync with backend in background
     try {
-      final wasSaved = post.isSaved ?? false;
-      final oldSavesCount = post.savesCount ?? 0;
-
-      setState(() {
-        post.isSaved = !wasSaved;
-        post.savesCount = wasSaved ? oldSavesCount - 1 : oldSavesCount + 1;
-      });
-
       final response =
           await api<PostApiService>((request) => request.toggleSave(post.id!));
 
       if (response != null && response['success'] == true) {
+        // Update with actual server values
         setState(() {
           post.isSaved = response['data']['saved'] ?? !wasSaved;
-          post.savesCount = response['data']['saves_count'] ?? oldSavesCount;
+          post.savesCount = response['data']['saves_count'] ?? post.savesCount;
+          _postsCache[post.id!] = post;
         });
       } else {
+        // Revert on failure
         setState(() {
           post.isSaved = wasSaved;
           post.savesCount = oldSavesCount;
+          _postsCache[post.id!] = post;
         });
+        showToast(
+          title: 'Error',
+          description: 'Failed to ${wasSaved ? 'unsave' : 'save'} post',
+          style: ToastNotificationStyleType.warning,
+        );
       }
     } catch (e) {
       print('❌ Feed: Error toggling save: $e');
+      // Revert on error
+      setState(() {
+        post.isSaved = wasSaved;
+        post.savesCount = oldSavesCount;
+        _postsCache[post.id!] = post;
+      });
+      showToast(
+        title: 'Error',
+        description: 'Network error. Please try again.',
+        style: ToastNotificationStyleType.danger,
+      );
     }
   }
 }

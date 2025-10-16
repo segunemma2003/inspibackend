@@ -166,7 +166,8 @@ class _SavedState extends NyState<Saved> {
                   backgroundColor: const Color(0xFF9ACD32),
                   child: post.user?.profilePicture == null
                       ? Text(
-                          post.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                          post.user?.fullName?.substring(0, 1).toUpperCase() ??
+                              'U',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -180,9 +181,7 @@ class _SavedState extends NyState<Saved> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.user?.fullName ??
-                            post.user?.name ??
-                            'Unknown User',
+                        post.user?.fullName ?? 'Unknown User',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,

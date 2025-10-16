@@ -1,12 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import 'package:file_picker/file_picker.dart';
-import '/app/networking/user_api_service.dart';
-import '/app/networking/auth_api_service.dart';
-import '/app/networking/search_api_service.dart';
-import '/app/models/user.dart';
-import '/app/services/auth_service.dart';
+
+import 'package:flutter_app/app/models/user.dart';
+import 'package:flutter_app/app/networking/user_api_service.dart';
+
+import 'package:image_picker/image_picker.dart';
+import 'dart:io'; // Required for File
 
 class EditProfilePage extends NyStatefulWidget {
   static RouteView path = ("/edit-profile", (_) => EditProfilePage());
@@ -15,788 +14,414 @@ class EditProfilePage extends NyStatefulWidget {
 }
 
 class _EditProfilePageState extends NyPage<EditProfilePage> {
-  final TextEditingController _nameController = TextEditingController();
+  User? _currentUser;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _professionController = TextEditingController();
+  final TextEditingController _interestsController = TextEditingController();
 
-  // Profile picture
-  PlatformFile? _selectedProfilePicture;
-  String? _currentProfilePictureUrl;
-  bool _isUploadingPicture = false;
-
-  // User data
-  User? _currentUser;
-  bool _isLoadingUser = false;
-  bool _isSaving = false;
-
-  // Interests
-  List<String> _availableInterests = [];
-  List<String> _selectedInterests = [];
-  bool _isLoadingInterests = false;
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   get init => () async {
-        await _debugAuthData();
-        await _loadUserData();
-        await _loadInterests();
+        await _loadUserProfile();
       };
 
-  Future<void> _debugAuthData() async {
+  Future<void> _loadUserProfile() async {
     try {
-      print('🔍 EditProfile: Debugging Auth data...');
-      final authData = await Auth.data();
-      print('🔍 EditProfile: Raw Auth.data(): $authData');
-      print('🔍 EditProfile: Auth data type: ${authData.runtimeType}');
-      if (authData != null) {
-        print('🔍 EditProfile: Auth data keys: ${authData.keys}');
-        if (authData.containsKey('user')) {
-          print('🔍 EditProfile: User data: ${authData['user']}');
-          print(
-              '🔍 EditProfile: User data type: ${authData['user'].runtimeType}');
-        }
-        if (authData.containsKey('token')) {
-          print('🔍 EditProfile: Token: ${authData['token']}');
-        }
-      }
-    } catch (e) {
-      print('❌ EditProfile: Error debugging auth data: $e');
-    }
-  }
-
-  Future<void> _loadUserData() async {
-    setState(() => _isLoadingUser = true);
-
-    try {
-      print('🔄 EditProfile: Loading user data...');
-
-      // First try to get user data from AuthService (cached data)
-      final cachedUserData = await AuthService.instance.getUserProfile();
-      print('📱 EditProfile: Cached user data: $cachedUserData');
-      print(
-          '📱 EditProfile: Cached user data type: ${cachedUserData.runtimeType}');
-      if (cachedUserData != null) {
-        print('📱 EditProfile: Cached user data keys: ${cachedUserData.keys}');
-        print('📱 EditProfile: Name field: ${cachedUserData['name']}');
-        print(
-            '📱 EditProfile: Full name field: ${cachedUserData['full_name']}');
-        print('📱 EditProfile: Username field: ${cachedUserData['username']}');
-      }
-
-      if (cachedUserData != null) {
-        _populateUserData(cachedUserData);
-        print('✅ EditProfile: Populated from cache');
-      }
-
-      // Then fetch fresh data from API
-      print('🌐 EditProfile: Fetching fresh data from API...');
-      final response = await api<AuthApiService>(
-        (request) => request.getCurrentUser(),
+      final user = await api<UserApiService>(
+        (request) => request.fetchCurrentUser(),
       );
 
-      print('📡 EditProfile: API response: $response');
-      print('📡 EditProfile: Response type: ${response.runtimeType}');
-
-      if (response != null) {
-        // Handle different response structures
-        User? user;
-        if (response is User) {
-          user = response;
-          print('✅ EditProfile: Response is User object');
-        } else if (response is Map<String, dynamic>) {
-          print('📋 EditProfile: Response is Map, keys: ${response.keys}');
-          if (response.containsKey('data') &&
-              response['data'] is Map<String, dynamic>) {
-            final data = response['data'];
-            if (data.containsKey('user') &&
-                data['user'] is Map<String, dynamic>) {
-              user = User.fromJson(data['user']);
-              print('✅ EditProfile: Created user from response.data.user');
-            } else {
-              user = User.fromJson(data);
-              print('✅ EditProfile: Created user from response.data');
-            }
-          } else if (response.containsKey('user') &&
-              response['user'] is Map<String, dynamic>) {
-            user = User.fromJson(response['user']);
-            print('✅ EditProfile: Created user from response.user');
-          } else {
-            user = User.fromJson(response);
-            print('✅ EditProfile: Created user from response directly');
-          }
-        }
-
-        if (user != null) {
-          setState(() {
-            _currentUser = user;
-          });
-          _populateUserData({
-            'full_name': user.fullName,
-            'username': user.username,
-            'bio': user.bio,
-            'profession': user.profession,
-            'profile_picture': user.profilePicture,
-            'interests': user.interests,
-          });
-          print(
-              '✅ EditProfile: User data loaded successfully: ${user.fullName}');
-        } else {
-          print('❌ EditProfile: Failed to create user object');
-        }
-      } else {
-        print('❌ EditProfile: API response is null');
-      }
-    } catch (e, stackTrace) {
-      print('❌ EditProfile: Error loading user data: $e');
-      print('📍 EditProfile: Stack trace: $stackTrace');
-      showToast(title: 'Error', description: 'Failed to load profile data');
-    } finally {
-      setState(() => _isLoadingUser = false);
-    }
-  }
-
-  void _populateUserData(Map<String, dynamic> userData) {
-    print('🔄 EditProfile: Populating form with data: $userData');
-
-    // First create and store the User object (same as profile widget)
-    try {
-      final user = User.fromJson(userData);
-      print(
-          '🔄 EditProfile: Created user object - name: ${user.name}, fullName: ${user.fullName}');
-      setState(() {
-        _currentUser = user;
-      });
-      print('✅ EditProfile: User set in state: ${_currentUser?.fullName}');
-    } catch (e) {
-      print('Error parsing cached user data: $e');
-      // Fallback: create user with basic info
-      setState(() {
-        final user = User();
-        user.id = userData['id'];
-        user.fullName =
-            userData['full_name']?.toString() ?? userData['name']?.toString();
-        user.username = userData['username']?.toString();
-        user.email = userData['email']?.toString();
-        user.bio = userData['bio']?.toString();
-        user.profession = userData['profession']?.toString();
-        user.profilePicture = userData['profile_picture']?.toString();
-        user.interests = userData['interests'] is List
-            ? List<String>.from(userData['interests'])
-            : null;
-        _currentUser = user;
-      });
-    }
-
-    // Then populate the form controllers
-    setState(() {
-      _nameController.text = userData['full_name']?.toString() ??
-          userData['name']?.toString() ??
-          '';
-      _usernameController.text = userData['username']?.toString() ?? '';
-      _bioController.text = userData['bio']?.toString() ?? '';
-      _professionController.text = userData['profession']?.toString() ?? '';
-      _currentProfilePictureUrl = userData['profile_picture']?.toString();
-
-      if (userData['interests'] != null) {
-        if (userData['interests'] is List) {
-          _selectedInterests = List<String>.from(userData['interests']);
-        } else if (userData['interests'] is String) {
-          _selectedInterests = [userData['interests']];
-        }
-      }
-    });
-
-    print(
-        '✅ EditProfile: Form populated - Name: ${_nameController.text}, Username: ${_usernameController.text}');
-  }
-
-  Future<void> _loadInterests() async {
-    setState(() => _isLoadingInterests = true);
-
-    try {
-      final response = await api<SearchApiService>(
-        (request) => request.getInterests(),
-      );
-
-      if (response != null) {
+      if (user != null && mounted) {
+        print('✅ EditProfile: Fetched user data: ${user.toJson()}');
         setState(() {
-          _availableInterests = List<String>.from(response);
+          _currentUser = user;
+          _fullNameController.text = user.fullName ?? '';
+          print('✏️ EditProfile: Full Name: ${_fullNameController.text}');
+          _usernameController.text = user.username ?? '';
+          print('✏️ EditProfile: Username: ${_usernameController.text}');
+          _bioController.text = user.bio ?? '';
+          print('✏️ EditProfile: Bio: ${_bioController.text}');
+          _professionController.text = user.profession ?? '';
+          print('✏️ EditProfile: Profession: ${_professionController.text}');
+          _interestsController.text = user.interests?.join(', ') ?? '';
+          print('✏️ EditProfile: Interests: ${_interestsController.text}');
+          _isLoading = false;
         });
-      }
-    } catch (e) {
-      print('Error loading interests: $e');
-    } finally {
-      setState(() => _isLoadingInterests = false);
-    }
-  }
-
-  @override
-  Widget view(BuildContext context) {
-    print(
-        '🎨 EditProfile: Building UI - currentUser: ${_currentUser?.fullName}');
-    print(
-        '🎨 EditProfile: Building UI - form values: name="${_nameController.text}", username="${_usernameController.text}"');
-    print(
-        '🎨 EditProfile: Building UI - currentUser is null: ${_currentUser == null}');
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 30),
-                      _buildEditProfileCard(),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                size: 20,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const Spacer(),
-          const Text(
-            'Edit Profile',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: _isSaving ? null : _saveProfile,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: _isSaving
-                    ? null
-                    : const LinearGradient(
-                        colors: [Color(0xFFFF69B4), Color(0xFF9C27B0)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                color: _isSaving ? Colors.grey[400] : null,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'SAVE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditProfileCard() {
-    if (_isLoadingUser) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header Section
-        Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFF69B4),
-                    Color(0xFFFFD700),
-                    Color(0xFF9ACD32),
-                    Color(0xFF00BFFF),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.white,
-                ),
-                child: Icon(
-                  Icons.edit,
-                  color: Colors.grey[700],
-                  size: 24,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Edit Profile',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF7B68EE),
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  Text(
-                    'Update your profile information',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 30),
-
-        // Profile Picture Section
-        Center(
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFFFF69B4),
-                          Color(0xFFFFD700),
-                          Color(0xFF9ACD32),
-                          Color(0xFF00BFFF),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: ClipOval(
-                        child: _buildProfileImage(),
-                      ),
-                    ),
-                  ),
-                  if (_isUploadingPicture)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withOpacity(0.5),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _isUploadingPicture ? null : _pickProfilePicture,
-                child: Text(
-                  _isUploadingPicture ? 'Uploading...' : 'Change profile photo',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _isUploadingPicture
-                        ? Colors.grey
-                        : const Color(0xFF7B68EE),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 30),
-
-        // Form Fields
-        _buildTextField(
-          label: 'Full Name *',
-          controller: _nameController,
-          icon: Icons.person_outline,
-        ),
-
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          label: 'Username *',
-          controller: _usernameController,
-          icon: Icons.alternate_email,
-        ),
-
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          label: 'Profession',
-          controller: _professionController,
-          icon: Icons.work_outline,
-        ),
-
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          label: 'Bio',
-          controller: _bioController,
-          icon: Icons.description_outlined,
-          maxLines: 4,
-        ),
-
-        const SizedBox(height: 24),
-
-        // Interests Section
-        _buildInterestsSection(),
-
-        const SizedBox(height: 30),
-      ],
-    );
-  }
-
-  Widget _buildProfileImage() {
-    if (_selectedProfilePicture != null) {
-      return Image.file(
-        File(_selectedProfilePicture!.path!),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    } else if (_currentProfilePictureUrl != null) {
-      return Image.network(
-        _currentProfilePictureUrl!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey[200],
-            child: Icon(
-              Icons.person,
-              size: 50,
-              color: Colors.grey[400],
-            ),
+      } else if (user == null) {
+        print('❌ EditProfile: fetchCurrentUser returned null.');
+        if (mounted) {
+          setState(() => _isLoading = false);
+          showToastNotification(
+            context,
+            title: 'Warning'.tr(),
+            description: 'User data not found.',
+            style: ToastNotificationStyleType.warning,
           );
-        },
-      );
-    } else {
-      return Container(
-        color: Colors.grey[200],
-        child: Icon(
-          Icons.person,
-          size: 50,
-          color: Colors.grey[400],
-        ),
-      );
-    }
-  }
-
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    int maxLines = 1,
-  }) {
-    print(
-        '🎨 EditProfile: _buildTextField "$label" - value: "${controller.text}"');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: TextField(
-            controller: controller,
-            maxLines: maxLines,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-            decoration: InputDecoration(
-              prefixIcon: Icon(
-                icon,
-                color: Colors.grey[500],
-                size: 20,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              hintText: 'Enter ${label.replaceAll('*', '').trim()}...',
-              hintStyle: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInterestsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Interests',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (_isLoadingInterests)
-          const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
-            ),
-          )
-        else
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Select your interests (tap to toggle)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _availableInterests.map((interest) {
-                    final isSelected = _selectedInterests.contains(interest);
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedInterests.remove(interest);
-                          } else {
-                            _selectedInterests.add(interest);
-                          }
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFFFF69B4).withOpacity(0.1)
-                              : Colors.white,
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFFFF69B4)
-                                : Colors.grey[300]!,
-                            width: isSelected ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          interest,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color: isSelected
-                                ? const Color(0xFFFF69B4)
-                                : Colors.grey[700],
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                if (_selectedInterests.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Selected: ${_selectedInterests.length} interests',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _pickProfilePicture() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        final file = result.files.single;
-
-        // Check file size (5MB limit for profile pictures)
-        if (file.size > 5 * 1024 * 1024) {
-          showToast(
-              title: 'File Too Large',
-              description: 'Please select an image smaller than 5MB');
-          return;
         }
-
-        setState(() {
-          _selectedProfilePicture = file;
-        });
       }
     } catch (e) {
-      print('Error picking profile picture: $e');
-      showToast(title: 'Error', description: 'Failed to pick image');
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    // Validate required fields
-    if (_nameController.text.trim().isEmpty ||
-        _usernameController.text.trim().isEmpty) {
-      showToast(title: 'Error', description: 'Name and username are required');
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    try {
-      // Update profile
-      final response = await api<UserApiService>(
-        (request) => request.updateProfile(
-          fullName: _nameController.text.trim(),
-          username: _usernameController.text.trim(),
-          bio: _bioController.text.trim(),
-          profession: _professionController.text.trim(),
-          profilePicture: _selectedProfilePicture != null
-              ? File(_selectedProfilePicture!.path!)
-              : null, // Only pass File if there's a new picture
-          interests: _selectedInterests,
-        ),
-      );
-
-      if (response != null && response['success'] == true) {
-        showToast(
-            title: 'Success', description: 'Profile updated successfully!');
-        Navigator.of(context).pop();
-      } else {
-        throw Exception('Failed to update profile');
+      print('❌ EditProfile: Error loading profile: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        showToastNotification(
+          context,
+          title: 'Error'.tr(),
+          description: 'Failed to load profile: $e',
+          style: ToastNotificationStyleType.danger,
+        );
       }
-    } catch (e) {
-      print('Error saving profile: $e');
-      showToast(title: 'Error', description: 'Failed to update profile');
-    } finally {
-      setState(() => _isSaving = false);
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _fullNameController.dispose();
     _usernameController.dispose();
     _bioController.dispose();
     _professionController.dispose();
+    _interestsController.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget view(BuildContext context) {
+    print('🔄 EditProfile: _isLoading is $_isLoading');
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Edit Profile'),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.black, size: 24),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          titleTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Edit Profile'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black, size: 24),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Profile Picture
+            GestureDetector(
+              onTap: () {
+                _pickImage();
+              },
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundImage: _profileImage != null
+                        ? FileImage(_profileImage!)
+                        : (_currentUser?.profilePicture != null
+                            ? NetworkImage(_currentUser!.profilePicture!)
+                            : null),
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    child: _profileImage == null &&
+                            _currentUser?.profilePicture == null
+                        ? Text(
+                            _currentUser?.fullName
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
+                                'U',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 40,
+                            ),
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.camera_alt,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 30),
+
+            // Divider for visual separation
+            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
+            SizedBox(height: 30),
+
+            // Full Name
+            _buildTextField(
+              controller: _fullNameController,
+              label: 'Full Name',
+              icon: Icons.person_outline,
+            ),
+            SizedBox(height: 15),
+
+            // Username
+            _buildTextField(
+              controller: _usernameController,
+              label: 'Username',
+              icon: Icons.alternate_email,
+              readOnly: true, // Make username non-editable
+              fillColor: Theme.of(context)
+                  .colorScheme
+                  .surface, // Visual cue for non-editable
+            ),
+            SizedBox(height: 15),
+
+            // Bio
+            _buildTextField(
+              controller: _bioController,
+              label: 'Bio',
+              icon: Icons.info_outline,
+              maxLines: 3,
+            ),
+            SizedBox(height: 15),
+
+            // Profession
+            _buildTextField(
+              controller: _professionController,
+              label: 'Profession',
+              icon: Icons.work_outline,
+            ),
+            SizedBox(height: 15),
+
+            // Interests
+            _buildTextField(
+              controller: _interestsController,
+              label: 'Interests (comma-separated)',
+              icon: Icons.favorite_outline,
+              hint: 'e.g., Fashion, Beauty, Makeup',
+            ),
+            SizedBox(height: 30),
+
+            // Save Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isSaving
+                      ? Colors.grey[400]
+                      : Theme.of(context).colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                  foregroundColor: Colors.white, // Ensure text color is white
+                ),
+                child: _isSaving
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.onPrimary),
+                        ),
+                      )
+                    : Text(
+                        'Save Profile',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null && mounted) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    int maxLines = 1,
+    String? hint,
+    bool readOnly = false,
+    Color? fillColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: fillColor ??
+            Theme.of(context).inputDecorationTheme.fillColor ??
+            Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          hintStyle: Theme.of(context).inputDecorationTheme.hintStyle ??
+              Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.grey[500]),
+          labelStyle: Theme.of(context).inputDecorationTheme.labelStyle ??
+              Theme.of(context)
+                  .textTheme
+                  .labelLarge
+                  ?.copyWith(color: Colors.grey[700]),
+          prefixIcon: Icon(icon, color: Colors.grey[600]),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 2),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: maxLines > 1 ? 16 : 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => _isSaving = true);
+
+    try {
+      // Extract data from controllers
+      final String? fullName = _fullNameController.text.trim().isEmpty
+          ? null
+          : _fullNameController.text.trim();
+      final String? username = _usernameController.text.trim().isEmpty
+          ? null
+          : _usernameController.text.trim();
+      final String? bio = _bioController.text.trim().isEmpty
+          ? null
+          : _bioController.text.trim();
+      final String? profession = _professionController.text.trim().isEmpty
+          ? null
+          : _professionController.text.trim();
+      final List<String>? interests = _interestsController.text.trim().isEmpty
+          ? null
+          : _interestsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+
+      final updatedUser = await api<UserApiService>(
+        (request) => request.updateProfile(
+          fullName: fullName,
+          username: username,
+          bio: bio,
+          profession: profession,
+          interests: interests,
+          profilePicture: _profileImage,
+        ),
+      );
+
+      print('🐛 EditProfile: Result of updateProfile API call: $updatedUser');
+      print(
+          '🐛 EditProfile: Checking if updatedUser is not null: ${updatedUser != null}');
+      if (updatedUser != null && mounted) {
+        showToastNotification(
+          context,
+          title: 'Success'.tr(),
+          description: 'Profile updated successfully!',
+          style: ToastNotificationStyleType.success,
+        );
+
+        // Small delay for toast visibility
+        await Future.delayed(Duration(milliseconds: 800));
+
+        // Go back to previous page
+        if (mounted) {
+          pop();
+        }
+      } else {
+        if (mounted) {
+          showToastNotification(
+            context,
+            title: 'Error'.tr(),
+            description: 'Failed to update profile.',
+            style: ToastNotificationStyleType.danger,
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ EditProfile: Error saving profile: $e');
+      if (mounted) {
+        showToastNotification(
+          context,
+          title: 'Error'.tr(),
+          description: 'An error occurred: $e',
+          style: ToastNotificationStyleType.danger,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 }

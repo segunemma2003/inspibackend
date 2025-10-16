@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import '/app/services/auth_service.dart';
-import '/config/decoders.dart';
+import 'package:flutter_app/app/services/auth_service.dart';
+import 'package:flutter_app/config/decoders.dart';
+import 'dart:convert';
 
 class BusinessApiService extends NyApiService {
   BusinessApiService({BuildContext? buildContext})
@@ -58,11 +59,70 @@ class BusinessApiService extends NyApiService {
           'logo', MultipartFile.fromFileSync(logo.path, filename: 'logo.jpg')));
     }
 
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/business-accounts", data: formData),
       cacheKey: "business_account_create",
       cacheDuration: const Duration(minutes: 1),
     );
+
+    if (rawResponse == null) return null;
+
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 BusinessApiService.createBusinessAccount: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 BusinessApiService.createBusinessAccount: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 BusinessApiService.createBusinessAccount: Fixed and merged JSON: $mergedJson');
+            return mergedJson;
+          } else {
+            print(
+                '🐛 BusinessApiService.createBusinessAccount: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 BusinessApiService.createBusinessAccount: Error fixing concatenated JSON: $e');
+        }
+      }
+      try {
+        return jsonDecode(rawResponse) as Map<String, dynamic>;
+      } catch (e) {
+        print(
+            '🐛 BusinessApiService.createBusinessAccount: Failed to decode plain string response as JSON: $e');
+        return {
+          "success": false,
+          "message": "Failed to parse server response after initial attempt."
+        };
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      return rawResponse;
+    }
+    return {
+      "success": false,
+      "message": "Unexpected response format from server."
+    };
   }
 
   /// Get specific business account
@@ -100,12 +160,71 @@ class BusinessApiService extends NyApiService {
           'logo', MultipartFile.fromFileSync(logo.path, filename: 'logo.jpg')));
     }
 
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) =>
           request.put("/business-accounts/$businessAccountId", data: formData),
       cacheKey: "business_account_update_$businessAccountId",
       cacheDuration: const Duration(minutes: 1),
     );
+
+    if (rawResponse == null) return null;
+
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 BusinessApiService.updateBusinessAccount: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 BusinessApiService.updateBusinessAccount: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 BusinessApiService.updateBusinessAccount: Fixed and merged JSON: $mergedJson');
+            return mergedJson;
+          } else {
+            print(
+                '🐛 BusinessApiService.updateBusinessAccount: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 BusinessApiService.updateBusinessAccount: Error fixing concatenated JSON: $e');
+        }
+      }
+      try {
+        return jsonDecode(rawResponse) as Map<String, dynamic>;
+      } catch (e) {
+        print(
+            '🐛 BusinessApiService.updateBusinessAccount: Failed to decode plain string response as JSON: $e');
+        return {
+          "success": false,
+          "message": "Failed to parse server response after initial attempt."
+        };
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      return rawResponse;
+    }
+    return {
+      "success": false,
+      "message": "Unexpected response format from server."
+    };
   }
 
   /// Delete business account

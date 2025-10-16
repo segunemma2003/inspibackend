@@ -1,21 +1,27 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_app/routes/guards/auth_route_guard.dart';
 
-import '/resources/pages/about_page.dart';
-import '/resources/pages/base_navigation_hub.dart';
-import '/resources/pages/businessprofile_page.dart';
-import '/resources/pages/delete_account_page.dart';
-import '/resources/pages/edit_profile_page.dart';
-import '/resources/pages/home_page.dart';
-import '/resources/pages/not_found_page.dart';
-import '/resources/pages/notification_page.dart';
-import '/resources/pages/privacy_page.dart';
-import '/resources/pages/settings_page.dart';
-import '/resources/pages/sign_in_page.dart';
-import '/resources/pages/sign_up_page.dart';
-import '/resources/pages/support_page.dart';
-import '/resources/pages/tags_page.dart';
-import '/resources/pages/terms_page.dart';
+import 'package:flutter_app/resources/pages/about_page.dart';
+import 'package:flutter_app/resources/pages/base_navigation_hub.dart';
+import 'package:flutter_app/resources/pages/businessprofile_page.dart';
+import 'package:flutter_app/resources/pages/delete_account_page.dart';
+import 'package:flutter_app/resources/pages/edit_profile_page.dart';
+import 'package:flutter_app/resources/pages/home_page.dart';
+import 'package:flutter_app/resources/pages/forgot_password_page.dart';
+import 'package:flutter_app/resources/pages/change_password_page.dart';
+import 'package:flutter_app/resources/pages/verify_otp_page.dart';
+import 'package:flutter_app/resources/pages/not_found_page.dart';
+import 'package:flutter_app/resources/pages/notification_page.dart';
+import 'package:flutter_app/resources/pages/privacy_page.dart';
+import 'package:flutter_app/resources/pages/settings_page.dart';
+import 'package:flutter_app/resources/pages/sign_in_page.dart';
+import 'package:flutter_app/resources/pages/sign_up_page.dart';
+import 'package:flutter_app/resources/pages/support_page.dart';
+import 'package:flutter_app/resources/pages/tags_page.dart';
+import 'package:flutter_app/resources/pages/terms_page.dart';
+import 'package:flutter_app/resources/pages/reset_password_page.dart'; // Import ResetPasswordPage
 import 'package:nylo_framework/nylo_framework.dart';
+import 'package:flutter_app/app/services/auth_service.dart';
 
 /* App Router
 |--------------------------------------------------------------------------
@@ -44,10 +50,10 @@ appRouter() => nyRoutes((router) {
       router.group(
           () => {
                 "route_guards": [AuthRouteGuard()],
-                "prefix": "/dashboard"
+                "prefix": "/dashboard",
               }, (router) {
         router.add(DeleteAccountPage.path);
-        router.add(SignUpPage.path);
+
         router.add(EditProfilePage.path);
         router.add(TagsPage.path);
         router.add(BaseNavigationHub.path);
@@ -58,7 +64,37 @@ appRouter() => nyRoutes((router) {
         router.add(BusinessprofilePage.path);
         router.add(SettingsPage.path);
         router.add(SupportPage.path);
+
+        router.add(
+          (
+            "/logout",
+            (context) => FutureBuilder(
+                // Use FutureBuilder to show loading while logging out
+                future: AuthService.instance
+                    .logout()
+                    .then((_) => Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  SignInPage()), // Navigate to SignInPage
+                          (route) => false, // Remove all routes from the stack
+                        )),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Scaffold(
+                        body: Center(child: CircularProgressIndicator()));
+                  } else {
+                    return SizedBox.shrink(); // Widget to hide after navigation
+                  }
+                })
+          ),
+        );
       });
       router.add(NotFoundPage.path).unknownRoute();
       router.add(SignInPage.path);
+      router.add(ResetPasswordPage.path); // New Reset Password Page
+      router.add(VerifyOtpPage.path);
+      router.add(ChangePasswordPage.path);
+      router.add(SignUpPage.path);
+      router.add(ForgotPasswordPage.path);
     });

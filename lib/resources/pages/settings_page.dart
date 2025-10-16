@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
+import '../../app/networking/auth_api_service.dart';
+import '../../app/services/auth_service.dart';
+
 class SettingsPage extends NyStatefulWidget {
   static RouteView path = ("/settings", (_) => SettingsPage());
 
@@ -141,7 +144,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               Icons.edit_outlined,
               'Edit Profile',
               'Update your personal information',
-              () => routeTo('/edit-profile'),
+              () => routeTo('/dashboard/edit-profile'),
             ),
             _buildSettingItem(
               Icons.security_outlined,
@@ -285,11 +288,30 @@ class _SettingsPageState extends NyPage<SettingsPage> {
         ),
 
         SizedBox(height: 20),
+
+        // Danger Zone
+        _buildSection(
+          'Danger Zone',
+          Icons.warning_amber_outlined,
+          [
+            _buildSettingItem(
+              Icons.delete_forever_outlined,
+              'Delete Account',
+              'Permanently delete your account and data',
+              () => _showDeleteAccountDialog(),
+              isDestructive: true,
+            ),
+          ],
+        ),
+
+        SizedBox(height: 40),
       ],
     );
   }
 
-  Widget _buildSection(String title, IconData icon, List<Widget> children) {
+  Widget _buildSection(String title, IconData icon, List<Widget> children,
+      {bool isDestructive = false}) {
+    Color sectionColor = isDestructive ? Colors.red : Color(0xFF00BFFF);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -299,12 +321,12 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: Color(0xFF00BFFF).withOpacity(0.1),
+                color: sectionColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                color: Color(0xFF00BFFF),
+                color: sectionColor,
                 size: 18,
               ),
             ),
@@ -326,7 +348,9 @@ class _SettingsPageState extends NyPage<SettingsPage> {
   }
 
   Widget _buildSettingItem(
-      IconData icon, String title, String subtitle, VoidCallback onTap) {
+      IconData icon, String title, String subtitle, VoidCallback onTap,
+      {bool isDestructive = false}) {
+    Color itemColor = isDestructive ? Colors.red : Color(0xFFFF69B4);
     return Container(
       margin: EdgeInsets.only(bottom: 8),
       child: Material(
@@ -346,12 +370,12 @@ class _SettingsPageState extends NyPage<SettingsPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Color(0xFFFF69B4).withOpacity(0.1),
+                    color: itemColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
-                    color: Color(0xFFFF69B4),
+                    color: itemColor,
                     size: 20,
                   ),
                 ),
@@ -406,12 +430,12 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Color(0xFFFFD700).withOpacity(0.1),
+              color: Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
-              color: Color(0xFFFFD700),
+              color: Colors.orange,
               size: 20,
             ),
           ),
@@ -499,6 +523,67 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               routeTo('/sign-in');
             },
             child: Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Account'),
+        content: Text(
+            'Are you sure you want to permanently delete your account? This action is irreversible.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              showToastNotification(
+                context,
+                title: 'Deleting Account',
+                description: 'Please wait...',
+                style: ToastNotificationStyleType.info,
+              );
+              try {
+                final response = await api<AuthApiService>(
+                    (request) => request.deleteAccount());
+                if (response != null && response['success'] == true) {
+                  showToastNotification(
+                    context,
+                    title: 'Success',
+                    description: 'Account deleted successfully.',
+                    style: ToastNotificationStyleType.success,
+                  );
+                  await Future.delayed(Duration(milliseconds: 800));
+                  AuthService.instance.clearAuth(); // Clear local auth data
+                  routeTo('/sign-in',
+                      navigationType: NavigationType
+                          .pushAndForgetAll); // Redirect to sign-in
+                } else {
+                  showToastNotification(
+                    context,
+                    title: 'Error',
+                    description:
+                        response?['message'] ?? 'Failed to delete account.',
+                    style: ToastNotificationStyleType.danger,
+                  );
+                }
+              } catch (e) {
+                showToastNotification(
+                  context,
+                  title: 'Error',
+                  description: 'An error occurred: $e',
+                  style: ToastNotificationStyleType.danger,
+                );
+              }
+            },
+            child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

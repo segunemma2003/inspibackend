@@ -15,9 +15,6 @@ class FirebaseProvider implements NyProvider {
 
       _isInitialized = true;
       print('✅ Firebase initialized successfully');
-
-      // Set up auth state listener
-      _setupAuthStateListener();
     } catch (e) {
       print('❌ Firebase initialization error: $e');
       rethrow;
@@ -71,5 +68,7 @@ class FirebaseProvider implements NyProvider {
     return FirebaseAuth.instance.currentUser;
   }
 
-  afterBoot(Nylo nylo) async {}
+  afterBoot(Nylo nylo) async {
+    _setupAuthStateListener();
+  }
 }

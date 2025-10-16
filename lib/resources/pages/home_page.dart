@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/resources/pages/base_navigation_hub.dart';
+import 'package:flutter_app/resources/pages/sign_in_page.dart';
+import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import '/resources/widgets/safearea_widget.dart';
 import '/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
@@ -16,7 +19,7 @@ class _HomePageState extends NyPage<HomePage> {
         final isAuthenticated = await AuthService.instance.isAuthenticated();
         if (isAuthenticated) {
           // User is already logged in, redirect to main app
-          routeTo('/base');
+          routeTo(BaseNavigationHub.path);
         }
       };
 
@@ -130,7 +133,7 @@ class _HomePageState extends NyPage<HomePage> {
           height: 50,
           child: OutlinedButton(
             onPressed: () {
-              routeTo('/sign-up');
+              routeTo(SignUpPage.path);
             },
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF00BFFF), width: 1.5),
@@ -158,7 +161,7 @@ class _HomePageState extends NyPage<HomePage> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
-              routeTo('/sign-in');
+              routeTo(SignInPage.path);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00BFFF),

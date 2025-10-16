@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/networking/auth_api_service.dart';
 import '/resources/widgets/social_login_buttons.dart';
+import 'package:flutter_app/resources/pages/forgot_password_page.dart'; // Ensure correct import for ForgotPasswordPage
 
 class SignInPage extends NyStatefulWidget {
   static RouteView path = ("/sign-in", (_) => SignInPage());
@@ -204,7 +206,9 @@ class _SignInPageState extends NyPage<SignInPage> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: _forgotPassword,
+            onPressed: () {
+              routeTo(ForgotPasswordPage.path);
+            },
             child: Text(
               'Forgot Password?',
               style: TextStyle(
@@ -296,7 +300,7 @@ class _SignInPageState extends NyPage<SignInPage> {
   Widget _buildSignUpLink() {
     return GestureDetector(
       onTap: () {
-        routeTo('/sign-up');
+        routeTo(SignUpPage.path);
       },
       child: RichText(
         text: TextSpan(
@@ -361,7 +365,20 @@ class _SignInPageState extends NyPage<SignInPage> {
         ),
       );
 
-      if (response != null && response['success'] == true) {
+      // Ensure the response is a Map before proceeding with specific error parsing
+      if (response == null || !(response is Map<String, dynamic>)) {
+        showToastNotification(
+          context,
+          title: "Error".tr(),
+          description:
+              "An unexpected server response was received. Please try again."
+                  .tr(),
+          style: ToastNotificationStyleType.danger,
+        );
+        return;
+      }
+
+      if (response['success'] == true) {
         // Store user data and token for session management
         if (response['data'] != null) {
           final userData = response['data']['user'];
@@ -380,94 +397,77 @@ class _SignInPageState extends NyPage<SignInPage> {
 
           print('🔐 SignIn: Authentication data stored successfully');
 
-          showToast(
-              title: 'Success',
-              description: 'Welcome back, ${userData['name'] ?? 'User'}!');
+          showToastNotification(
+            context,
+            title: 'Success'.tr(),
+            description: 'Welcome back, ${userData['name'] ?? 'User'}!'.tr(),
+            style: ToastNotificationStyleType.success,
+          );
         }
 
         // Navigate to main app
         routeTo('/base');
       } else {
         // Handle API validation errors
-        final message = response?['message'] ?? 'Failed to sign in';
-        final errors = response?['errors'];
+        final message = response['message'] ?? 'Failed to sign in'.tr();
+        final errors = response['errors'];
 
-        if (errors != null && errors is Map<String, dynamic>) {
+        if (errors != null) {
           // Show specific field errors
           final fieldErrors = <String>[];
-          errors.forEach((field, errorList) {
+          (errors as Map<String, dynamic>).forEach((field, errorList) {
             if (errorList is List && errorList.isNotEmpty) {
               fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
             }
           });
 
           if (fieldErrors.isNotEmpty) {
-            showToast(
-                title: 'Validation Error', description: fieldErrors.join('\n'));
+            showToastNotification(
+              context,
+              title: "Validation Error".tr(),
+              description: fieldErrors.join('\n'),
+              style: ToastNotificationStyleType.danger,
+            );
             return;
           }
         }
 
-        showToast(title: 'Error', description: message);
+        showToastNotification(
+          context,
+          title: "Error".tr(),
+          description: message,
+          style: ToastNotificationStyleType.danger,
+        );
       }
+    } on TypeError catch (e) {
+      print('🔐 SignIn: TypeError: $e');
+      showToastNotification(
+        context,
+        title: "Error".tr(),
+        description:
+            "An unexpected data format was received from the server. Please try again."
+                .tr(),
+        style: ToastNotificationStyleType.danger,
+      );
     } catch (e) {
-      showToast(title: 'Error', description: 'Failed to sign in: $e');
+      print('🔐 SignIn: Error: $e');
+      showToastNotification(
+        context,
+        title: "Error".tr(),
+        description: 'Failed to sign in: ${e.toString()}'.tr(),
+        style: ToastNotificationStyleType.danger,
+      );
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _forgotPassword() async {
-    if (_emailController.text.trim().isEmpty) {
-      showToast(
-          title: 'Error', description: 'Please enter your email address first');
-      return;
-    }
-
-    // Validate email format
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(_emailController.text.trim())) {
-      showToast(
-          title: 'Error', description: 'Please enter a valid email address');
-      return;
-    }
-
-    try {
-      final response = await api<AuthApiService>(
-        (request) =>
-            request.forgotPassword(email: _emailController.text.trim()),
-      );
-
-      if (response != null && response['success'] == true) {
-        showToast(
-            title: 'Success',
-            description: 'Password reset link sent to your email');
-      } else {
-        // Handle API validation errors
-        final message = response?['message'] ?? 'Failed to send reset link';
-        final errors = response?['errors'];
-
-        if (errors != null && errors is Map<String, dynamic>) {
-          // Show specific field errors
-          final fieldErrors = <String>[];
-          errors.forEach((field, errorList) {
-            if (errorList is List && errorList.isNotEmpty) {
-              fieldErrors.add('${field.toUpperCase()}: ${errorList.first}');
-            }
-          });
-
-          if (fieldErrors.isNotEmpty) {
-            showToast(
-                title: 'Validation Error', description: fieldErrors.join('\n'));
-            return;
-          }
-        }
-
-        showToast(title: 'Error', description: message);
-      }
-    } catch (e) {
-      showToast(title: 'Error', description: 'Failed to send reset link: $e');
-    }
+  void _clearFormFields() {
+    _emailController.clear();
+    _passwordController.clear();
+    setState(() {
+      _isPasswordVisible = false;
+    });
   }
 
   @override

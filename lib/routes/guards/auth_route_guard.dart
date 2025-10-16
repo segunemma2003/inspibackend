@@ -1,6 +1,5 @@
-import 'package:flutter_app/resources/pages/base_navigation_hub.dart';
+import 'package:flutter_app/resources/pages/sign_in_page.dart'; // Import SignInPage
 
-import '/resources/pages/home_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 /* Auth Route Guard
@@ -24,7 +23,7 @@ class AuthRouteGuard extends NyRouteGuard {
 
     bool isLoggedIn = (await Auth.isAuthenticated());
     if (!isLoggedIn) {
-      return redirect(BaseNavigationHub.path);
+      return redirect(SignInPage.path); // Redirect to SignInPage
     }
 
     return pageRequest;

@@ -27,3 +27,18 @@ class Keys {
 
   /// Add your storage keys here...
 }
+
+/// App Keys
+///
+/// Used for passing data between routes and for API calls
+///
+/// Make sure to document each key
+
+// Example:
+// const String kTestKey = 'test_key';
+
+const String EmailKey = 'email';
+const String OtpKey = 'otp';
+const String OtpTypeKey = 'type';
+const String OtpTypeKey_PasswordReset = 'password_reset';
+const String OtpTypeKey_Registration = 'registration';

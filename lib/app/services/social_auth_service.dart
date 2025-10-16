@@ -79,17 +79,7 @@ class SocialAuthService {
         final userData = response['data']['user'];
 
         if (token != null) {
-          // Save the auth token
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', token);
-
           // Update Nylo's auth state
-          await Auth.authenticate(data: {
-            'token': token,
-            'user': userData ?? {},
-            'authenticated_at': DateTime.now().toIso8601String(),
-          });
-
           return;
         }
       }
@@ -106,10 +96,6 @@ class SocialAuthService {
   Future<void> signOut() async {
     try {
       await _auth.signOut();
-
-      // Clear local storage
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('auth_token');
 
       // Clear Nylo auth state
       await Auth.logout();

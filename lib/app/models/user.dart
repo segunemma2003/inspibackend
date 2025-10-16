@@ -2,7 +2,6 @@ import 'package:nylo_framework/nylo_framework.dart';
 
 class User extends Model {
   int? id;
-  String? name;
   String? fullName;
   String? username;
   String? email;
@@ -22,7 +21,6 @@ class User extends Model {
 
   User.fromJson(dynamic data) {
     id = data['id'];
-    name = data['name'];
     fullName = data['full_name'];
     username = data['username'];
     email = data['email'];
@@ -44,7 +42,6 @@ class User extends Model {
   @override
   toJson() => {
         "id": id,
-        "name": name,
         "full_name": fullName,
         "username": username,
         "email": email,

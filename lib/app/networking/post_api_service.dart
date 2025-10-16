@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nylo_framework/nylo_framework.dart';
 
-import '/app/models/post.dart';
-import '/app/services/auth_service.dart';
-import '/config/decoders.dart';
+import 'package:flutter_app/app/models/post.dart';
+import 'package:flutter_app/app/services/auth_service.dart';
+import 'package:flutter_app/config/decoders.dart';
 
 class PostApiService extends NyApiService {
   PostApiService({BuildContext? buildContext})
@@ -38,27 +39,99 @@ class PostApiService extends NyApiService {
     String? mediaType,
     String? sortBy,
     String? sortOrder,
+    bool forceRefresh = false, // Add forceRefresh parameter
   }) async {
     final queryParams = <String, dynamic>{
       "per_page": perPage,
       "page": page,
     };
 
-    if (tags != null && tags.isNotEmpty) queryParams["tags"] = tags;
-    if (creators != null && creators.isNotEmpty)
-      queryParams["creators"] = creators;
-    if (categories != null && categories.isNotEmpty)
-      queryParams["categories"] = categories;
+    // Manually format list parameters for array serialization
+    if (tags != null && tags.isNotEmpty) {
+      for (var tag in tags) {
+        queryParams.putIfAbsent('tags[]', () => []).add(tag);
+      }
+    }
+    if (creators != null && creators.isNotEmpty) {
+      for (var creator in creators) {
+        queryParams.putIfAbsent('creators[]', () => []).add(creator);
+      }
+    }
+    if (categories != null && categories.isNotEmpty) {
+      for (var category in categories) {
+        queryParams.putIfAbsent('categories[]', () => []).add(category);
+      }
+    }
     if (search != null && search.isNotEmpty) queryParams["search"] = search;
     if (mediaType != null) queryParams["media_type"] = mediaType;
     if (sortBy != null) queryParams["sort_by"] = sortBy;
     if (sortOrder != null) queryParams["sort_order"] = sortOrder;
 
-    return await network<Map<String, dynamic>>(
+    print(
+        '📡 PostApiService: Sending getFeed request with queryParams: $queryParams'); // Add this line
+
+    final rawResponse = await network<dynamic>(
       request: (request) => request.get("/posts", queryParameters: queryParams),
-      cacheKey: "feed_${page}_${tags?.join('_') ?? 'all'}",
+      cacheKey:
+          "feed_${page}_${tags?.join('_') ?? 'all'}_${categories?.join('_') ?? 'all'}${forceRefresh ? '_' + DateTime.now().millisecondsSinceEpoch.toString() : ''}", // Include forceRefresh in cache key
       cacheDuration: const Duration(minutes: 2),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getFeed: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getFeed: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.getFeed: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.getFeed: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getFeed: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getFeed: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Create a new post (direct upload)
@@ -69,7 +142,7 @@ class PostApiService extends NyApiService {
     List<String>? tags,
     String? location,
   }) async {
-    return await network<Post>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts", data: {
         "caption": caption,
         "media": media,
@@ -78,6 +151,66 @@ class PostApiService extends NyApiService {
         if (location != null) "location": location,
       }),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.createPost: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.createPost: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.createPost: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.createPost: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.createPost: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.createPost: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+
+    if (response != null && response['success'] == true) {
+      return Post.fromJson(response['data']);
+    }
+    return null;
   }
 
   /// Get presigned URL for S3 upload (smart upload system)
@@ -100,10 +233,65 @@ class PostApiService extends NyApiService {
     print(
         '🌐 PostApiService: - file_size: $fileSize bytes (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)');
 
-    final response = await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) =>
           request.post("/posts/upload-url", data: requestData),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getUploadUrl: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getUploadUrl: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.getUploadUrl: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.getUploadUrl: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getUploadUrl: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getUploadUrl: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
 
     print('🌐 PostApiService: getUploadUrl Response:');
     print('🌐 PostApiService: - Response: $response');
@@ -118,7 +306,7 @@ class PostApiService extends NyApiService {
     required int totalSize,
     required int chunkSize,
   }) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/chunked-upload-url", data: {
         "filename": filename,
         "content_type": contentType,
@@ -126,6 +314,62 @@ class PostApiService extends NyApiService {
         "chunk_size": chunkSize,
       }),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getChunkedUploadUrl: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getChunkedUploadUrl: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.getChunkedUploadUrl: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.getChunkedUploadUrl: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getChunkedUploadUrl: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getChunkedUploadUrl: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Complete chunked upload
@@ -133,13 +377,69 @@ class PostApiService extends NyApiService {
     required String filePath,
     required int totalChunks,
   }) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) =>
           request.post("/posts/complete-chunked-upload", data: {
         "file_path": filePath,
         "total_chunks": totalChunks,
       }),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.completeChunkedUpload: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.completeChunkedUpload: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.completeChunkedUpload: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.completeChunkedUpload: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.completeChunkedUpload: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.completeChunkedUpload: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Create post after S3 upload
@@ -153,7 +453,7 @@ class PostApiService extends NyApiService {
     String? thumbnailPath,
   }) async {
     try {
-      return await network<Map<String, dynamic>>(
+      final rawResponse = await network<dynamic>(
         request: (request) => request.post("/posts/create-from-s3", data: {
           'file_path': filePath,
           if (caption != null) 'caption': caption,
@@ -164,6 +464,62 @@ class PostApiService extends NyApiService {
           if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
         }),
       );
+
+      if (rawResponse == null) return null;
+
+      Map<String, dynamic>? response;
+      if (rawResponse is String) {
+        if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+          try {
+            final parts = rawResponse.split('}{');
+            if (parts.length == 2) {
+              final firstPart = '${parts[0]}}';
+              final secondPart = '{${parts[1]}';
+
+              Map<String, dynamic> firstJson = {};
+              Map<String, dynamic> secondJson = {};
+
+              try {
+                firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.createPostFromS3: Failed to decode first JSON part: $e');
+              }
+              try {
+                secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.createPostFromS3: Failed to decode second JSON part: $e');
+              }
+
+              Map<String, dynamic> mergedJson = {};
+              mergedJson.addAll(firstJson);
+              mergedJson.addAll(secondJson);
+              print(
+                  '🐛 PostApiService.createPostFromS3: Fixed and merged JSON: $mergedJson');
+              response = mergedJson;
+            } else {
+              print(
+                  '🐛 PostApiService.createPostFromS3: Malformed but unhandled concatenated JSON format: $rawResponse');
+            }
+          } catch (e) {
+            print(
+                '🐛 PostApiService.createPostFromS3: Error fixing concatenated JSON: $e');
+          }
+        }
+        if (response == null) {
+          try {
+            response = jsonDecode(rawResponse) as Map<String, dynamic>;
+          } catch (e) {
+            print(
+                '🐛 PostApiService.createPostFromS3: Failed to decode plain string response as JSON: $e');
+            return null;
+          }
+        }
+      } else if (rawResponse is Map<String, dynamic>) {
+        response = rawResponse;
+      }
+      return response;
     } catch (e) {
       print('❌ Error in createPostFromS3: $e');
       rethrow;
@@ -172,25 +528,197 @@ class PostApiService extends NyApiService {
 
   /// Get post details
   Future<Post?> getPostDetails(int postId) async {
-    return await network<Post>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.get("/posts/$postId"),
       cacheKey: "post_details_$postId",
       cacheDuration: const Duration(minutes: 5),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getPostDetails: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getPostDetails: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.getPostDetails: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.getPostDetails: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getPostDetails: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getPostDetails: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+
+    if (response != null && response['success'] == true) {
+      return Post.fromJson(response['data']);
+    }
+    return null;
   }
 
   /// Like/Unlike a post
   Future<Map<String, dynamic>?> toggleLike(int postId) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/like"),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.toggleLike: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.toggleLike: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.toggleLike: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.toggleLike: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.toggleLike: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.toggleLike: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Save/Unsave a post
   Future<Map<String, dynamic>?> toggleSave(int postId) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/save"),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.toggleSave: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.toggleSave: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.toggleSave: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.toggleSave: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.toggleSave: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.toggleSave: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Get saved posts
@@ -200,7 +728,7 @@ class PostApiService extends NyApiService {
   }) async {
     print('📚 PostApiService: Fetching saved posts (page: $page)');
     try {
-      final response = await network<Map<String, dynamic>>(
+      final rawResponse = await network<dynamic>(
         request: (request) => request.get(
           "/user-saved-posts",
           queryParameters: {
@@ -211,6 +739,61 @@ class PostApiService extends NyApiService {
         cacheKey: "saved_posts_$page",
         cacheDuration: const Duration(minutes: 2),
       );
+
+      if (rawResponse == null) return null;
+
+      Map<String, dynamic>? response;
+      if (rawResponse is String) {
+        if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+          try {
+            final parts = rawResponse.split('}{');
+            if (parts.length == 2) {
+              final firstPart = '${parts[0]}}';
+              final secondPart = '{${parts[1]}';
+
+              Map<String, dynamic> firstJson = {};
+              Map<String, dynamic> secondJson = {};
+
+              try {
+                firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.getSavedPosts: Failed to decode first JSON part: $e');
+              }
+              try {
+                secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.getSavedPosts: Failed to decode second JSON part: $e');
+              }
+
+              Map<String, dynamic> mergedJson = {};
+              mergedJson.addAll(firstJson);
+              mergedJson.addAll(secondJson);
+              print(
+                  '🐛 PostApiService.getSavedPosts: Fixed and merged JSON: $mergedJson');
+              response = mergedJson;
+            } else {
+              print(
+                  '🐛 PostApiService.getSavedPosts: Malformed but unhandled concatenated JSON format: $rawResponse');
+            }
+          } catch (e) {
+            print(
+                '🐛 PostApiService.getSavedPosts: Error fixing concatenated JSON: $e');
+          }
+        }
+        if (response == null) {
+          try {
+            response = jsonDecode(rawResponse) as Map<String, dynamic>;
+          } catch (e) {
+            print(
+                '🐛 PostApiService.getSavedPosts: Failed to decode plain string response as JSON: $e');
+            return null;
+          }
+        }
+      } else if (rawResponse is Map<String, dynamic>) {
+        response = rawResponse;
+      }
 
       if (response != null) {
         print(
@@ -233,7 +816,7 @@ class PostApiService extends NyApiService {
   }) async {
     print('❤️ PostApiService: Fetching liked posts (page: $page)');
     try {
-      final response = await network<Map<String, dynamic>>(
+      final rawResponse = await network<dynamic>(
         request: (request) => request.get(
           "/user-liked-posts",
           queryParameters: {
@@ -241,9 +824,64 @@ class PostApiService extends NyApiService {
             'page': page,
           },
         ),
-        cacheKey: "liked_posts_$page",
-        cacheDuration: const Duration(minutes: 5),
+        // cacheKey: "liked_posts_$page",
+        // cacheDuration: const Duration(minutes: 5),
       );
+
+      if (rawResponse == null) return null;
+
+      Map<String, dynamic>? response;
+      if (rawResponse is String) {
+        if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+          try {
+            final parts = rawResponse.split('}{');
+            if (parts.length == 2) {
+              final firstPart = '${parts[0]}}';
+              final secondPart = '{${parts[1]}';
+
+              Map<String, dynamic> firstJson = {};
+              Map<String, dynamic> secondJson = {};
+
+              try {
+                firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.getLikedPosts: Failed to decode first JSON part: $e');
+              }
+              try {
+                secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+              } catch (e) {
+                print(
+                    '🐛 PostApiService.getLikedPosts: Failed to decode second JSON part: $e');
+              }
+
+              Map<String, dynamic> mergedJson = {};
+              mergedJson.addAll(firstJson);
+              mergedJson.addAll(secondJson);
+              print(
+                  '🐛 PostApiService.getLikedPosts: Fixed and merged JSON: $mergedJson');
+              response = mergedJson;
+            } else {
+              print(
+                  '🐛 PostApiService.getLikedPosts: Malformed but unhandled concatenated JSON format: $rawResponse');
+            }
+          } catch (e) {
+            print(
+                '🐛 PostApiService.getLikedPosts: Error fixing concatenated JSON: $e');
+          }
+        }
+        if (response == null) {
+          try {
+            response = jsonDecode(rawResponse) as Map<String, dynamic>;
+          } catch (e) {
+            print(
+                '🐛 PostApiService.getLikedPosts: Failed to decode plain string response as JSON: $e');
+            return null;
+          }
+        }
+      } else if (rawResponse is Map<String, dynamic>) {
+        response = rawResponse;
+      }
 
       if (response != null) {
         print(
@@ -261,9 +899,65 @@ class PostApiService extends NyApiService {
 
   /// Delete a post
   Future<Map<String, dynamic>?> deletePost(int postId) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/posts/$postId"),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.deletePost: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.deletePost: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.deletePost: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.deletePost: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.deletePost: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.deletePost: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Search posts by tags
@@ -271,7 +965,7 @@ class PostApiService extends NyApiService {
     required List<String> tags,
     int perPage = 20,
   }) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/search/tags", data: {
         "tags": tags,
         "per_page": perPage,
@@ -279,6 +973,62 @@ class PostApiService extends NyApiService {
       cacheKey: "posts_by_tags_${tags.join('_')}",
       cacheDuration: const Duration(minutes: 5),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.searchPostsByTags: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.searchPostsByTags: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.searchPostsByTags: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.searchPostsByTags: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.searchPostsByTags: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.searchPostsByTags: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// General search
@@ -287,7 +1037,7 @@ class PostApiService extends NyApiService {
     required String type,
     int perPage = 20,
   }) async {
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.get("/search", queryParameters: {
         "q": query,
         "type": type,
@@ -296,6 +1046,61 @@ class PostApiService extends NyApiService {
       cacheKey: "search_${type}_${query}",
       cacheDuration: const Duration(minutes: 3),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.search: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.search: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.search: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.search: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print('🐛 PostApiService.search: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.search: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   // ==================== UPLOAD METHODS ====================
@@ -331,7 +1136,7 @@ class PostApiService extends NyApiService {
       if (location != null) 'location': location,
     });
 
-    return await network<Map<String, dynamic>>(
+    final rawResponse = await network<dynamic>(
       request: (request) => request.post(
         "/posts",
         data: formData,
@@ -342,6 +1147,62 @@ class PostApiService extends NyApiService {
         ),
       ),
     );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.createPostDirect: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.createPostDirect: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.createPostDirect: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.createPostDirect: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.createPostDirect: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.createPostDirect: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
   }
 
   /// Method 2: Presigned URL Upload (any size) - Direct to S3
