@@ -69,5 +69,17 @@ class _BaseNavigationHubState extends NavigationHub<BaseNavigationHub> {
   @override
   onTap(int index) {
     super.onTap(index);
+
+    // Pause all videos when switching tabs (except when going to Feed tab)
+    if (index != 0) {
+      // Not on Feed tab, pause any playing videos
+      _pauseAllVideosInFeed();
+    }
+  }
+
+  /// Method to pause all videos in the Feed widget
+  void _pauseAllVideosInFeed() {
+    // This will be handled by the Feed widget's own lifecycle
+    // The Feed widget will pause videos when it's not visible
   }
 }

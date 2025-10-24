@@ -24,6 +24,32 @@ class UserApiService extends NyApiService {
     return headers;
   }
 
+  /// Get tag suggestions for user tagging
+  Future<Map<String, dynamic>?> getTagSuggestions({
+    required String query,
+    int limit = 10,
+  }) async {
+    try {
+      print('🔍 UserApiService: Getting tag suggestions for query: $query');
+
+      final response = await network<dynamic>(
+        request: (request) => request.get(
+          "/tag-suggestions",
+          queryParameters: {
+            'q': query,
+            'limit': limit,
+          },
+        ),
+      );
+
+      print('🔍 UserApiService: Tag suggestions response: $response');
+      return response;
+    } catch (e) {
+      print('❌ UserApiService: Error getting tag suggestions: $e');
+      return null;
+    }
+  }
+
   /// Get paginated list of users
   Future<Map<String, dynamic>?> getUsers({
     String? query,
@@ -43,11 +69,20 @@ class UserApiService extends NyApiService {
 
   /// Get specific user by ID
   Future<User?> getUser(int userId) async {
-    return await network<User>(
+    print('🌐 UserApiService: Getting user with ID: $userId');
+    final result = await network<User>(
       request: (request) => request.get("/users/$userId"),
       cacheKey: "user_$userId",
       cacheDuration: const Duration(minutes: 10),
     );
+    print('🌐 UserApiService: Raw result: $result');
+    print('🌐 UserApiService: Result type: ${result.runtimeType}');
+    if (result != null) {
+      print('🌐 UserApiService: User ID: ${result.id}');
+      print('🌐 UserApiService: User name: ${result.fullName}');
+      print('🌐 UserApiService: User username: ${result.username}');
+    }
+    return result;
   }
 
   /// Get current user profile
@@ -277,6 +312,31 @@ class UserApiService extends NyApiService {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/users/$userId/unfollow"),
     );
+  }
+
+  /// Check if current user is following a specific user
+  Future<bool> isFollowingUser(int userId) async {
+    try {
+      print('👤 UserApiService: Checking if following user $userId');
+
+      final response = await network<Map<String, dynamic>>(
+        request: (request) => request.get("/users/$userId/follow-status"),
+        cacheKey: "follow_status_$userId",
+        cacheDuration: const Duration(minutes: 2),
+      );
+
+      if (response != null && response['success'] == true) {
+        final isFollowing = response['data']?['is_following'] ?? false;
+        print('👤 UserApiService: Is following user $userId: $isFollowing');
+        return isFollowing;
+      }
+
+      print('👤 UserApiService: Failed to get follow status for user $userId');
+      return false;
+    } catch (e) {
+      print('❌ UserApiService: Error checking follow status: $e');
+      return false;
+    }
   }
 
   /// Get user followers

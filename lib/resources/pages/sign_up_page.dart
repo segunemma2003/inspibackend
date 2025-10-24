@@ -349,12 +349,18 @@ class _SignUpPageState extends NyPage<SignUpPage> {
                     fontSize: 14,
                   ),
                 ),
-                TextSpan(
-                  text: 'Terms of Service',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                WidgetSpan(
+                  child: GestureDetector(
+                    onTap: () => routeTo('/terms-of-service'),
+                    child: Text(
+                      'Terms of Service',
+                      style: TextStyle(
+                        color: Color(0xFF00BFFF),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ),
                 TextSpan(
@@ -364,12 +370,18 @@ class _SignUpPageState extends NyPage<SignUpPage> {
                     fontSize: 14,
                   ),
                 ),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                WidgetSpan(
+                  child: GestureDetector(
+                    onTap: () => routeTo('/privacy-policy'),
+                    child: Text(
+                      'Privacy Policy',
+                      style: TextStyle(
+                        color: Color(0xFF00BFFF),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ),
               ],

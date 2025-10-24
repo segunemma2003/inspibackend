@@ -1,28 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
-import 'package:flutter_app/app/services/auth_service.dart';
-import 'package:flutter_app/config/decoders.dart';
-import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import '/config/decoders.dart';
 
 class DeviceApiService extends NyApiService {
   DeviceApiService({BuildContext? buildContext})
       : super(buildContext, decoders: modelDecoders);
 
-  @override
-  String get baseUrl =>
-      getEnv('API_BASE_URL', defaultValue: 'https://api.inspirtag.com/api');
-
-  @override
-  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-    print('🌐 DeviceApiService: Setting auth headers...');
-    final authHeaders = await AuthService.instance.getAuthHeaders();
-    print('🌐 DeviceApiService: Auth headers received: $authHeaders');
-    headers.addAll(authHeaders);
-    print('🌐 DeviceApiService: Final headers: ${headers.toString()}');
-    return headers;
-  }
-
-  /// Register a new device for push notifications
+  /// Register device for push notifications
   Future<Map<String, dynamic>?> registerDevice({
     required String deviceToken,
     required String deviceType,
@@ -30,139 +15,48 @@ class DeviceApiService extends NyApiService {
     String? appVersion,
     String? osVersion,
   }) async {
-    final rawResponse = await network<dynamic>(
-      request: (request) => request.post("/devices/register", data: {
-        "device_token": deviceToken,
-        "device_type": deviceType,
-        if (deviceName != null) "device_name": deviceName,
-        if (appVersion != null) "app_version": appVersion,
-        if (osVersion != null) "os_version": osVersion,
-      }),
-    );
+    try {
+      print('📱 DeviceApiService: Registering device with token: $deviceToken');
 
-    if (rawResponse == null) return null;
+      final response = await network<dynamic>(
+        request: (request) => request.post(
+          "/devices/register",
+          data: {
+            'device_token': deviceToken,
+            'device_type': deviceType,
+            if (deviceName != null) 'device_name': deviceName,
+            if (appVersion != null) 'app_version': appVersion,
+            if (osVersion != null) 'os_version': osVersion,
+          },
+        ),
+      );
 
-    Map<String, dynamic>? response;
-    if (rawResponse is String) {
-      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
-        try {
-          final parts = rawResponse.split('}{');
-          if (parts.length == 2) {
-            final firstPart = '${parts[0]}}';
-            final secondPart = '{${parts[1]}';
-
-            Map<String, dynamic> firstJson = {};
-            Map<String, dynamic> secondJson = {};
-
-            try {
-              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.registerDevice: Failed to decode first JSON part: $e');
-            }
-            try {
-              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.registerDevice: Failed to decode second JSON part: $e');
-            }
-
-            Map<String, dynamic> mergedJson = {};
-            mergedJson.addAll(firstJson);
-            mergedJson.addAll(secondJson);
-            print(
-                '🐛 DeviceApiService.registerDevice: Fixed and merged JSON: $mergedJson');
-            response = mergedJson;
-          } else {
-            print(
-                '🐛 DeviceApiService.registerDevice: Malformed but unhandled concatenated JSON format: $rawResponse');
-          }
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.registerDevice: Error fixing concatenated JSON: $e');
-        }
-      }
-      if (response == null) {
-        try {
-          response = jsonDecode(rawResponse) as Map<String, dynamic>;
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.registerDevice: Failed to decode plain string response as JSON: $e');
-          return null;
-        }
-      }
-    } else if (rawResponse is Map<String, dynamic>) {
-      response = rawResponse;
+      print('📱 DeviceApiService: Device registration response: $response');
+      return response;
+    } catch (e) {
+      print('❌ DeviceApiService: Error registering device: $e');
+      return null;
     }
-    return response;
   }
 
   /// Get user's devices
   Future<Map<String, dynamic>?> getDevices() async {
-    final rawResponse = await network<dynamic>(
-      request: (request) => request.get("/devices"),
-      cacheKey: "user_devices",
-      cacheDuration: const Duration(minutes: 5),
-    );
+    try {
+      print('📱 DeviceApiService: Getting user devices');
 
-    if (rawResponse == null) return null;
+      final response = await network<dynamic>(
+        request: (request) => request.get("/devices"),
+      );
 
-    Map<String, dynamic>? response;
-    if (rawResponse is String) {
-      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
-        try {
-          final parts = rawResponse.split('}{');
-          if (parts.length == 2) {
-            final firstPart = '${parts[0]}}';
-            final secondPart = '{${parts[1]}';
-
-            Map<String, dynamic> firstJson = {};
-            Map<String, dynamic> secondJson = {};
-
-            try {
-              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.getDevices: Failed to decode first JSON part: $e');
-            }
-            try {
-              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.getDevices: Failed to decode second JSON part: $e');
-            }
-
-            Map<String, dynamic> mergedJson = {};
-            mergedJson.addAll(firstJson);
-            mergedJson.addAll(secondJson);
-            print(
-                '🐛 DeviceApiService.getDevices: Fixed and merged JSON: $mergedJson');
-            response = mergedJson;
-          } else {
-            print(
-                '🐛 DeviceApiService.getDevices: Malformed but unhandled concatenated JSON format: $rawResponse');
-          }
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.getDevices: Error fixing concatenated JSON: $e');
-        }
-      }
-      if (response == null) {
-        try {
-          response = jsonDecode(rawResponse) as Map<String, dynamic>;
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.getDevices: Failed to decode plain string response as JSON: $e');
-          return null;
-        }
-      }
-    } else if (rawResponse is Map<String, dynamic>) {
-      response = rawResponse;
+      print('📱 DeviceApiService: Get devices response: $response');
+      return response;
+    } catch (e) {
+      print('❌ DeviceApiService: Error getting devices: $e');
+      return null;
     }
-    return response;
   }
 
-  /// Update device information
+  /// Update device
   Future<Map<String, dynamic>?> updateDevice({
     required int deviceId,
     String? deviceName,
@@ -170,195 +64,87 @@ class DeviceApiService extends NyApiService {
     String? osVersion,
     bool? isActive,
   }) async {
-    final rawResponse = await network<dynamic>(
-      request: (request) => request.put("/devices/$deviceId", data: {
-        if (deviceName != null) "device_name": deviceName,
-        if (appVersion != null) "app_version": appVersion,
-        if (osVersion != null) "os_version": osVersion,
-        if (isActive != null) "is_active": isActive,
-      }),
-    );
+    try {
+      print('📱 DeviceApiService: Updating device $deviceId');
 
-    if (rawResponse == null) return null;
+      final response = await network<dynamic>(
+        request: (request) => request.put(
+          "/devices/$deviceId",
+          data: {
+            if (deviceName != null) 'device_name': deviceName,
+            if (appVersion != null) 'app_version': appVersion,
+            if (osVersion != null) 'os_version': osVersion,
+            if (isActive != null) 'is_active': isActive,
+          },
+        ),
+      );
 
-    Map<String, dynamic>? response;
-    if (rawResponse is String) {
-      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
-        try {
-          final parts = rawResponse.split('}{');
-          if (parts.length == 2) {
-            final firstPart = '${parts[0]}}';
-            final secondPart = '{${parts[1]}';
-
-            Map<String, dynamic> firstJson = {};
-            Map<String, dynamic> secondJson = {};
-
-            try {
-              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.updateDevice: Failed to decode first JSON part: $e');
-            }
-            try {
-              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.updateDevice: Failed to decode second JSON part: $e');
-            }
-
-            Map<String, dynamic> mergedJson = {};
-            mergedJson.addAll(firstJson);
-            mergedJson.addAll(secondJson);
-            print(
-                '🐛 DeviceApiService.updateDevice: Fixed and merged JSON: $mergedJson');
-            response = mergedJson;
-          } else {
-            print(
-                '🐛 DeviceApiService.updateDevice: Malformed but unhandled concatenated JSON format: $rawResponse');
-          }
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.updateDevice: Error fixing concatenated JSON: $e');
-        }
-      }
-      if (response == null) {
-        try {
-          response = jsonDecode(rawResponse) as Map<String, dynamic>;
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.updateDevice: Failed to decode plain string response as JSON: $e');
-          return null;
-        }
-      }
-    } else if (rawResponse is Map<String, dynamic>) {
-      response = rawResponse;
+      print('📱 DeviceApiService: Update device response: $response');
+      return response;
+    } catch (e) {
+      print('❌ DeviceApiService: Error updating device: $e');
+      return null;
     }
-    return response;
   }
 
   /// Deactivate device
   Future<Map<String, dynamic>?> deactivateDevice(int deviceId) async {
-    final rawResponse = await network<dynamic>(
-      request: (request) => request.put("/devices/$deviceId/deactivate"),
-    );
+    try {
+      print('📱 DeviceApiService: Deactivating device $deviceId');
 
-    if (rawResponse == null) return null;
+      final response = await network<dynamic>(
+        request: (request) => request.put("/devices/$deviceId/deactivate"),
+      );
 
-    Map<String, dynamic>? response;
-    if (rawResponse is String) {
-      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
-        try {
-          final parts = rawResponse.split('}{');
-          if (parts.length == 2) {
-            final firstPart = '${parts[0]}}';
-            final secondPart = '{${parts[1]}';
-
-            Map<String, dynamic> firstJson = {};
-            Map<String, dynamic> secondJson = {};
-
-            try {
-              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.deactivateDevice: Failed to decode first JSON part: $e');
-            }
-            try {
-              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.deactivateDevice: Failed to decode second JSON part: $e');
-            }
-
-            Map<String, dynamic> mergedJson = {};
-            mergedJson.addAll(firstJson);
-            mergedJson.addAll(secondJson);
-            print(
-                '🐛 DeviceApiService.deactivateDevice: Fixed and merged JSON: $mergedJson');
-            response = mergedJson;
-          } else {
-            print(
-                '🐛 DeviceApiService.deactivateDevice: Malformed but unhandled concatenated JSON format: $rawResponse');
-          }
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.deactivateDevice: Error fixing concatenated JSON: $e');
-        }
-      }
-      if (response == null) {
-        try {
-          response = jsonDecode(rawResponse) as Map<String, dynamic>;
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.deactivateDevice: Failed to decode plain string response as JSON: $e');
-          return null;
-        }
-      }
-    } else if (rawResponse is Map<String, dynamic>) {
-      response = rawResponse;
+      print('📱 DeviceApiService: Deactivate device response: $response');
+      return response;
+    } catch (e) {
+      print('❌ DeviceApiService: Error deactivating device: $e');
+      return null;
     }
-    return response;
   }
 
   /// Delete device
   Future<Map<String, dynamic>?> deleteDevice(int deviceId) async {
-    final rawResponse = await network<dynamic>(
-      request: (request) => request.delete("/devices/$deviceId"),
-    );
+    try {
+      print('📱 DeviceApiService: Deleting device $deviceId');
 
-    if (rawResponse == null) return null;
+      final response = await network<dynamic>(
+        request: (request) => request.delete("/devices/$deviceId"),
+      );
 
-    Map<String, dynamic>? response;
-    if (rawResponse is String) {
-      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
-        try {
-          final parts = rawResponse.split('}{');
-          if (parts.length == 2) {
-            final firstPart = '${parts[0]}}';
-            final secondPart = '{${parts[1]}';
-
-            Map<String, dynamic> firstJson = {};
-            Map<String, dynamic> secondJson = {};
-
-            try {
-              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.deleteDevice: Failed to decode first JSON part: $e');
-            }
-            try {
-              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
-            } catch (e) {
-              print(
-                  '🐛 DeviceApiService.deleteDevice: Failed to decode second JSON part: $e');
-            }
-
-            Map<String, dynamic> mergedJson = {};
-            mergedJson.addAll(firstJson);
-            mergedJson.addAll(secondJson);
-            print(
-                '🐛 DeviceApiService.deleteDevice: Fixed and merged JSON: $mergedJson');
-            response = mergedJson;
-          } else {
-            print(
-                '🐛 DeviceApiService.deleteDevice: Malformed but unhandled concatenated JSON format: $rawResponse');
-          }
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.deleteDevice: Error fixing concatenated JSON: $e');
-        }
-      }
-      if (response == null) {
-        try {
-          response = jsonDecode(rawResponse) as Map<String, dynamic>;
-        } catch (e) {
-          print(
-              '🐛 DeviceApiService.deleteDevice: Failed to decode plain string response as JSON: $e');
-          return null;
-        }
-      }
-    } else if (rawResponse is Map<String, dynamic>) {
-      response = rawResponse;
+      print('📱 DeviceApiService: Delete device response: $response');
+      return response;
+    } catch (e) {
+      print('❌ DeviceApiService: Error deleting device: $e');
+      return null;
     }
-    return response;
+  }
+
+  /// Get device type based on platform
+  static String getDeviceType() {
+    if (Platform.isIOS) {
+      return 'ios';
+    } else if (Platform.isAndroid) {
+      return 'android';
+    } else {
+      return 'web';
+    }
+  }
+
+  /// Get device name
+  static String getDeviceName() {
+    if (Platform.isIOS) {
+      return 'iOS Device';
+    } else if (Platform.isAndroid) {
+      return 'Android Device';
+    } else {
+      return 'Web Device';
+    }
+  }
+
+  /// Get OS version
+  static String getOsVersion() {
+    return Platform.operatingSystemVersion;
   }
 }

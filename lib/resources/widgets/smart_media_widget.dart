@@ -9,6 +9,7 @@ class SmartMediaWidget extends StatefulWidget {
   final double? height;
   final double? width;
   final BoxFit fit;
+  final VoidCallback? onExpand; // Callback when media is tapped to expand
 
   const SmartMediaWidget({
     super.key,
@@ -16,6 +17,7 @@ class SmartMediaWidget extends StatefulWidget {
     this.height,
     this.width,
     this.fit = BoxFit.cover,
+    this.onExpand,
   });
 
   @override
@@ -37,7 +39,10 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
 
   @override
   void dispose() {
-    _videoController?.dispose();
+    if (_videoController != null) {
+      _videoController!.pause();
+      _videoController!.dispose();
+    }
     super.dispose();
   }
 
@@ -45,7 +50,13 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     if (_isVideo() && !_isVideoInitialized) {
       _videoController = VideoPlayerController.networkUrl(
         Uri.parse(widget.post.mediaUrl!),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
       );
+
+      _videoController!.setLooping(true);
 
       _videoController!.initialize().then((_) {
         if (mounted) {
@@ -93,6 +104,22 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     }
   }
 
+  void pauseVideo() {
+    if (_isVideo() && _isVideoInitialized && _videoController != null) {
+      print('🎥 SmartMediaWidget: Force pausing video');
+      _videoController!.pause();
+      setState(() {
+        _isVideoPlaying = false;
+      });
+    }
+  }
+
+  // Method to force pause video (public method)
+  void forcePauseVideo() {
+    print('🎥 SmartMediaWidget: forcePauseVideo called');
+    pauseVideo();
+  }
+
   void _playVideo() {
     if (_videoController != null && !_isVideoPlaying) {
       _videoController!.play();
@@ -119,6 +146,46 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     }
   }
 
+  void _onVideoTap() {
+    print(
+        '🎥 SmartMediaWidget: Video tapped, isPlaying: $_isVideoPlaying, hasExpandCallback: ${widget.onExpand != null}');
+
+    // If there's an expand callback, always pause video first
+    if (widget.onExpand != null) {
+      print('🎥 SmartMediaWidget: Has expand callback, pausing video first');
+
+      // Force pause the video
+      if (_isVideo() && _isVideoInitialized && _videoController != null) {
+        print('🎥 SmartMediaWidget: Video controller exists, pausing...');
+        _videoController!.pause();
+        setState(() {
+          _isVideoPlaying = false;
+        });
+        print(
+            '🎥 SmartMediaWidget: Video paused successfully, isPlaying: $_isVideoPlaying');
+      } else {
+        print(
+            '🎥 SmartMediaWidget: Video controller not available or not initialized');
+        // Still set the playing state to false
+        setState(() {
+          _isVideoPlaying = false;
+        });
+      }
+
+      // Add a small delay to ensure pause takes effect
+      Future.delayed(Duration(milliseconds: 150), () {
+        if (widget.onExpand != null) {
+          print('🎥 SmartMediaWidget: Triggering expand callback after pause');
+          widget.onExpand!();
+        }
+      });
+    } else {
+      // No expand callback, just toggle playback
+      print('🎥 SmartMediaWidget: No expand callback, toggling playback');
+      _toggleVideoPlayback();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.post.mediaUrl == null) {
@@ -128,11 +195,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     return VisibilityDetector(
       key: Key('media_${widget.post.id}'),
       onVisibilityChanged: _onVisibilityChanged,
-      child: Container(
-        height: widget.height,
-        width: widget.width,
-        child: _isVideo() ? _buildVideoWidget() : _buildImageWidget(),
-      ),
+      child: _isVideo() ? _buildVideoWidget() : _buildImageWidget(),
     );
   }
 
@@ -146,45 +209,56 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     }
 
     return GestureDetector(
-      onTap: _toggleVideoPlayback,
+      onTap: _onVideoTap,
       child: Stack(
-        fit: StackFit.expand,
+        alignment: Alignment.center,
         children: [
-          // Video player
-          AspectRatio(
-            aspectRatio: _videoController!.value.aspectRatio,
-            child: VideoPlayer(_videoController!),
+          // Video player with consistent height
+          Container(
+            height: widget.height ?? 400,
+            width: widget.width ?? double.infinity,
+            color: Colors.black,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _videoController!.value.size.width,
+                height: _videoController!.value.size.height,
+                child: VideoPlayer(_videoController!),
+              ),
+            ),
           ),
 
           // Play/pause overlay
           if (!_isVideoPlaying)
             Container(
+              height: widget.height ?? 400,
+              width: widget.width ?? double.infinity,
               color: Colors.black26,
               child: Center(
                 child: Icon(
                   Icons.play_arrow,
-                  size: 60,
-                  color: Colors.white,
+                  size: 64,
+                  color: Colors.white.withOpacity(0.9),
                 ),
               ),
             ),
 
           // Video duration indicator
           Positioned(
-            bottom: 8,
-            right: 8,
+            bottom: 12,
+            right: 12,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 _formatDuration(_videoController!.value.duration),
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -195,14 +269,35 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   }
 
   Widget _buildVideoThumbnail() {
-    // Show thumbnail while video is loading
     if (widget.post.thumbnailUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: widget.post.thumbnailUrl!,
-        fit: widget.fit,
-        placeholder: (context, url) => _buildLoadingWidget(),
-        errorWidget: (context, url, error) =>
-            _buildErrorWidget('Failed to load thumbnail'),
+      return Container(
+        height: widget.height ?? 400,
+        width: widget.width ?? double.infinity,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CachedNetworkImage(
+              imageUrl: widget.post.thumbnailUrl!,
+              fit: BoxFit.cover,
+              height: widget.height ?? 400,
+              width: widget.width ?? double.infinity,
+              placeholder: (context, url) => _buildLoadingWidget(),
+              errorWidget: (context, url, error) =>
+                  _buildErrorWidget('Failed to load thumbnail'),
+              maxHeightDiskCache: 1920,
+              maxWidthDiskCache: 1080,
+            ),
+            Container(
+              color: Colors.black26,
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -210,24 +305,38 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   }
 
   Widget _buildImageWidget() {
-    return CachedNetworkImage(
-      imageUrl: widget.post.mediaUrl!,
-      fit: widget.fit,
-      placeholder: (context, url) => _buildLoadingWidget(),
-      errorWidget: (context, url, error) =>
-          _buildErrorWidget('Failed to load image'),
-      memCacheWidth: 400, // Optimize memory usage
-      memCacheHeight: 400,
+    return GestureDetector(
+      onTap: widget.onExpand,
+      child: Container(
+        height: widget.height ?? 400,
+        width: widget.width ?? double.infinity,
+        child: CachedNetworkImage(
+          imageUrl: widget.post.mediaUrl!,
+          fit: BoxFit.cover,
+          height: widget.height ?? 400,
+          width: widget.width ?? double.infinity,
+          placeholder: (context, url) => _buildLoadingWidget(),
+          errorWidget: (context, url, error) =>
+              _buildErrorWidget('Failed to load image'),
+          // High quality disk cache settings (Instagram uses 1080p)
+          maxHeightDiskCache: 1920,
+          maxWidthDiskCache: 1080,
+          // Remove memory cache limits for best quality
+          filterQuality: FilterQuality.high,
+        ),
+      ),
     );
   }
 
   Widget _buildLoadingWidget() {
     return Container(
-      color: Colors.grey[200],
+      height: widget.height ?? 400,
+      width: widget.width ?? double.infinity,
+      color: Colors.grey[100],
       child: Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF69B4)),
-          strokeWidth: 2,
+          strokeWidth: 2.5,
         ),
       ),
     );
@@ -235,22 +344,24 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
 
   Widget _buildErrorWidget(String message) {
     return Container(
-      color: Colors.grey[200],
+      height: widget.height ?? 400,
+      width: widget.width ?? double.infinity,
+      color: Colors.grey[100],
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.error_outline,
-              size: 40,
+              size: 48,
               color: Colors.grey[400],
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 12),
             Text(
               message,
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 12,
+                fontSize: 14,
               ),
               textAlign: TextAlign.center,
             ),

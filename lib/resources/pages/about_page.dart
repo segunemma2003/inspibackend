@@ -168,6 +168,11 @@ class _AboutPageState extends NyPage<AboutPage> {
         // Social Media Section
         _buildSocialSection(),
 
+        SizedBox(height: 24),
+
+        // Policy Links Section
+        _buildPolicyLinksSection(),
+
         SizedBox(height: 32),
 
         // Copyright
@@ -469,6 +474,56 @@ class _AboutPageState extends NyPage<AboutPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPolicyLinksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Legal & Policies',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: [
+            _buildPolicyLink('Privacy Policy', '/privacy-policy'),
+            _buildPolicyLink('Terms of Service', '/terms-of-service'),
+            _buildPolicyLink('Community Guidelines', '/community-guidelines'),
+            _buildPolicyLink('Help Center', '/help-center'),
+            _buildPolicyLink('Contact Support', '/support'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPolicyLink(String text, String route) {
+    return GestureDetector(
+      onTap: () => routeTo(route),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Color(0xFF00BFFF).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Color(0xFF00BFFF).withOpacity(0.3)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: Color(0xFF00BFFF),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -9,6 +9,8 @@ import 'package:video_player/video_player.dart';
 import '/app/networking/post_api_service.dart';
 import '/app/networking/category_api_service.dart';
 import '/app/models/category.dart';
+import '/app/models/user.dart';
+import '/resources/widgets/user_tagging_widget.dart';
 
 class Upload extends StatefulWidget {
   const Upload({super.key});
@@ -42,8 +44,12 @@ class _UploadState extends NyState<Upload> {
   List<Category> _categories = [];
   Category? _selectedCategory;
 
+  // User tagging
+  List<User> _taggedUsers = [];
+
   @override
   get init => () async {
+        print('🏷️ Upload: UserTaggingWidget initialized with ${_taggedUsers.length} tagged users');
         await _loadCategories();
       };
 
@@ -167,6 +173,7 @@ class _UploadState extends NyState<Upload> {
                 _locationController.clear();
                 _tagsController.clear();
                 _selectedCategory = null;
+                _taggedUsers.clear();
               });
               _disposeVideoController();
             },
@@ -586,6 +593,38 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 16),
 
+            // User tagging field
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tag Users',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue, width: 2), // Debug border
+                  ),
+                  child: UserTaggingWidget(
+                    selectedUsers: _taggedUsers,
+                    onUsersChanged: (users) {
+                      print('🏷️ Upload: Tagged users changed: ${users.map((u) => u.username).toList()}');
+                      setState(() {
+                        _taggedUsers = users;
+                      });
+                    },
+                    hintText: 'Tag users with @username',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Location field
             _buildTextField(
               controller: _locationController,
@@ -717,8 +756,8 @@ class _UploadState extends NyState<Upload> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border:
-                Border.all(color: Colors.black87), // Match other form fields
+            border: Border.all(
+                color: Colors.black87, width: 1), // Match other form fields
             borderRadius: BorderRadius.circular(8),
           ),
           child: Theme(
@@ -1467,6 +1506,8 @@ class _UploadState extends NyState<Upload> {
           '📝 Upload: Category: ${_selectedCategory!.name} (ID: ${_selectedCategory!.id})');
       print('📝 Upload: Caption: ${_captionController.text.trim()}');
       print('📝 Upload: Tags: $tags');
+      print(
+          '📝 Upload: Tagged Users: ${_taggedUsers.map((u) => u.username).toList()}');
       print('📝 Upload: Location: ${_locationController.text.trim()}');
 
       print('🔵 REQUEST: createPostFromS3()');
@@ -1475,6 +1516,7 @@ class _UploadState extends NyState<Upload> {
       print(
           '  - categoryId: ${_selectedCategory!.id} (${_selectedCategory!.name})');
       print('  - tags: ${tags.isNotEmpty ? tags : 'None'}');
+      print('  - tagged_users: ${_taggedUsers.map((u) => u.id).toList()}');
       print(
           '  - location: ${_locationController.text.trim().isNotEmpty ? _locationController.text.trim() : 'Not provided'}');
 
@@ -1484,6 +1526,9 @@ class _UploadState extends NyState<Upload> {
           caption: _captionController.text.trim(),
           categoryId: _selectedCategory!.id!,
           tags: tags.isNotEmpty ? tags : null,
+          taggedUsers: _taggedUsers.isNotEmpty
+              ? _taggedUsers.map((u) => u.id!).toList()
+              : null, // ✅ Add tagged users
           location: _locationController.text.trim().isNotEmpty
               ? _locationController.text.trim()
               : null,

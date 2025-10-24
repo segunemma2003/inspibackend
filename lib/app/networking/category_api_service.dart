@@ -25,13 +25,18 @@ class CategoryApiService extends NyApiService {
 
   /// Get all categories
   Future<List<Category>?> getCategories() async {
+    print('🌐 CategoryApiService: Starting getCategories request...');
     final rawResponse = await network<dynamic>(
       request: (request) => request.get("/categories"),
       cacheKey: "categories_list",
       cacheDuration: const Duration(hours: 1),
     );
 
-    if (rawResponse == null) return null;
+    print('🌐 CategoryApiService: Raw response received: $rawResponse');
+    if (rawResponse == null) {
+      print('🌐 CategoryApiService: Raw response is null');
+      return null;
+    }
 
     Map<String, dynamic>? response;
     if (rawResponse is String) {
@@ -88,9 +93,16 @@ class CategoryApiService extends NyApiService {
 
     if (response != null && response['success'] == true) {
       final List<dynamic> categoriesData = response['data'] ?? [];
-      return categoriesData.map((json) => Category.fromJson(json)).toList();
+      print(
+          '🌐 CategoryApiService: Found ${categoriesData.length} categories in response');
+      final categories =
+          categoriesData.map((json) => Category.fromJson(json)).toList();
+      print(
+          '🌐 CategoryApiService: Parsed ${categories.length} categories successfully');
+      return categories;
     }
 
+    print('🌐 CategoryApiService: Response not successful or null');
     return null;
   }
 

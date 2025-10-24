@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/resources/pages/notification_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/app/networking/post_api_service.dart';
 import 'package:flutter_app/app/models/post.dart';
 import 'package:flutter_app/app/networking/user_api_service.dart'; // Re-add UserApiService
 import 'package:flutter_app/app/models/user.dart'; // Re-add User model
 import '/resources/widgets/smart_media_widget.dart';
-import 'dart:async';
-import '../../app/services/auth_service.dart';
+import '/app/services/firebase_messaging_service.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -25,38 +23,11 @@ class _ProfileState extends NyState<Profile> {
   // User content categories
   Map<String, int> _userCategories = {};
   bool _isLoadingCategories = false;
-  StreamSubscription<void>? _authStateSubscription;
 
   @override
   get init => () async {
-    // Ensure user data is loaded on init
-    await _loadUserData();
-    // Listen for auth state changes to refresh user data
-    _authStateSubscription = AuthService.instance.authStateChanges.listen((_) {
-      print('🔄 Profile: Auth state changed, re-loading user data.');
-      _loadUserData();
-    });
-  };
-
-  @override
-  void dispose() {
-    _authStateSubscription?.cancel(); // Cancel subscription to prevent memory leaks
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // If _currentUser is null, it means data might not have been loaded yet or was cleared.
-    // Re-attempt to load data if the widget is active and user is logged in.
-    if (_currentUser == null) {
-      AuthService.instance.isAuthenticated().then((isAuthenticated) {
-        if (isAuthenticated) {
-          _loadUserData();
-        }
-      });
-    }
-  }
+        await _loadUserData(); // Ensure user data is loaded on init
+      };
 
   Future<void> _loadUserData() async {
     try {
@@ -767,7 +738,7 @@ class _ProfileState extends NyState<Profile> {
                                 backgroundColor: const Color(0xFF9ACD32),
                                 child: post.user?.profilePicture == null
                                     ? Text(
-                                        post.user?.fullName
+                                        post.user?.name
                                                 ?.substring(0, 1)
                                                 .toUpperCase() ??
                                             'U',
@@ -784,7 +755,9 @@ class _ProfileState extends NyState<Profile> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      post.user?.fullName ?? 'Unknown User',
+                                      post.user?.fullName ??
+                                          post.user?.name ??
+                                          'Unknown User',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 16,
@@ -1018,7 +991,55 @@ class _ProfileState extends NyState<Profile> {
                       _buildSidebarItem(
                           Icons.settings_outlined, 'Settings', '/settings'),
                       _buildSidebarItem(Icons.notifications_outlined,
-                          'Notifications', NotificationPage.path),
+                          'Notifications', '/notifications'),
+
+                      // Policy and Support Section
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Legal & Support',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      _buildSidebarItem(Icons.privacy_tip_outlined,
+                          'Privacy Policy', '/privacy-policy'),
+                      _buildSidebarItem(Icons.description_outlined,
+                          'Terms of Service', '/terms-of-service'),
+                      _buildSidebarItem(Icons.rule_outlined,
+                          'Community Guidelines', '/community-guidelines'),
+                      _buildSidebarItem(Icons.help_center_outlined,
+                          'Help Center', '/help-center'),
+                      _buildSidebarItem(Icons.support_agent_outlined,
+                          'Contact Support', '/support'),
+                      _buildSidebarItem(
+                          Icons.info_outline, 'About Us', '/about'),
+
+                      // Debug section
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Debug',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDebugNotificationButton(),
+
+                      const SizedBox(height: 16),
                       _buildSidebarItem(Icons.logout, 'Logout', '/logout',
                           isDestructive: true),
                     ],
@@ -1038,6 +1059,59 @@ class _ProfileState extends NyState<Profile> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDebugNotificationButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            try {
+              // Import FirebaseMessagingService
+              final messagingService = FirebaseMessagingService();
+
+              // Test local notification
+              await messagingService.testLocalNotification();
+
+              // Show debug info
+              await messagingService.debugNotificationSetup();
+
+              showToast(
+                title: "Debug Test",
+                description: "Check console for notification debug info",
+              );
+            } catch (e) {
+              showToast(
+                title: "Debug Error",
+                description: "Error testing notifications: $e",
+                style: ToastNotificationStyleType.danger,
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.bug_report_outlined,
+                    color: Colors.orange[600], size: 20),
+                const SizedBox(width: 12),
+                const Text(
+                  'Test Notifications',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

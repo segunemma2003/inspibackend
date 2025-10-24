@@ -1,11 +1,11 @@
 import 'package:nylo_framework/nylo_framework.dart';
-import 'package:flutter_app/config/keys.dart'; // Import Keys for explicit cache clearing
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'dart:async'; // Added for StreamController
 
 import '../../resources/pages/sign_in_page.dart'; // Used for routeTo after logout
+import '/app/services/firebase_messaging_service.dart'; // For device registration
 
 /// Authentication Service
 /// Handles user authentication, session management, and token storage
@@ -204,27 +204,33 @@ class AuthService {
 
 /// Custom implementation of Auth for persistence
 class CustomAuth extends Auth {
-  @override
   Future<bool> authenticate({Map<String, dynamic>? data}) async {
     if (data != null) {
       await AuthService.instance.storeAuthData(data);
+
+      // Register device for push notifications after successful authentication
+      try {
+        await FirebaseMessagingService().registerDevice();
+        print('📱 AuthService: Device registered for push notifications');
+      } catch (e) {
+        print('❌ AuthService: Failed to register device: $e');
+        // Don't fail authentication if device registration fails
+      }
+
       return true;
     }
     return false;
   }
 
-  @override
   Future<bool> logout() async {
     await AuthService.instance.clearAuth();
     return true;
   }
 
-  @override
   Future<Map<String, dynamic>?> data() async {
     return await AuthService.instance.retrieveAuthData();
   }
 
-  @override
   Future<bool> isAuthenticated() async {
     final authData = await AuthService.instance.retrieveAuthData();
     return authData != null &&

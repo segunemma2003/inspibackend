@@ -54,20 +54,12 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 		<key>NSExceptionDomains</key>
-		<dict>
-			<key>api.inspirtag.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
+		<dict/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Inspiritag needs access to your camera to take photos for your inspiration collection.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to your location at all times, even when not in use, to provide location-based features and services.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs access to your location when the app is in use to provide location-based features.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -78,8 +70,6 @@
 	<string>Inspiritag needs access to your photo library to save and retrieve your inspiration images.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads to you.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs access to your location at all times, even when not in use, to provide location-based features and services.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

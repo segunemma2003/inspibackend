@@ -448,6 +448,7 @@ class PostApiService extends NyApiService {
     String? caption,
     required int categoryId,
     List<String>? tags,
+    List<int>? taggedUsers, // ✅ Add tagged users support
     String? location,
     Map<String, dynamic>? mediaMetadata,
     String? thumbnailPath,
@@ -459,6 +460,8 @@ class PostApiService extends NyApiService {
           if (caption != null) 'caption': caption,
           'category_id': categoryId,
           if (tags != null && tags.isNotEmpty) 'tags': tags,
+          if (taggedUsers != null && taggedUsers.isNotEmpty)
+            'tagged_users': taggedUsers, // ✅ Add tagged users
           if (location != null) 'location': location,
           if (mediaMetadata != null) 'media_metadata': mediaMetadata,
           if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
@@ -523,6 +526,83 @@ class PostApiService extends NyApiService {
     } catch (e) {
       print('❌ Error in createPostFromS3: $e');
       rethrow;
+    }
+  }
+
+  /// Tag users in a post
+  Future<Map<String, dynamic>?> tagUsers({
+    required int postId,
+    required List<int> userIds,
+  }) async {
+    try {
+      print('🏷️ PostApiService: Tagging users in post $postId: $userIds');
+
+      final response = await network<dynamic>(
+        request: (request) => request.post(
+          "/posts/$postId/tag-users",
+          data: {
+            'user_ids': userIds,
+          },
+        ),
+      );
+
+      print('🏷️ PostApiService: Tag users response: $response');
+      return response;
+    } catch (e) {
+      print('❌ PostApiService: Error tagging users: $e');
+      return null;
+    }
+  }
+
+  /// Untag users from a post
+  Future<Map<String, dynamic>?> untagUsers({
+    required int postId,
+    required List<int> userIds,
+  }) async {
+    try {
+      print('🏷️ PostApiService: Untagging users from post $postId: $userIds');
+
+      final response = await network<dynamic>(
+        request: (request) => request.delete(
+          "/posts/$postId/untag-users",
+          data: {
+            'user_ids': userIds,
+          },
+        ),
+      );
+
+      print('🏷️ PostApiService: Untag users response: $response');
+      return response;
+    } catch (e) {
+      print('❌ PostApiService: Error untagging users: $e');
+      return null;
+    }
+  }
+
+  /// Get tagged posts for current user
+  Future<Map<String, dynamic>?> getTaggedPosts({
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    try {
+      print(
+          '🏷️ PostApiService: Getting tagged posts (page: $page, perPage: $perPage)');
+
+      final response = await network<dynamic>(
+        request: (request) => request.get(
+          "/tagged-posts",
+          queryParameters: {
+            'per_page': perPage,
+            'page': page,
+          },
+        ),
+      );
+
+      print('🏷️ PostApiService: Tagged posts response: $response');
+      return response;
+    } catch (e) {
+      print('❌ PostApiService: Error getting tagged posts: $e');
+      return null;
     }
   }
 

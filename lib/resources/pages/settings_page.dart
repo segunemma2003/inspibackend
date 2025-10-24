@@ -218,6 +218,52 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 24),
 
+        // Legal & Policies
+        _buildSection(
+          'Legal & Policies',
+          Icons.gavel_outlined,
+          [
+            _buildSettingItem(
+              Icons.privacy_tip_outlined,
+              'Privacy Policy',
+              'How we collect and use your data',
+              () => routeTo('/privacy-policy'),
+            ),
+            _buildSettingItem(
+              Icons.description_outlined,
+              'Terms of Service',
+              'Terms and conditions of use',
+              () => routeTo('/terms-of-service'),
+            ),
+            _buildSettingItem(
+              Icons.rule_outlined,
+              'Community Guidelines',
+              'Community standards and rules',
+              () => routeTo('/community-guidelines'),
+            ),
+            _buildSettingItem(
+              Icons.copyright_outlined,
+              'Intellectual Property',
+              'Copyright and IP policies',
+              () => routeTo('/intellectual-property-policy'),
+            ),
+            _buildSettingItem(
+              Icons.security_outlined,
+              'Online Safety Act',
+              'Safety guidelines and reporting',
+              () => routeTo('/online-safety-act'),
+            ),
+            _buildSettingItem(
+              Icons.code_outlined,
+              'Open Source Notice',
+              'Open source licenses and credits',
+              () => routeTo('/open-source-notice'),
+            ),
+          ],
+        ),
+
+        SizedBox(height: 24),
+
         // Support
         _buildSection(
           'Support',
@@ -227,6 +273,12 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               Icons.help_center_outlined,
               'Help Center',
               'Get help and support',
+              () => routeTo('/help-center'),
+            ),
+            _buildSettingItem(
+              Icons.support_agent_outlined,
+              'Contact Support',
+              'Get in touch with our team',
               () => routeTo('/support'),
             ),
             _buildSettingItem(

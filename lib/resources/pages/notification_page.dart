@@ -408,7 +408,8 @@ class _NotificationPageState extends NyPage<NotificationPage> {
   Future<void> _markAsRead(app_models.Notification notification) async {
     try {
       final response = await api<NotificationApiService>(
-        (request) => request.markNotificationAsRead(notification.id!),
+        (request) =>
+            request.markNotificationAsRead(notificationId: notification.id!),
       );
 
       if (response != null && response['success'] == true) {
