@@ -86,8 +86,7 @@ class _NotificationsPageState extends NyState<NotificationsPage> {
 
     try {
       final response = await api<NotificationApiService>(
-        (request) =>
-            request.markNotificationAsRead(notificationId: notification.id!),
+        (request) => request.markNotificationAsRead(notification.id!),
       );
 
       if (response != null && response['success'] == true) {

@@ -14,27 +14,21 @@ import 'package:flutter_app/resources/pages/not_found_page.dart';
 import 'package:flutter_app/resources/pages/notification_page.dart';
 import 'package:flutter_app/resources/pages/notification_settings_page.dart';
 import 'package:flutter_app/resources/pages/debug_notifications_page.dart';
-import 'package:flutter_app/resources/pages/search_page.dart';
-import 'package:flutter_app/resources/pages/tagged_posts_page.dart';
-import 'package:flutter_app/resources/pages/notifications_page.dart';
-import 'package:flutter_app/resources/pages/business_accounts_page.dart';
 import 'package:flutter_app/resources/pages/privacy_page.dart';
-import 'package:flutter_app/resources/pages/privacy_policy_page.dart';
-import 'package:flutter_app/resources/pages/privacy_settings_page.dart';
 import 'package:flutter_app/resources/pages/settings_page.dart';
 import 'package:flutter_app/resources/pages/sign_in_page.dart';
 import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import 'package:flutter_app/resources/pages/support_page.dart';
 import 'package:flutter_app/resources/pages/tags_page.dart';
 import 'package:flutter_app/resources/pages/terms_page.dart';
-import 'package:flutter_app/resources/pages/terms_of_service_page.dart';
-import 'package:flutter_app/resources/pages/community_guidelines_page.dart';
-import 'package:flutter_app/resources/pages/intellectual_property_policy_page.dart';
-import 'package:flutter_app/resources/pages/help_center_page.dart';
-import 'package:flutter_app/resources/pages/online_safety_act_page.dart';
-import 'package:flutter_app/resources/pages/open_source_notice_page.dart';
 import 'package:flutter_app/resources/pages/reset_password_page.dart'; // Import ResetPasswordPage
 import 'package:flutter_app/resources/pages/user_profile_page.dart'; // Import UserProfilePage
+import 'package:flutter_app/resources/pages/community_guidelines_page.dart';
+import 'package:flutter_app/resources/pages/help_center_page.dart';
+import 'package:flutter_app/resources/pages/followers_page.dart';
+import 'package:flutter_app/resources/pages/following_page.dart';
+import 'package:flutter_app/resources/pages/search_users_page.dart';
+import 'package:flutter_app/resources/pages/post_management_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/app/services/auth_service.dart';
 
@@ -76,24 +70,18 @@ appRouter() => nyRoutes((router) {
         router.add(NotificationSettingsPage.path);
         router.add(DebugNotificationsPage.path);
         router.add(UserProfilePage.path);
-        router.add(SearchPage.path);
-        router.add(TaggedPostsPage.path);
-        router.add(NotificationsPage.path);
-        router.add(BusinessAccountsPage.path);
         router.add(AboutPage.path);
         router.add(TermsPage.path);
-        router.add(TermsOfServicePage.path);
         router.add(PrivacyPage.path);
-        router.add(PrivacyPolicyPage.path);
-        router.add(PrivacySettingsPage.path);
-        router.add(CommunityGuidelinesPage.path);
-        router.add(IntellectualPropertyPolicyPage.path);
-        router.add(HelpCenterPage.path);
-        router.add(OnlineSafetyActPage.path);
-        router.add(OpenSourceNoticePage.path);
         router.add(BusinessprofilePage.path);
         router.add(SettingsPage.path);
         router.add(SupportPage.path);
+        router.add(CommunityGuidelinesPage.path);
+        router.add(HelpCenterPage.path);
+        router.add(FollowersPage.path);
+        router.add(FollowingPage.path);
+        router.add(SearchUsersPage.path);
+        router.add(PostManagementPage.path);
 
         router.add(
           (

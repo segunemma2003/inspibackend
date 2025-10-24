@@ -5,10 +5,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nylo_framework/nylo_framework.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 import 'package:flutter_app/app/models/post.dart';
-import 'package:flutter_app/app/services/auth_service.dart';
 import 'package:flutter_app/config/decoders.dart';
+import '/app/networking/dio/interceptors/bearer_auth_interceptor.dart';
 
 class PostApiService extends NyApiService {
   PostApiService({BuildContext? buildContext})
@@ -19,14 +20,13 @@ class PostApiService extends NyApiService {
       getEnv('API_BASE_URL', defaultValue: 'http://38.180.244.178/api');
 
   @override
-  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-    print('🌐 PostApiService: Setting auth headers...');
-    final authHeaders = await AuthService.instance.getAuthHeaders();
-    print('🌐 PostApiService: Auth headers received: $authHeaders');
-    headers.addAll(authHeaders);
-    print('🌐 PostApiService: Final headers: ${headers.toString()}');
-    return headers;
-  }
+  get interceptors => {
+        if (getEnv('APP_DEBUG') == true) PrettyDioLogger: PrettyDioLogger(),
+        BearerAuthInterceptor: BearerAuthInterceptor(),
+      };
+
+  // Authentication is now handled by BearerAuthInterceptor
+  // No need for setAuthHeaders method
 
   /// Get personalized feed with filters
   Future<Map<String, dynamic>?> getFeed({
@@ -141,6 +141,7 @@ class PostApiService extends NyApiService {
     required int categoryId,
     List<String>? tags,
     String? location,
+    List<int>? taggedUsers,
   }) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts", data: {
@@ -149,6 +150,7 @@ class PostApiService extends NyApiService {
         "category_id": categoryId,
         if (tags != null) "tags": tags,
         if (location != null) "location": location,
+        if (taggedUsers != null) "tagged_users": taggedUsers,
       }),
     );
 
@@ -448,10 +450,10 @@ class PostApiService extends NyApiService {
     String? caption,
     required int categoryId,
     List<String>? tags,
-    List<int>? taggedUsers, // ✅ Add tagged users support
     String? location,
     Map<String, dynamic>? mediaMetadata,
     String? thumbnailPath,
+    List<int>? taggedUsers,
   }) async {
     try {
       final rawResponse = await network<dynamic>(
@@ -460,11 +462,11 @@ class PostApiService extends NyApiService {
           if (caption != null) 'caption': caption,
           'category_id': categoryId,
           if (tags != null && tags.isNotEmpty) 'tags': tags,
-          if (taggedUsers != null && taggedUsers.isNotEmpty)
-            'tagged_users': taggedUsers, // ✅ Add tagged users
           if (location != null) 'location': location,
           if (mediaMetadata != null) 'media_metadata': mediaMetadata,
           if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+          if (taggedUsers != null && taggedUsers.isNotEmpty)
+            'tagged_users': taggedUsers,
         }),
       );
 
@@ -526,83 +528,6 @@ class PostApiService extends NyApiService {
     } catch (e) {
       print('❌ Error in createPostFromS3: $e');
       rethrow;
-    }
-  }
-
-  /// Tag users in a post
-  Future<Map<String, dynamic>?> tagUsers({
-    required int postId,
-    required List<int> userIds,
-  }) async {
-    try {
-      print('🏷️ PostApiService: Tagging users in post $postId: $userIds');
-
-      final response = await network<dynamic>(
-        request: (request) => request.post(
-          "/posts/$postId/tag-users",
-          data: {
-            'user_ids': userIds,
-          },
-        ),
-      );
-
-      print('🏷️ PostApiService: Tag users response: $response');
-      return response;
-    } catch (e) {
-      print('❌ PostApiService: Error tagging users: $e');
-      return null;
-    }
-  }
-
-  /// Untag users from a post
-  Future<Map<String, dynamic>?> untagUsers({
-    required int postId,
-    required List<int> userIds,
-  }) async {
-    try {
-      print('🏷️ PostApiService: Untagging users from post $postId: $userIds');
-
-      final response = await network<dynamic>(
-        request: (request) => request.delete(
-          "/posts/$postId/untag-users",
-          data: {
-            'user_ids': userIds,
-          },
-        ),
-      );
-
-      print('🏷️ PostApiService: Untag users response: $response');
-      return response;
-    } catch (e) {
-      print('❌ PostApiService: Error untagging users: $e');
-      return null;
-    }
-  }
-
-  /// Get tagged posts for current user
-  Future<Map<String, dynamic>?> getTaggedPosts({
-    int perPage = 20,
-    int page = 1,
-  }) async {
-    try {
-      print(
-          '🏷️ PostApiService: Getting tagged posts (page: $page, perPage: $perPage)');
-
-      final response = await network<dynamic>(
-        request: (request) => request.get(
-          "/tagged-posts",
-          queryParameters: {
-            'per_page': perPage,
-            'page': page,
-          },
-        ),
-      );
-
-      print('🏷️ PostApiService: Tagged posts response: $response');
-      return response;
-    } catch (e) {
-      print('❌ PostApiService: Error getting tagged posts: $e');
-      return null;
     }
   }
 
@@ -1311,6 +1236,7 @@ class PostApiService extends NyApiService {
     String? location,
     Map<String, dynamic>? mediaMetadata,
     String? thumbnailPath,
+    List<int>? taggedUsers,
   }) async {
     try {
       // Step 1: Get upload URL from server
@@ -1381,6 +1307,7 @@ class PostApiService extends NyApiService {
         location: location,
         mediaMetadata: mediaMetadata,
         thumbnailPath: thumbnailPath,
+        taggedUsers: taggedUsers,
       );
 
       return {
@@ -1530,6 +1457,161 @@ class PostApiService extends NyApiService {
     }
   }
 
+  /// Get posts by user
+  Future<Map<String, dynamic>?> getPostsByUser({
+    required int userId,
+    int perPage = 20,
+    int page = 1,
+    bool forceRefresh = false,
+  }) async {
+    final queryParams = <String, dynamic>{
+      "per_page": perPage,
+      "page": page,
+    };
+
+    print('📡 PostApiService: Sending getPostsByUser request for user $userId');
+
+    final rawResponse = await network<dynamic>(
+      request: (request) =>
+          request.get("/users/$userId/posts", queryParameters: queryParams),
+      cacheKey:
+          "user_posts_${userId}_$page${forceRefresh ? '_' + DateTime.now().millisecondsSinceEpoch.toString() : ''}",
+      cacheDuration: const Duration(minutes: 2),
+    );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
+        try {
+          final parts = rawResponse.split('}{');
+          if (parts.length == 2) {
+            final firstPart = '${parts[0]}}';
+            final secondPart = '{${parts[1]}';
+
+            Map<String, dynamic> firstJson = {};
+            Map<String, dynamic> secondJson = {};
+
+            try {
+              firstJson = jsonDecode(firstPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getPostsByUser: Failed to decode first JSON part: $e');
+            }
+            try {
+              secondJson = jsonDecode(secondPart) as Map<String, dynamic>;
+            } catch (e) {
+              print(
+                  '🐛 PostApiService.getPostsByUser: Failed to decode second JSON part: $e');
+            }
+
+            Map<String, dynamic> mergedJson = {};
+            mergedJson.addAll(firstJson);
+            mergedJson.addAll(secondJson);
+            print(
+                '🐛 PostApiService.getPostsByUser: Fixed and merged JSON: $mergedJson');
+            response = mergedJson;
+          } else {
+            print(
+                '🐛 PostApiService.getPostsByUser: Malformed but unhandled concatenated JSON format: $rawResponse');
+          }
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getPostsByUser: Error fixing concatenated JSON: $e');
+        }
+      }
+      if (response == null) {
+        try {
+          response = jsonDecode(rawResponse) as Map<String, dynamic>;
+        } catch (e) {
+          print(
+              '🐛 PostApiService.getPostsByUser: Failed to decode plain string response as JSON: $e');
+          return null;
+        }
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
+  }
+
+  /// Get posts that a specific user has liked
+  Future<Map<String, dynamic>?> getUserLikedPosts({
+    required int userId,
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    print(
+        '❤️ PostApiService: Fetching liked posts for user $userId (page: $page)');
+
+    final queryParams = <String, dynamic>{
+      "per_page": perPage,
+      "page": page,
+    };
+
+    final rawResponse = await network<dynamic>(
+      request: (request) => request.get("/users/$userId/liked-posts",
+          queryParameters: queryParams),
+      cacheKey: "user_liked_posts_${userId}_$page",
+      cacheDuration: const Duration(minutes: 5),
+    );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      try {
+        response = jsonDecode(rawResponse) as Map<String, dynamic>;
+      } catch (e) {
+        print(
+            '🐛 PostApiService.getUserLikedPosts: Failed to decode response: $e');
+        return null;
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
+  }
+
+  /// Get posts that a specific user has saved
+  Future<Map<String, dynamic>?> getUserSavedPosts({
+    required int userId,
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    print(
+        '📚 PostApiService: Fetching saved posts for user $userId (page: $page)');
+
+    final queryParams = <String, dynamic>{
+      "per_page": perPage,
+      "page": page,
+    };
+
+    final rawResponse = await network<dynamic>(
+      request: (request) => request.get("/users/$userId/saved-posts",
+          queryParameters: queryParams),
+      cacheKey: "user_saved_posts_${userId}_$page",
+      cacheDuration: const Duration(minutes: 5),
+    );
+
+    if (rawResponse == null) return null;
+
+    Map<String, dynamic>? response;
+    if (rawResponse is String) {
+      try {
+        response = jsonDecode(rawResponse) as Map<String, dynamic>;
+      } catch (e) {
+        print(
+            '🐛 PostApiService.getUserSavedPosts: Failed to decode response: $e');
+        return null;
+      }
+    } else if (rawResponse is Map<String, dynamic>) {
+      response = rawResponse;
+    }
+    return response;
+  }
+
   /// Helper method to get MIME type from file extension
   String _getMimeType(String extension) {
     switch (extension.toLowerCase()) {
@@ -1549,5 +1631,64 @@ class PostApiService extends NyApiService {
       default:
         return 'application/octet-stream';
     }
+  }
+
+  // ==================== USER TAGGING METHODS ====================
+
+  /// Search users for tagging
+  Future<List<Map<String, dynamic>>?> searchUsersForTagging({
+    required String query,
+    int limit = 10,
+  }) async {
+    final response = await network<Map<String, dynamic>>(
+      request: (request) => request.get("/tag-suggestions", queryParameters: {
+        "q": query,
+        "limit": limit,
+      }),
+    );
+
+    if (response != null && response['success'] == true) {
+      return List<Map<String, dynamic>>.from(response['data'] ?? []);
+    }
+    return null;
+  }
+
+  /// Tag users in a post
+  Future<Map<String, dynamic>?> tagUsersInPost({
+    required int postId,
+    required List<int> userIds,
+  }) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.post("/posts/$postId/tag-users", data: {
+        "user_ids": userIds,
+      }),
+    );
+  }
+
+  /// Remove user tags from a post
+  Future<Map<String, dynamic>?> untagUsersFromPost({
+    required int postId,
+    required List<int> userIds,
+  }) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.delete("/posts/$postId/untag-users", data: {
+        "user_ids": userIds,
+      }),
+    );
+  }
+
+  /// Get posts where user is tagged
+  Future<Map<String, dynamic>?> getTaggedPosts({
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    return await network<Map<String, dynamic>>(
+      request: (request) => request.get("/tagged-posts", queryParameters: {
+        "per_page": perPage,
+        "page": page,
+      }),
+      cacheKey: "tagged_posts_$page",
+      cacheDuration: const Duration(minutes: 5),
+    );
   }
 }

@@ -22,6 +22,11 @@ class SmartMediaWidget extends StatefulWidget {
 
   @override
   State<SmartMediaWidget> createState() => _SmartMediaWidgetState();
+
+  // Static method to pause all videos globally
+  static void pauseAllVideos() {
+    _SmartMediaWidgetState.pauseAllVideos();
+  }
 }
 
 class _SmartMediaWidgetState extends State<SmartMediaWidget> {
@@ -30,6 +35,10 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   bool _isVideoPlaying = false;
   bool _isVisible = false;
   bool _hasError = false;
+
+  // Static list to track all video controllers globally
+  static final Set<VideoPlayerController> _allVideoControllers =
+      <VideoPlayerController>{};
 
   @override
   void initState() {
@@ -41,9 +50,37 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   void dispose() {
     if (_videoController != null) {
       _videoController!.pause();
+      _unregisterVideoController(_videoController!);
       _videoController!.dispose();
     }
     super.dispose();
+  }
+
+  // Static method to pause all videos globally
+  static void pauseAllVideos() {
+    print(
+        '🎥 SmartMediaWidget: Pausing all videos globally (${_allVideoControllers.length} controllers)');
+    for (var controller in _allVideoControllers) {
+      if (controller != null && controller.value.isInitialized) {
+        print(
+            '🎥 SmartMediaWidget: Pausing controller: ${controller.hashCode}');
+        controller.pause();
+      }
+    }
+  }
+
+  // Register video controller
+  void _registerVideoController(VideoPlayerController controller) {
+    _allVideoControllers.add(controller);
+    print(
+        '🎥 SmartMediaWidget: Registered controller: ${controller.hashCode} (total: ${_allVideoControllers.length})');
+  }
+
+  // Unregister video controller
+  void _unregisterVideoController(VideoPlayerController controller) {
+    _allVideoControllers.remove(controller);
+    print(
+        '🎥 SmartMediaWidget: Unregistered controller: ${controller.hashCode} (total: ${_allVideoControllers.length})');
   }
 
   void _initializeVideoIfNeeded() {
@@ -57,6 +94,9 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
       );
 
       _videoController!.setLooping(true);
+
+      // Register the video controller globally
+      _registerVideoController(_videoController!);
 
       _videoController!.initialize().then((_) {
         if (mounted) {
@@ -90,9 +130,11 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     final isVisible = info.visibleFraction > 0.5;
 
     if (isVisible != _isVisible) {
-      setState(() {
-        _isVisible = isVisible;
-      });
+      if (mounted) {
+        setState(() {
+          _isVisible = isVisible;
+        });
+      }
 
       if (_isVideo() && _isVideoInitialized) {
         if (isVisible) {
@@ -108,9 +150,11 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     if (_isVideo() && _isVideoInitialized && _videoController != null) {
       print('🎥 SmartMediaWidget: Force pausing video');
       _videoController!.pause();
-      setState(() {
-        _isVideoPlaying = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isVideoPlaying = false;
+        });
+      }
     }
   }
 
@@ -123,9 +167,11 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   void _playVideo() {
     if (_videoController != null && !_isVideoPlaying) {
       _videoController!.play();
-      setState(() {
-        _isVideoPlaying = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isVideoPlaying = true;
+        });
+      }
     }
   }
 
@@ -147,43 +193,12 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   }
 
   void _onVideoTap() {
-    print(
-        '🎥 SmartMediaWidget: Video tapped, isPlaying: $_isVideoPlaying, hasExpandCallback: ${widget.onExpand != null}');
+    print('🎥 SmartMediaWidget: Video tapped, isPlaying: $_isVideoPlaying');
 
-    // If there's an expand callback, always pause video first
-    if (widget.onExpand != null) {
-      print('🎥 SmartMediaWidget: Has expand callback, pausing video first');
-
-      // Force pause the video
-      if (_isVideo() && _isVideoInitialized && _videoController != null) {
-        print('🎥 SmartMediaWidget: Video controller exists, pausing...');
-        _videoController!.pause();
-        setState(() {
-          _isVideoPlaying = false;
-        });
-        print(
-            '🎥 SmartMediaWidget: Video paused successfully, isPlaying: $_isVideoPlaying');
-      } else {
-        print(
-            '🎥 SmartMediaWidget: Video controller not available or not initialized');
-        // Still set the playing state to false
-        setState(() {
-          _isVideoPlaying = false;
-        });
-      }
-
-      // Add a small delay to ensure pause takes effect
-      Future.delayed(Duration(milliseconds: 150), () {
-        if (widget.onExpand != null) {
-          print('🎥 SmartMediaWidget: Triggering expand callback after pause');
-          widget.onExpand!();
-        }
-      });
-    } else {
-      // No expand callback, just toggle playback
-      print('🎥 SmartMediaWidget: No expand callback, toggling playback');
-      _toggleVideoPlayback();
-    }
+    // Always just toggle playback when video is tapped
+    // The expand functionality should be handled by a separate expand button
+    print('🎥 SmartMediaWidget: Toggling video playback');
+    _toggleVideoPlayback();
   }
 
   @override

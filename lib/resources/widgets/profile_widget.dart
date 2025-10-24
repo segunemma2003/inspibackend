@@ -5,7 +5,7 @@ import 'package:flutter_app/app/models/post.dart';
 import 'package:flutter_app/app/networking/user_api_service.dart'; // Re-add UserApiService
 import 'package:flutter_app/app/models/user.dart'; // Re-add User model
 import '/resources/widgets/smart_media_widget.dart';
-import '/app/services/firebase_messaging_service.dart';
+import '/config/cache.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -37,9 +37,11 @@ class _ProfileState extends NyState<Profile> {
           request.fetchCurrentUser()); // Fetch user via UserApiService
 
       if (user != null) {
-        setState(() {
-          _currentUser = user;
-        });
+        if (mounted) {
+          setState(() {
+            _currentUser = user;
+          });
+        }
         print('✅ Profile: User loaded successfully: ${_currentUser?.fullName}');
       } else {
         print('❌ Profile: Failed to load user data');
@@ -146,7 +148,9 @@ class _ProfileState extends NyState<Profile> {
   }
 
   void _loadUserCategories(List<Post> posts) {
-    setState(() => _isLoadingCategories = true);
+    if (mounted) {
+      setState(() => _isLoadingCategories = true);
+    }
 
     try {
       final Map<String, int> categories = {};
@@ -157,13 +161,17 @@ class _ProfileState extends NyState<Profile> {
         }
       }
 
-      setState(() {
-        _userCategories = categories;
-      });
+      if (mounted) {
+        setState(() {
+          _userCategories = categories;
+        });
+      }
     } catch (e) {
       print('Error processing user categories: $e');
     } finally {
-      setState(() => _isLoadingCategories = false);
+      if (mounted) {
+        setState(() => _isLoadingCategories = false);
+      }
     }
   }
 
@@ -191,32 +199,36 @@ class _ProfileState extends NyState<Profile> {
               children: [
                 _buildTopBar(),
                 Expanded(
-                  child: NyPullToRefresh.grid(
-                    key: ValueKey(_getStateNameForTab()),
-                    stateName: _getStateNameForTab(),
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 2,
-                    crossAxisSpacing: 2,
-                    padding: EdgeInsets.zero,
-                    header: _buildProfileHeader(), // Header content here
-                    child: (context, post) => _buildPostItem(post as Post),
-                    data: (int iteration) async {
-                      print(
-                          '📱 Profile: Loading posts - tab: $_selectedTabIndex, page: $iteration');
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return NyPullToRefresh.grid(
+                        key: ValueKey(_getStateNameForTab()),
+                        stateName: _getStateNameForTab(),
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 2,
+                        crossAxisSpacing: 2,
+                        padding: EdgeInsets.zero,
+                        header: _buildProfileHeader(), // Header content here
+                        child: (context, post) => _buildPostItem(post as Post),
+                        data: (int iteration) async {
+                          print(
+                              '📱 Profile: Loading posts - tab: $_selectedTabIndex, page: $iteration');
 
-                      switch (_selectedTabIndex) {
-                        case 0:
-                          return await _loadUserPosts(iteration,
-                              forceRefresh: true);
-                        case 1:
-                          return await _loadLikedPosts(iteration);
-                        case 2:
-                          return await _loadSavedPosts(iteration);
-                        default:
-                          return [];
-                      }
+                          switch (_selectedTabIndex) {
+                            case 0:
+                              return await _loadUserPosts(iteration,
+                                  forceRefresh: true);
+                            case 1:
+                              return await _loadLikedPosts(iteration);
+                            case 2:
+                              return await _loadSavedPosts(iteration);
+                            default:
+                              return [];
+                          }
+                        },
+                        empty: _buildEmptyState(),
+                      );
                     },
-                    empty: _buildEmptyState(),
                   ),
                 ),
               ],
@@ -230,6 +242,7 @@ class _ProfileState extends NyState<Profile> {
 
   Widget _buildProfileHeader() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 20),
         _buildProfilePicture(),
@@ -278,6 +291,11 @@ class _ProfileState extends NyState<Profile> {
                 ),
               ),
             ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _navigateToSearchUsers,
+            child: const Icon(Icons.search, size: 24, color: Colors.black),
           ),
           const SizedBox(width: 12),
           GestureDetector(
@@ -342,6 +360,7 @@ class _ProfileState extends NyState<Profile> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             _currentUser?.fullName ?? 'User',
@@ -365,10 +384,193 @@ class _ProfileState extends NyState<Profile> {
               height: 1.4,
             ),
             textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 20),
+
+          // Followers and Following counts
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem(
+                'Posts',
+                '${_currentUser?.postsCount ?? 0}',
+                () => _navigateToPostManagement(),
+              ),
+              _buildStatItem(
+                'Followers',
+                '${_currentUser?.followersCount ?? 0}',
+                () => _navigateToFollowers(),
+              ),
+              _buildStatItem(
+                'Following',
+                '${_currentUser?.followingCount ?? 0}',
+                () => _navigateToFollowing(),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildStatItem(String label, String count, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPostManagement() {
+    routeTo('/post-management', data: {'userId': _currentUser?.id});
+  }
+
+  void _navigateToFollowers() {
+    routeTo('/followers', data: {'userId': _currentUser?.id});
+  }
+
+  void _navigateToFollowing() {
+    routeTo('/following', data: {'userId': _currentUser?.id});
+  }
+
+  void _navigateToSearchUsers() {
+    routeTo('/search-users');
+  }
+
+  Future<void> _deletePost(Post post) async {
+    // Show confirmation dialog
+    final bool? shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text(
+              'Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      // Show loading indicator and store reference
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Call delete API
+      final response = await api<PostApiService>(
+        (request) => request.deletePost(post.id!),
+      );
+
+      // Close loading dialog explicitly
+      Navigator.of(context).pop();
+
+      if (response != null && response['success'] == true) {
+        // Close the post detail modal
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        // Clear user posts cache to remove deleted post
+        await _clearUserPostsCache();
+
+        // Show success message
+        showToast(
+          title: "Success",
+          description: "Post deleted successfully",
+          style: ToastNotificationStyleType.success,
+        );
+
+        // Refresh the profile data
+        if (mounted) {
+          setState(() {
+            _refreshTrigger++;
+          });
+        }
+      } else {
+        showToast(
+          title: "Error",
+          description: "Failed to delete post. Please try again.",
+          style: ToastNotificationStyleType.danger,
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if it's still open
+      Navigator.of(context).pop();
+
+      // print('❌ Profile: Error deleting post: $e');
+      showToast(
+        title: "Error",
+        description: "Network error. Please try again.",
+        style: ToastNotificationStyleType.danger,
+      );
+    }
+  }
+
+  Future<void> _clearUserPostsCache() async {
+    try {
+      // print('🗑️ Profile: Clearing user posts cache...');
+
+      // Clear post-related cache using CacheConfig
+      await CacheConfig.clearPostCache();
+
+      // Clear user-specific cache
+      await CacheConfig.clearUserCache();
+
+      // Clear any feed cache that might contain the deleted post
+      await cache().clear('feed_*');
+
+      // Clear any user posts cache
+      final keys = await cache().documents();
+      for (String key in keys) {
+        if (key.startsWith('user_posts_') ||
+            key.startsWith('liked_posts_') ||
+            key.startsWith('saved_posts_') ||
+            key.startsWith('feed_')) {
+          await cache().clear(key);
+        }
+      }
+
+      // print('✅ Profile: User posts cache cleared successfully');
+    } catch (e) {
+      // print('❌ Profile: Error clearing user posts cache: $e');
+    }
   }
 
   Widget _buildUserCategoriesSection() {
@@ -392,22 +594,22 @@ class _ProfileState extends NyState<Profile> {
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // const Text(
-          //   'Content Categories',
-          //   style: TextStyle(
-          //     fontSize: 18,
-          //     fontWeight: FontWeight.bold,
-          //     color: Colors.black87,
-          //   ),
-          // ),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _userCategories.entries.map((entry) {
-              return _buildCategoryChip(entry.key, entry.value);
-            }).toList(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 100, // Limit the height of categories
+            ),
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _userCategories.entries.map((entry) {
+                  return _buildCategoryChip(entry.key, entry.value);
+                }).toList(),
+              ),
+            ),
           ),
         ],
       ),
@@ -537,28 +739,31 @@ class _ProfileState extends NyState<Profile> {
         icon = Icons.inbox;
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -573,90 +778,73 @@ class _ProfileState extends NyState<Profile> {
             color: Colors.grey[300],
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: post.mediaUrl != null
-                    ? (post.mediaType == 'video'
-                        ? Image.network(
-                            post.thumbnailUrl ?? post.mediaUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.videocam,
-                                    color: Colors.white, size: 30),
-                              );
-                            },
-                          )
-                        : Image.network(
-                            post.mediaUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.image,
-                                    color: Colors.white, size: 30),
-                              );
-                            },
-                          ))
-                    : Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          gradient: LinearGradient(
-                            colors: [Colors.blue[200]!, Colors.green[200]!],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: const Icon(Icons.image,
-                            color: Colors.white, size: 30),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: post.mediaUrl != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      SmartMediaWidget(
+                        post: post,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
                       ),
-              ),
-              // Video indicator
-              if (post.mediaType == 'video')
-                const Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Icon(Icons.play_circle_filled,
-                      color: Colors.white, size: 20),
-                ),
-              // Likes indicator
-              if (post.likesCount != null && post.likesCount! > 0)
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.favorite,
-                            color: Colors.white, size: 12),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${post.likesCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                      // Video indicator
+                      if (post.mediaType == 'video')
+                        const Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Icon(Icons.play_circle_filled,
+                              color: Colors.white, size: 20),
+                        ),
+                      // Likes indicator
+                      if (post.likesCount != null && post.likesCount! > 0)
+                        Positioned(
+                          bottom: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.favorite,
+                                    color: Colors.white, size: 12),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${post.likesCount}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
+                    ],
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[200]!, Colors.green[200]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
+                    child:
+                        const Icon(Icons.image, color: Colors.white, size: 30),
                   ),
-                ),
-            ],
           ),
         ),
       ),
@@ -797,11 +985,22 @@ class _ProfileState extends NyState<Profile> {
 
                         // Media
                         if (post.mediaUrl != null)
-                          SmartMediaWidget(
-                            post: post,
-                            width: double.infinity,
+                          Container(
                             height: 400,
-                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SmartMediaWidget(
+                                post: post,
+                                width: double.infinity,
+                                height: 400,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                           ),
 
                         // Caption
@@ -1063,59 +1262,6 @@ class _ProfileState extends NyState<Profile> {
     );
   }
 
-  Widget _buildDebugNotificationButton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            try {
-              // Import FirebaseMessagingService
-              final messagingService = FirebaseMessagingService();
-
-              // Test local notification
-              await messagingService.testLocalNotification();
-
-              // Show debug info
-              await messagingService.debugNotificationSetup();
-
-              showToast(
-                title: "Debug Test",
-                description: "Check console for notification debug info",
-              );
-            } catch (e) {
-              showToast(
-                title: "Debug Error",
-                description: "Error testing notifications: $e",
-                style: ToastNotificationStyleType.danger,
-              );
-            }
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(Icons.bug_report_outlined,
-                    color: Colors.orange[600], size: 20),
-                const SizedBox(width: 12),
-                const Text(
-                  'Test Notifications',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSidebarItem(IconData icon, String title, route,
       {bool isDestructive = false}) {
     Color iconColor = isDestructive ? Colors.red : Colors.grey[600]!;
@@ -1158,6 +1304,48 @@ class _ProfileState extends NyState<Profile> {
                   ),
                 ),
                 Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugNotificationButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            setState(() {
+              _isSidebarOpen = false;
+            });
+            routeTo('/debug-notifications');
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.blue[50],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.bug_report, color: Colors.blue[600], size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Debug Notifications',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.blue[400], size: 20),
               ],
             ),
           ),

@@ -8,8 +8,10 @@ import '/app/models/category.dart';
 import '/app/networking/post_api_service.dart';
 import '/app/networking/category_api_service.dart';
 import '/app/networking/auth_api_service.dart';
+import '/app/services/auth_service.dart';
 import '/config/cache.dart';
 import '/resources/widgets/smart_media_widget.dart';
+import '/resources/widgets/tagged_users_widget.dart';
 import 'package:video_player/video_player.dart'; // Import VideoPlayerController
 
 class Feed extends StatefulWidget {
@@ -32,7 +34,7 @@ class _FeedState extends NyState<Feed> {
   // Map to store active video controllers
   final Map<int, VideoPlayerController?> _activeVideoControllers = {};
   // Map to store SmartMediaWidget keys for direct access
-  final Map<int, GlobalKey> _smartMediaKeys = {};
+  // final Map<int, GlobalKey> _smartMediaKeys = {};
 
   // Current user ID for profile click prevention
   int? _currentUserId;
@@ -44,7 +46,11 @@ class _FeedState extends NyState<Feed> {
 
   @override
   void dispose() {
-    // Pause and dispose all video controllers
+    // Pause all videos globally using SmartMediaWidget
+    print('🎥 Feed: Disposing feed widget, pausing all videos globally');
+    SmartMediaWidget.pauseAllVideos();
+
+    // Also pause and dispose local video controllers
     _activeVideoControllers.values.forEach((controller) {
       if (controller != null) {
         controller.pause();
@@ -58,6 +64,7 @@ class _FeedState extends NyState<Feed> {
 
   @override
   get init => () async {
+        print('📱 Feed: Initializing feed widget...');
         await _loadInitialData();
       };
 
@@ -80,70 +87,108 @@ class _FeedState extends NyState<Feed> {
     // Pause videos when navigating away
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
-        pauseAllVideos();
+        print('🎥 Feed: Widget not mounted, pausing all videos');
+        forcePauseAllVideos();
       }
     });
   }
 
-  Future<void> _loadInitialData() async {
-    // Load categories first (independent of user data)
-    await _loadCategories();
+  // Method to force pause all videos and clear controllers
+  void forcePauseAllVideos() {
+    print('🎥 Feed: forcePauseAllVideos called');
+    // Use global video pausing from SmartMediaWidget
+    SmartMediaWidget.pauseAllVideos();
 
-    // Try to load current user data (but don't fail if it doesn't work)
+    // Also pause and dispose local video controllers
+    _activeVideoControllers.values.forEach((controller) {
+      if (controller != null) {
+        print(
+            '🎥 Feed: Force pausing video controller: ${controller.hashCode}');
+        controller.pause();
+        controller.dispose();
+      }
+    });
+    _activeVideoControllers.clear();
+  }
+
+  Future<void> _loadInitialData() async {
     try {
+      print('📱 Feed: Starting _loadInitialData...');
+
       final currentUserResponse = await api<AuthApiService>(
         (request) => request.getCurrentUser(),
         cacheKey: CacheConfig.currentUserKey,
         cacheDuration: CacheConfig.userProfileCache,
       );
 
+      print('👤 Feed: Current user response: $currentUserResponse');
+
       // Store current user ID for profile click prevention
-      if (currentUserResponse != null &&
-          currentUserResponse['success'] == true) {
-        final userData = currentUserResponse['data'];
-        if (userData != null && userData['id'] != null) {
-          _currentUserId = userData['id'];
+      if (currentUserResponse != null) {
+        final userData = currentUserResponse;
+        if (userData != null && userData.id != null) {
+          _currentUserId = userData.id;
           print('👤 Feed: Current user ID stored: $_currentUserId');
         }
       }
-    } catch (e) {
-      print('⚠️ Feed: Failed to load current user data: $e');
-      // Don't show toast for user data failure, just continue
-    }
 
-    // Load feed posts
-    try {
-      await _loadFeedPosts(1, forceRefresh: true);
+      print('📱 Feed: About to load categories...');
+      await _loadCategories();
+      print('📱 Feed: Categories loaded, now loading feed posts...');
+      await _loadFeedPosts(1,
+          forceRefresh: true); // Load initial feed posts with force refresh
     } catch (e) {
-      showToast(title: 'Error', description: 'Failed to load feed posts: $e');
+      print('❌ Feed: Error in _loadInitialData: $e');
+
+      // Check if it's an authentication error
+      if (e.toString().contains('401') ||
+          e.toString().contains('Unauthorized')) {
+        print(
+            '🔑 Feed: Authentication error in initial data load, checking token validity...');
+
+        // Check if token is expired
+        final isExpired = await AuthService.instance.isTokenExpired();
+        if (isExpired) {
+          print(
+              '🔑 Feed: Token is expired during initial load, logging out user...');
+          showToast(
+            title: 'Session Expired',
+            description: 'Please sign in again',
+            style: ToastNotificationStyleType.warning,
+          );
+
+          // Logout and redirect to sign in
+          await AuthService.instance.logout();
+          routeTo('/sign-in');
+          return;
+        }
+      }
+
+      showToast(title: 'Error', description: 'Failed to load data: $e');
     }
   }
 
   Future<void> _loadCategories() async {
     try {
       print('📱 Feed: Starting to load categories...');
-      final categoryService = CategoryApiService();
-      print('📱 Feed: CategoryApiService created, calling getCategories...');
-      final categories = await categoryService.getCategories();
-      print('📱 Feed: getCategories returned: $categories');
+      final categories = await api<CategoryApiService>(
+        (request) => request.getCategories(),
+        cacheKey: CacheConfig.categoriesKey,
+        cacheDuration: CacheConfig.categoriesCache,
+      );
 
-      if (categories != null && categories.isNotEmpty) {
+      print('📱 Feed: Categories API response: $categories');
+
+      if (categories != null) {
         print('📱 Feed: Loaded ${categories.length} categories');
-        for (var category in categories) {
-          print(
-              '📱 Feed: Category - ID: ${category.id}, Name: ${category.name}, Color: ${category.color}');
-        }
         setState(() {
           _categories = categories;
         });
-        print('📱 Feed: Categories state updated successfully');
       } else {
-        print('⚠️ Feed: No categories loaded or categories is null');
+        print('📱 Feed: Categories response is null');
       }
     } catch (e) {
-      print('❌ Feed: Error loading categories: $e');
-      print('❌ Feed: Error type: ${e.runtimeType}');
-      print('❌ Feed: Error details: ${e.toString()}');
+      print('📱 Feed: Error loading categories: $e');
       showToast(title: 'Error', description: 'Failed to load categories: $e');
     }
   }
@@ -223,6 +268,30 @@ class _FeedState extends NyState<Feed> {
       }
     } catch (e) {
       print('❌ Feed: Error loading posts: $e');
+
+      // Check if it's an authentication error
+      if (e.toString().contains('401') ||
+          e.toString().contains('Unauthorized')) {
+        print(
+            '🔑 Feed: Authentication error detected, checking token validity...');
+
+        // Check if token is expired
+        final isExpired = await AuthService.instance.isTokenExpired();
+        if (isExpired) {
+          print('🔑 Feed: Token is expired, logging out user...');
+          showToast(
+            title: 'Session Expired',
+            description: 'Please sign in again',
+            style: ToastNotificationStyleType.warning,
+          );
+
+          // Logout and redirect to sign in
+          await AuthService.instance.logout();
+          routeTo('/sign-in');
+          return [];
+        }
+      }
+
       showToast(title: 'Error', description: 'Failed to load posts: $e');
       return [];
     }
@@ -258,6 +327,7 @@ class _FeedState extends NyState<Feed> {
 
   @override
   Widget view(BuildContext context) {
+    print('📱 Feed: Building feed widget view...');
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -374,6 +444,14 @@ class _FeedState extends NyState<Feed> {
     ];
     print('📱 Feed: All categories: $allCategories');
 
+    // Define the specific colors for categories
+    final categoryColors = [
+      Color(0xFF00C3F1), // #00C3F1
+      Color(0xFFFD4CC0), // #FD4CC0
+      Color(0xFFFFCF02), // #FFCF02
+      Color(0xFFB5DA64), // #B5DA64
+    ];
+
     return Container(
       height: 50,
       margin: EdgeInsets.only(bottom: 16),
@@ -384,23 +462,28 @@ class _FeedState extends NyState<Feed> {
         itemBuilder: (context, index) {
           final category = allCategories[index];
           final isSelected = _selectedCategory == category;
-          print(
-              '📱 Feed: Building category chip: $category, selected: $isSelected');
+
+          // Get color for this category (cycle through colors)
+          final categoryColor = categoryColors[index % categoryColors.length];
+
           return Padding(
             padding: EdgeInsets.only(right: 8),
             child: FilterChip(
               label: Text(category),
               selected: isSelected,
               onSelected: (selected) => _onCategorySelected(category),
-              backgroundColor: Colors.grey[100],
-              selectedColor: Color(0xFFFF69B4),
+              backgroundColor: isSelected ? categoryColor : Colors.grey[100],
+              selectedColor: categoryColor,
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey[700],
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(20), // Apply border radius here
+                borderRadius: BorderRadius.circular(20),
+                side: isSelected
+                    ? BorderSide.none
+                    : BorderSide(
+                        color: categoryColor.withOpacity(0.3), width: 1),
               ),
             ),
           );
@@ -472,6 +555,10 @@ class _FeedState extends NyState<Feed> {
                     if (displayPost.user?.id != null) {
                       print(
                           '👤 Navigating to user profile with ID: ${displayPost.user!.id}');
+                      // Force pause all videos before navigation using global method
+                      print(
+                          '🎥 Feed: Force pausing all videos before navigation');
+                      SmartMediaWidget.pauseAllVideos();
                       routeTo(UserProfilePage.path,
                           data: {'userId': displayPost.user!.id});
                     } else {
@@ -604,6 +691,21 @@ class _FeedState extends NyState<Feed> {
 
           if (displayPost.caption != null && displayPost.caption!.isNotEmpty)
             SizedBox(height: 12),
+
+          // Tagged Users
+          if (displayPost.taggedUsers != null &&
+              displayPost.taggedUsers!.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TaggedUsersChipsWidget(
+                taggedUsers: displayPost.taggedUsers!,
+                onUserTap: (user) {
+                  // Navigate to user profile
+                  Navigator.pushNamed(context, '/user-profile',
+                      arguments: user.id);
+                },
+              ),
+            ),
 
           // Media with proper aspect ratio and full width
           if (displayPost.mediaUrl != null)
@@ -878,13 +980,10 @@ class _FullscreenMediaViewer extends StatefulWidget {
 class _FullscreenMediaViewerState extends State<_FullscreenMediaViewer> {
   @override
   void dispose() {
-    // Pause any videos when closing fullscreen
+    // Force pause all videos when disposing
+    print('🎥 Feed: Disposing feed widget, force pausing all videos');
+    // forcePauseAllVideos();
     super.dispose();
-  }
-
-  // Method to pause any playing videos
-  void pauseAllVideos() {
-    // This will be handled by the SmartMediaWidget's own disposal
   }
 
   @override

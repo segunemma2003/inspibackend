@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '/config/decoders.dart';
-import '/app/services/auth_service.dart';
+import '/app/networking/dio/interceptors/bearer_auth_interceptor.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 /* ApiService
@@ -30,7 +30,7 @@ class ApiService extends NyApiService {
   @override
   get interceptors => {
         if (getEnv('APP_DEBUG') == true) PrettyDioLogger: PrettyDioLogger(),
-        // MyCustomInterceptor: MyCustomInterceptor(),
+        BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
   Future fetchTestData() async {
@@ -58,15 +58,8 @@ class ApiService extends NyApiService {
   | Authenticate your API requests using a bearer token or any other method
   |-------------------------------------------------------------------------- */
 
-  @override
-  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-    print('🌐 ApiService: Setting auth headers...');
-    final authHeaders = await AuthService.instance.getAuthHeaders();
-    print('🌐 ApiService: Auth headers received: $authHeaders');
-    headers.addAll(authHeaders);
-    print('🌐 ApiService: Final headers: ${headers.toString()}');
-    return headers;
-  }
+  // Authentication is now handled by BearerAuthInterceptor
+  // No need for setAuthHeaders method
 
   /* Should Refresh Token
   |--------------------------------------------------------------------------

@@ -6,7 +6,7 @@ import 'package:flutter_app/app/networking/auth_api_service.dart';
 import 'package:flutter_app/resources/pages/change_password_page.dart';
 import 'package:flutter_app/config/keys.dart';
 import 'package:flutter_app/app/services/firebase_auth_service.dart';
-import 'package:flutter_app/app/services/auth_service.dart'; // Import AuthService
+// Import AuthService
 
 class VerifyOtpPage extends NyStatefulWidget {
   static RouteView path = ("/verify-otp", (_) => VerifyOtpPage());

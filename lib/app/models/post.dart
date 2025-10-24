@@ -21,6 +21,7 @@ class Post extends Model {
   User? user;
   Category? category;
   List<Tag>? tags;
+  List<User>? taggedUsers;
 
   static StorageKey key = "post";
 
@@ -49,6 +50,11 @@ class Post extends Model {
     tags = data['tags'] != null
         ? (data['tags'] as List).map((tag) => Tag.fromJson(tag)).toList()
         : null;
+    taggedUsers = data['tagged_users'] != null
+        ? (data['tagged_users'] as List)
+            .map((user) => User.fromJson(user))
+            .toList()
+        : null;
   }
 
   @override
@@ -72,6 +78,7 @@ class Post extends Model {
       "user": user?.toJson(),
       "category": category?.toJson(),
       "tags": tags?.map((tag) => tag.toJson()).toList(),
+      "tagged_users": taggedUsers?.map((user) => user.toJson()).toList(),
     };
   }
 }

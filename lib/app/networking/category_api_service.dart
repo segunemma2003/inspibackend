@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/config/decoders.dart';
-import 'package:flutter_app/app/services/auth_service.dart';
 import 'package:flutter_app/app/models/category.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'dart:convert';
+import '/app/networking/dio/interceptors/bearer_auth_interceptor.dart';
 
 class CategoryApiService extends NyApiService {
   CategoryApiService({BuildContext? buildContext})
@@ -11,17 +12,16 @@ class CategoryApiService extends NyApiService {
 
   @override
   String get baseUrl =>
-      getEnv('API_BASE_URL', defaultValue: 'https://api.inspirtag.com/api');
+      getEnv('API_BASE_URL', defaultValue: 'http://38.180.244.178/api');
 
   @override
-  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-    print('🌐 CategoryApiService: Setting auth headers...');
-    final authHeaders = await AuthService.instance.getAuthHeaders();
-    print('🌐 CategoryApiService: Auth headers received: $authHeaders');
-    headers.addAll(authHeaders);
-    print('🌐 CategoryApiService: Final headers: ${headers.toString()}');
-    return headers;
-  }
+  get interceptors => {
+        if (getEnv('APP_DEBUG') == true) PrettyDioLogger: PrettyDioLogger(),
+        BearerAuthInterceptor: BearerAuthInterceptor(),
+      };
+
+  // Authentication is now handled by BearerAuthInterceptor
+  // No need for setAuthHeaders method
 
   /// Get all categories
   Future<List<Category>?> getCategories() async {
@@ -32,11 +32,9 @@ class CategoryApiService extends NyApiService {
       cacheDuration: const Duration(hours: 1),
     );
 
-    print('🌐 CategoryApiService: Raw response received: $rawResponse');
-    if (rawResponse == null) {
-      print('🌐 CategoryApiService: Raw response is null');
-      return null;
-    }
+    print('🌐 CategoryApiService: Raw response: $rawResponse');
+
+    if (rawResponse == null) return null;
 
     Map<String, dynamic>? response;
     if (rawResponse is String) {
@@ -93,16 +91,12 @@ class CategoryApiService extends NyApiService {
 
     if (response != null && response['success'] == true) {
       final List<dynamic> categoriesData = response['data'] ?? [];
-      print(
-          '🌐 CategoryApiService: Found ${categoriesData.length} categories in response');
-      final categories =
-          categoriesData.map((json) => Category.fromJson(json)).toList();
-      print(
-          '🌐 CategoryApiService: Parsed ${categories.length} categories successfully');
-      return categories;
+      print('🌐 CategoryApiService: Found ${categoriesData.length} categories');
+      return categoriesData.map((json) => Category.fromJson(json)).toList();
     }
 
-    print('🌐 CategoryApiService: Response not successful or null');
+    print(
+        '🌐 CategoryApiService: No categories found or response not successful');
     return null;
   }
 

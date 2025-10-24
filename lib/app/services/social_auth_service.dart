@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '../networking/auth_api_service.dart';
 
@@ -76,7 +75,7 @@ class SocialAuthService {
           response['success'] == true &&
           response['data'] != null) {
         final token = response['data']['token'];
-        final userData = response['data']['user'];
+        // final userData = response['data']['user'];
 
         if (token != null) {
           // Update Nylo's auth state

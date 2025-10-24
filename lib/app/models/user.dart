@@ -19,21 +19,76 @@ class User extends Model {
   int? followersCount; // Added followersCount
   int? followingCount; // Added followingCount
   bool?
-      isFollowed; // Added isFollowed to track if current user follows this user
+      isFollowed; // Added isFollowed to check if authenticated user is following this user
 
   static StorageKey key = 'user';
 
   User() : super(key: key);
 
   User.fromJson(dynamic data) {
-    print('👤 User.fromJson: Raw data: $data');
-    print('👤 User.fromJson: Data type: ${data.runtimeType}');
+    // print('👤 User: From Json: type of data: ${data.runtimeType}');
 
-    // Handle nested response structure
-    dynamic userData = data;
-    if (data is Map<String, dynamic> && data.containsKey('data')) {
-      userData = data['data'];
-      print('👤 User.fromJson: Using nested data: $userData');
+    // Handle case where data might be null or not a Map
+    if (data == null) {
+      // print('👤 User: Data is null, returning empty user');
+      return;
+    }
+
+    // print('👤 User: Raw data: $data');
+
+    // Convert to Map if it's not already
+    Map<String, dynamic> userData;
+    if (data is Map<String, dynamic>) {
+      userData = data;
+    } else if (data is Map) {
+      userData = Map<String, dynamic>.from(data);
+    } else {
+      // print('👤 User: Data is not a Map, returning empty user');
+      return;
+    }
+
+    // Handle nested 'data' wrapper
+    if (userData.containsKey('data')) {
+      userData = userData['data'];
+      // print('👤 User: Extracted data from wrapper: $userData');
+    }
+
+    // Handle nested 'user' object (for responses like { "data": { "user": {...}, "statistics": {...} } })
+    if (userData.containsKey('user')) {
+      // print('👤 User: Found nested user object');
+
+      // Handle statistics from nested format
+      if (userData.containsKey('statistics') && userData['statistics'] is Map) {
+        final stats = userData['statistics'] as Map<String, dynamic>;
+        postsCount = stats['posts_count'] ?? 0;
+        followersCount = stats['followers_count'] ?? 0;
+        followingCount = stats['following_count'] ?? 0;
+        // print(
+        //     '👤 User: Parsed from nested statistics: postsCount: $postsCount, followersCount: $followersCount, followingCount: $followingCount');
+      }
+
+      // Extract the actual user data
+      userData = userData['user'];
+      // print('👤 User: Extracted user data: $userData');
+    } else {
+      // print('👤 User: No nested user object, using direct data');
+
+      // Handle statistics from direct format
+      if (userData.containsKey('statistics') && userData['statistics'] is Map) {
+        final stats = userData['statistics'] as Map<String, dynamic>;
+        postsCount = stats['posts_count'] ?? 0;
+        followersCount = stats['followers_count'] ?? 0;
+        followingCount = stats['following_count'] ?? 0;
+        // print(
+        //     '👤 User: Parsed from direct statistics: postsCount: $postsCount, followersCount: $followersCount, followingCount: $followingCount');
+      } else {
+        // Fallback to direct fields
+        postsCount = userData['posts_count'] ?? 0;
+        followersCount = userData['followers_count'] ?? 0;
+        followingCount = userData['following_count'] ?? 0;
+        // print(
+        //     '👤 User: Parsed from direct fields: postsCount: $postsCount, followersCount: $followersCount, followingCount: $followingCount');
+      }
     }
 
     id = userData['id'];
@@ -41,13 +96,19 @@ class User extends Model {
     fullName = userData['full_name'];
     username = userData['username'];
     email = userData['email'];
+
+    // print('👤 User: Parsed id: $id, name: $name, username: $username');
+    // print('👤 User: ID is null: ${id == null}');
+    if (id == null) {
+      // print('❌ User: ID is null! This will cause issues with profile loading');
+    }
     profilePicture = userData['profile_picture'];
     bio = userData['bio'];
     profession = userData['profession'];
     isBusiness = userData['is_business'];
     isAdmin = userData['is_admin'];
     interests = userData['interests'] != null
-        ? List<String>.from(userData['interests'])
+        ? (userData['interests'] as List).map((e) => e.toString()).toList()
         : null;
     notificationsEnabled = userData['notifications_enabled'];
     notificationPreferences = userData['notification_preferences'] != null
@@ -56,13 +117,13 @@ class User extends Model {
     createdAt = userData['created_at'] != null
         ? DateTime.parse(userData['created_at'])
         : null;
-    postsCount = userData['posts_count']; // Parse postsCount
-    followersCount = userData['followers_count']; // Parse followersCount
-    followingCount = userData['following_count']; // Parse followingCount
-    isFollowed = userData['is_followed']; // Parse isFollowed
 
-    print(
-        '👤 User.fromJson: Parsed user - ID: $id, Name: $fullName, Username: $username');
+    // Handle statistics from /me API response
+
+    isFollowed = userData['is_followed'] ?? false; // Parse isFollowed
+
+    // print(
+    //     '👤 User: Final parsed postsCount: $postsCount, followersCount: $followersCount, followingCount: $followingCount, isFollowed: $isFollowed');
   }
 
   @override

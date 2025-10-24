@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '../networking/auth_api_service.dart';
 import 'package:flutter_app/app/services/auth_service.dart';

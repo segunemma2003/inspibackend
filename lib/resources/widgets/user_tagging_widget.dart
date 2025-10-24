@@ -37,7 +37,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
 
   Future<void> _searchUsers(String query) async {
     print('🔍 UserTaggingWidget: Searching for users with query: "$query"');
-    
+
     if (query.length < 2) {
       setState(() {
         _suggestions = [];
@@ -53,9 +53,9 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
     try {
       print('🔍 UserTaggingWidget: Making API call to getTagSuggestions');
       final response = await api<UserApiService>(
-        (request) => request.getTagSuggestions(
-          query: query,
-          limit: 10,
+        (request) => request.searchUsersByInterests(
+          interests: [query],
+          perPage: 10,
         ),
       );
 
@@ -72,7 +72,8 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
           _showSuggestions = true;
         });
       } else {
-        print('🔍 UserTaggingWidget: API call failed or returned no data, showing dummy users for testing');
+        print(
+            '🔍 UserTaggingWidget: API call failed or returned no data, showing dummy users for testing');
         // Fallback: Show dummy users for testing
         final List<User> dummyUsers = [
           User.fromJson({
@@ -94,7 +95,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
             'profile_picture': null,
           }),
         ];
-        
+
         setState(() {
           _suggestions = dummyUsers;
           _showSuggestions = true;
@@ -117,7 +118,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
           'profile_picture': null,
         }),
       ];
-      
+
       setState(() {
         _suggestions = dummyUsers;
         _showSuggestions = true;

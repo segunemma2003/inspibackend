@@ -370,13 +370,25 @@ class FirebaseMessagingService {
   /// Show local notification for foreground messages
   void _showLocalNotification(RemoteMessage message) {
     final notification = message.notification;
-    if (notification == null) return;
+    if (notification == null) {
+      print('🔥 _showLocalNotification: No notification data in message');
+      return;
+    }
 
-    // Use Nylo's local notification system
-    pushNotification(
-      notification.title ?? 'New Notification',
-      notification.body ?? '',
-    ).send();
+    print('🔥 _showLocalNotification: Showing local notification');
+    print('🔥 Title: ${notification.title}');
+    print('🔥 Body: ${notification.body}');
+
+    try {
+      // Use Nylo's local notification system
+      pushNotification(
+        notification.title ?? 'New Notification',
+        notification.body ?? '',
+      ).send();
+      print('✅ Local notification sent successfully');
+    } catch (e) {
+      print('❌ Error sending local notification: $e');
+    }
   }
 
   /// Handle navigation based on message data
@@ -528,6 +540,59 @@ class FirebaseMessagingService {
       print('🧪 ======================================');
     } catch (e) {
       print('❌ Error testing local notification: $e');
+    }
+  }
+
+  /// Test notification display directly
+  Future<void> testNotificationDisplay() async {
+    try {
+      print('🧪 ===== TESTING NOTIFICATION DISPLAY =====');
+
+      // Test Nylo's pushNotification system directly
+      pushNotification(
+        'Direct Test Notification',
+        'This is a direct test of the notification system',
+      ).send();
+
+      print('✅ Direct notification sent');
+      print('🧪 ======================================');
+    } catch (e) {
+      print('❌ Error testing notification display: $e');
+    }
+  }
+
+  /// Check and request notification permissions
+  Future<void> checkAndRequestPermissions() async {
+    try {
+      print('🔍 ===== CHECKING NOTIFICATION PERMISSIONS =====');
+
+      final settings = await _firebaseMessaging.getNotificationSettings();
+      print('🔍 Current Authorization Status: ${settings.authorizationStatus}');
+      print('🔍 Alert Setting: ${settings.alert}');
+      print('🔍 Badge Setting: ${settings.badge}');
+      print('🔍 Sound Setting: ${settings.sound}');
+
+      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        print('🔍 Requesting notification permissions...');
+        final newSettings = await _firebaseMessaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+        print(
+            '🔍 New Authorization Status: ${newSettings.authorizationStatus}');
+        print('🔍 New Alert Setting: ${newSettings.alert}');
+        print('🔍 New Badge Setting: ${newSettings.badge}');
+        print('🔍 New Sound Setting: ${newSettings.sound}');
+      }
+
+      print('🔍 ===========================================');
+    } catch (e) {
+      print('❌ Error checking/requesting permissions: $e');
     }
   }
 }

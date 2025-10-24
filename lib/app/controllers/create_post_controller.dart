@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class CreatePostController {
@@ -12,21 +11,21 @@ class CreatePostController {
   }) async {
     try {
       final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
-      
+
       // Add form fields
       fields.forEach((key, value) {
         request.fields[key] = value;
       });
-      
+
       // Add file
       request.files.add(await http.MultipartFile.fromPath(
         'file',
         file.path,
       ));
-      
+
       // Send request
       final response = await request.send();
-      
+
       if (response.statusCode == 204) {
         return true;
       } else {
@@ -39,7 +38,7 @@ class CreatePostController {
       return false;
     }
   }
-  
+
   /// Validates the post data before submission
   bool validatePost({
     required String caption,
@@ -48,14 +47,14 @@ class CreatePostController {
     if (caption.trim().isEmpty) {
       return false;
     }
-    
+
     if (mediaFile == null) {
       return false;
     }
-    
+
     return true;
   }
-  
+
   /// Formats tags for the API
   List<String> formatTags(List<String> tags) {
     return tags

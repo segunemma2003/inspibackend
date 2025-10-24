@@ -7,6 +7,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:video_player/video_player.dart';
 import '../../app/controllers/create_post_controller.dart';
 import '../../app/networking/post_api_service.dart';
+import '../widgets/user_search_widget.dart';
 
 class CreatePostPage extends NyStatefulWidget {
   static const path = '/create-post';
@@ -20,6 +21,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
   final _tagController = TextEditingController();
   final _controller = CreatePostController();
   final List<String> _tags = [];
+  List<Map<String, dynamic>> _taggedUsers = [];
   File? _mediaFile;
   bool _isLoading = false;
   bool _isVideo = false;
@@ -117,6 +119,18 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
     }
   }
 
+  void _handleCaptionChange(String text) {
+    // Check for @mentions in the caption
+    // final mentionRegex = RegExp(r'@(\w+)');
+    // final matches = mentionRegex.allMatches(text);
+
+    // You could implement auto-complete for mentions here
+    // For now, we'll just update the caption
+    setState(() {
+      // The caption is already updated by the TextEditingController
+    });
+  }
+
   void _removeTag(String tag) {
     setState(() {
       _tags.remove(tag);
@@ -173,6 +187,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
         media: uploadUrlResponse['file_url'],
         categoryId: 1, // Replace with actual category selection
         tags: _tags,
+        taggedUsers: _taggedUsers.map((user) => user['id'] as int).toList(),
       );
 
       if (post != null) {
@@ -327,9 +342,11 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                       controller: _captionController,
                       decoration: const InputDecoration(
                         labelText: 'Write a caption...',
+                        hintText: 'You can mention users with @username',
                         border: OutlineInputBorder(),
                       ),
                       maxLines: 3,
+                      onChanged: _handleCaptionChange,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter a caption';
@@ -363,6 +380,25 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                                 onDeleted: () => _removeTag(tag),
                               ))
                           .toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // User Tagging Section
+                    const Text(
+                      'Tag People',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    UserSearchWidget(
+                      onUsersSelected: (users) {
+                        setState(() {
+                          _taggedUsers = users;
+                        });
+                      },
+                      selectedUsers: _taggedUsers,
                     ),
                   ],
                 ),

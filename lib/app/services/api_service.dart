@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_app/app/networking/api_config.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../config/api_config.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();

@@ -1,140 +1,81 @@
-import 'package:nylo_framework/nylo_framework.dart';
-import '/app/networking/notification_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service to handle notification counting and badge management
+/// Service to manage notification counter
 class NotificationCounterService {
-  static final NotificationCounterService _instance =
-      NotificationCounterService._internal();
-  factory NotificationCounterService() => _instance;
-  NotificationCounterService._internal();
-
-  int _unreadCount = 0;
-  bool _isInitialized = false;
-
-  /// Get current unread count
-  int get unreadCount => _unreadCount;
-
-  /// Check if service is initialized
-  bool get isInitialized => _isInitialized;
+  static const String _counterKey = 'notification_counter';
+  static const String _lastResetKey = 'notification_last_reset';
 
   /// Initialize the notification counter service
   Future<void> initialize() async {
-    if (_isInitialized) return;
-
     try {
-      print('🔢 ===== INITIALIZING NOTIFICATION COUNTER =====');
-
-      // Load initial notification count
-      await _loadNotificationCount();
-
-      _isInitialized = true;
-      print('✅ Notification Counter Service initialized successfully');
-      print('🔢 ================================================');
+      final prefs = await SharedPreferences.getInstance();
+      final counter = prefs.getInt(_counterKey) ?? 0;
+      print('🔔 NotificationCounterService: Initialized with counter: $counter');
     } catch (e) {
-      print('❌ Error initializing Notification Counter Service: $e');
-      print('🔢 ================================================');
+      print('❌ NotificationCounterService: Error initializing: $e');
     }
   }
 
-  /// Load notification count from server
-  Future<void> _loadNotificationCount() async {
+  /// Get current notification count
+  Future<int> getCount() async {
     try {
-      final response = await api<NotificationApiService>(
-        (request) => request.getNotifications(perPage: 1, page: 1),
-      );
-
-      if (response != null && response['success'] == true) {
-        final data = response['data'];
-        final total = data['total'] ?? 0;
-        final unread = data['unread_count'] ?? 0;
-
-        _unreadCount = unread;
-
-        print('🔢 Total notifications: $total');
-        print('🔢 Unread notifications: $unread');
-
-        // Update app badge
-        await _updateAppBadge();
-      }
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt(_counterKey) ?? 0;
     } catch (e) {
-      print('❌ Error loading notification count: $e');
+      print('❌ NotificationCounterService: Error getting count: $e');
+      return 0;
     }
   }
 
-  /// Update app badge with current unread count
-  Future<void> _updateAppBadge() async {
-    try {
-      // Update app badge count
-      await pushNotification(
-        'Notification Count',
-        'You have $_unreadCount unread notifications',
-      ).addBadgeNumber(_unreadCount).send();
-
-      print('🔢 App badge updated: $_unreadCount');
-    } catch (e) {
-      print('❌ Error updating app badge: $e');
-    }
-  }
-
-  /// Increment unread count (when new notification arrives)
+  /// Increment notification count
   Future<void> incrementCount() async {
-    _unreadCount++;
-    print('🔢 Notification count incremented: $_unreadCount');
-    await _updateAppBadge();
-  }
-
-  /// Decrement unread count (when notification is read)
-  Future<void> decrementCount() async {
-    if (_unreadCount > 0) {
-      _unreadCount--;
-      print('🔢 Notification count decremented: $_unreadCount');
-      await _updateAppBadge();
-    }
-  }
-
-  /// Mark all notifications as read
-  Future<void> markAllAsRead() async {
     try {
-      final response = await api<NotificationApiService>(
-        (request) => request.markAllNotificationsAsRead(),
-      );
-
-      if (response != null && response['success'] == true) {
-        _unreadCount = 0;
-        print('🔢 All notifications marked as read');
-        await _updateAppBadge();
-      }
+      final prefs = await SharedPreferences.getInstance();
+      final currentCount = prefs.getInt(_counterKey) ?? 0;
+      final newCount = currentCount + 1;
+      await prefs.setInt(_counterKey, newCount);
+      print('🔔 NotificationCounterService: Count incremented to: $newCount');
     } catch (e) {
-      print('❌ Error marking all notifications as read: $e');
+      print('❌ NotificationCounterService: Error incrementing count: $e');
     }
   }
 
-  /// Mark specific notification as read
-  Future<void> markAsRead(int notificationId) async {
+  /// Reset notification count
+  Future<void> resetCount() async {
     try {
-      final response = await api<NotificationApiService>(
-        (request) =>
-            request.markNotificationAsRead(notificationId: notificationId),
-      );
-
-      if (response != null && response['success'] == true) {
-        await decrementCount();
-        print('🔢 Notification $notificationId marked as read');
-      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_counterKey, 0);
+      await prefs.setString(_lastResetKey, DateTime.now().toIso8601String());
+      print('🔔 NotificationCounterService: Count reset to 0');
     } catch (e) {
-      print('❌ Error marking notification as read: $e');
+      print('❌ NotificationCounterService: Error resetting count: $e');
     }
   }
 
-  /// Refresh notification count from server
-  Future<void> refreshCount() async {
-    await _loadNotificationCount();
+  /// Get last reset time
+  Future<DateTime?> getLastResetTime() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastResetString = prefs.getString(_lastResetKey);
+      if (lastResetString != null) {
+        return DateTime.parse(lastResetString);
+      }
+      return null;
+    } catch (e) {
+      print('❌ NotificationCounterService: Error getting last reset time: $e');
+      return null;
+    }
   }
 
-  /// Clear all notifications
+  /// Clear all notification data
   Future<void> clearAll() async {
-    _unreadCount = 0;
-    await _updateAppBadge();
-    print('🔢 All notifications cleared');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_counterKey);
+      await prefs.remove(_lastResetKey);
+      print('🔔 NotificationCounterService: All data cleared');
+    } catch (e) {
+      print('❌ NotificationCounterService: Error clearing data: $e');
+    }
   }
 }

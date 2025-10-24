@@ -65,9 +65,9 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
 
     try {
       final response = await api<UserApiService>(
-        (request) => request.getTagSuggestions(
-          query: query,
-          limit: 10,
+        (request) => request.searchUsersByInterests(
+          interests: [query],
+          perPage: 10,
         ),
       );
 
@@ -98,7 +98,7 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
 
     try {
       final response = await api<PostApiService>(
-        (request) => request.tagUsers(
+        (request) => request.tagUsersInPost(
           postId: widget.post.id!,
           userIds: [user.id!],
         ),
@@ -139,7 +139,7 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
 
     try {
       final response = await api<PostApiService>(
-        (request) => request.untagUsers(
+        (request) => request.untagUsersFromPost(
           postId: widget.post.id!,
           userIds: [user.id!],
         ),

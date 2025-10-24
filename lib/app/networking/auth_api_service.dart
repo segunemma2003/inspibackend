@@ -4,8 +4,9 @@ import 'package:flutter_app/app/services/auth_service.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/app/models/user.dart';
 import 'package:flutter_app/app/networking/api_config.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'dart:convert'; // Added for jsonDecode
-import 'package:flutter_app/app/services/firebase_auth_service.dart';
+import '/app/networking/dio/interceptors/bearer_auth_interceptor.dart';
 
 class AuthApiService extends NyApiService {
   AuthApiService({BuildContext? buildContext})
@@ -15,14 +16,13 @@ class AuthApiService extends NyApiService {
   String get baseUrl => ApiConfig.baseUrl;
 
   @override
-  Future<RequestHeaders> setAuthHeaders(RequestHeaders headers) async {
-    print('🌐 AuthApiService: Setting auth headers...');
-    final authHeaders = await AuthService.instance.getAuthHeaders();
-    print('🌐 AuthApiService: Auth headers received: $authHeaders');
-    headers.addAll(authHeaders);
-    print('🌐 AuthApiService: Final headers: ${headers.toString()}');
-    return headers;
-  }
+  get interceptors => {
+        if (getEnv('APP_DEBUG') == true) PrettyDioLogger: PrettyDioLogger(),
+        BearerAuthInterceptor: BearerAuthInterceptor(),
+      };
+
+  // Authentication is now handled by BearerAuthInterceptor
+  // No need for setAuthHeaders method
 
   /// Register a new user
   Future<Map<String, dynamic>?> register({
@@ -204,7 +204,14 @@ class AuthApiService extends NyApiService {
       final String? token = rawResponse['data']?['token'];
       final Map<String, dynamic>? userJson = rawResponse['data']?['user'];
       if (token != null && userJson != null) {
-        await FirebaseAuthService().updateAuthStates(token, userJson);
+        final Map<String, dynamic> authData = {
+          'token': token,
+          'user': userJson,
+          'authenticated_at': DateTime.now().toIso8601String(),
+        };
+        print(
+            '🔑 AuthApiService: Calling storeAuthData with authData: $authData');
+        await AuthService.instance.storeAuthData(authData);
       } else {
         // If the response is a Map but not successful, clear authentication data
         await AuthService.instance.clearAuth();
