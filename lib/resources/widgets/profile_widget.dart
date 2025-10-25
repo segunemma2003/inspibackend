@@ -262,8 +262,6 @@ class _ProfileState extends NyState<Profile> {
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
       child: Row(
         children: [
-          const Icon(Icons.arrow_back, size: 24, color: Colors.black),
-          const SizedBox(width: 16),
           Expanded(
             child: Text(
               _currentUser?.username ?? 'Profile',
@@ -1190,7 +1188,7 @@ class _ProfileState extends NyState<Profile> {
                       _buildSidebarItem(
                           Icons.settings_outlined, 'Settings', '/settings'),
                       _buildSidebarItem(Icons.notifications_outlined,
-                          'Notifications', '/notifications'),
+                          'Notifications', '/notification'),
 
                       // Policy and Support Section
                       const SizedBox(height: 16),

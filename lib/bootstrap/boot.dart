@@ -17,6 +17,18 @@ class Boot {
   static Future<Nylo> nylo() async {
     WidgetsFlutterBinding.ensureInitialized();
 
+    // Initialize Firebase Core FIRST, before anything else
+    try {
+      print('🔥 ===== INITIALIZING FIREBASE CORE =====');
+      await Firebase.initializeApp();
+      print('✅ Firebase Core initialized successfully');
+      print('🔥 ======================================');
+    } catch (e) {
+      print('❌ Firebase Core initialization failed: $e');
+      print('🔥 ======================================');
+      rethrow;
+    }
+
     if (getEnv('SHOW_SPLASH_SCREEN', defaultValue: false)) {
       runApp(SplashScreen.app());
     }
@@ -40,58 +52,6 @@ class Boot {
 |-------------------------------------------------------------------------- */
 
 _setup() async {
-  /// Initialize Firebase Core
-  try {
-    print('🔥 ===== INITIALIZING FIREBASE CORE =====');
-    await Firebase.initializeApp();
-    print('✅ Firebase Core initialized successfully');
-    print('🔥 ======================================');
-  } catch (e) {
-    print('❌ Firebase Core initialization failed: $e');
-    print('🔥 ======================================');
-    rethrow;
-  }
-
-  /// Initialize Firebase Messaging for background notifications
-  try {
-    print('📱 ===== INITIALIZING FIREBASE MESSAGING =====');
-    await FirebaseMessagingService().initialize();
-    print('✅ Firebase Messaging initialized successfully');
-
-    // Debug notification setup
-    await FirebaseMessagingService().debugNotificationSetup();
-
-    print('📱 ===========================================');
-  } catch (e) {
-    print('❌ Firebase Messaging initialization failed: $e');
-    print('📱 ===========================================');
-    // Don't rethrow here as messaging is not critical for app startup
-  }
-
-  /// Register device for push notifications if user is authenticated
-  try {
-    print('📱 ===== CHECKING FOR DEVICE REGISTRATION =====');
-    // Check if user is authenticated and register device
-    if (await Auth.isAuthenticated()) {
-      print(
-          '📱 User is authenticated, registering device for push notifications');
-      await FirebaseMessagingService().registerDevice();
-      print('✅ Device registered for push notifications');
-    } else {
-      print('📱 User not authenticated, skipping device registration');
-    }
-    print('📱 ===========================================');
-  } catch (e) {
-    print('❌ Device registration failed: $e');
-    print('📱 ===========================================');
-    // Don't rethrow here as device registration is not critical for app startup
-  }
-
-  /// Example: Initializing StorageConfig
-  // StorageConfig.init(
-  //   androidOptions: AndroidOptions(
-  //     resetOnError: true,
-  //     encryptedSharedPreferences: false
-  //   )
-  // );
+  // Minimal setup - heavy initialization moved to after app startup
+  print('✅ Boot setup completed');
 }

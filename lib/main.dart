@@ -2,6 +2,7 @@ import 'package:nylo_framework/nylo_framework.dart';
 import 'bootstrap/boot.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '/app/services/firebase_messaging_service.dart';
+import '/app/services/auth_service.dart'; // Import auth instance
 
 /// Inspiritag - Framework for Flutter Developers
 /// Docs: https://inspiritag.dev/docs/6.x
@@ -9,7 +10,6 @@ import '/app/services/firebase_messaging_service.dart';
 /// Main entry point for the application.
 void main() async {
   // Register background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await Nylo.init(
     setup: Boot.nylo,

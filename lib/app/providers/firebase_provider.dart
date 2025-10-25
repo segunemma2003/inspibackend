@@ -10,13 +10,12 @@ class FirebaseProvider implements NyProvider {
 
   boot(Nylo nylo) async {
     try {
-      // Initialize Firebase
-      await Firebase.initializeApp();
-
+      // Firebase is already initialized in boot.dart
+      // Just mark as initialized
       _isInitialized = true;
-      print('✅ Firebase initialized successfully');
+      print('✅ Firebase provider booted successfully');
     } catch (e) {
-      print('❌ Firebase initialization error: $e');
+      print('❌ Firebase provider boot error: $e');
       rethrow;
     }
   }

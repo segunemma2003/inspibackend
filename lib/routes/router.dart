@@ -26,6 +26,8 @@ import 'package:flutter_app/resources/pages/user_profile_page.dart'; // Import U
 import 'package:flutter_app/resources/pages/community_guidelines_page.dart';
 import 'package:flutter_app/resources/pages/help_center_page.dart';
 import 'package:flutter_app/resources/pages/followers_page.dart';
+import 'package:flutter_app/resources/pages/privacy_policy_page.dart';
+import 'package:flutter_app/resources/pages/terms_of_service_page.dart';
 import 'package:flutter_app/resources/pages/following_page.dart';
 import 'package:flutter_app/resources/pages/search_users_page.dart';
 import 'package:flutter_app/resources/pages/post_management_page.dart';
@@ -80,6 +82,8 @@ appRouter() => nyRoutes((router) {
         router.add(HelpCenterPage.path);
         router.add(FollowersPage.path);
         router.add(FollowingPage.path);
+        router.add(PrivacyPolicyPage.path);
+        router.add(TermsOfServicePage.path);
         router.add(SearchUsersPage.path);
         router.add(PostManagementPage.path);
 

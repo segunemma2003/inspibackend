@@ -69,6 +69,8 @@ class AppProvider implements NyProvider {
     nylo.addAuthKey(Keys.auth);
     await nylo.syncKeys(Keys.syncedOnBoot);
 
+    // Auth is configured via the global auth instance exported from auth_service.dart
+
     // Optional
     // nylo.showDateTimeInLogs(); // Show date time in logs
     // nylo.monitorAppUsage(); // Monitor the app usage

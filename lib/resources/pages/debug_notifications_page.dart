@@ -104,6 +104,16 @@ class _DebugNotificationsPageState extends NyState<DebugNotificationsPage> {
                     Icons.security,
                     () => _checkPermissions(),
                   ),
+                  _buildActionButton(
+                    'Get FCM Token',
+                    Icons.key,
+                    () => _getFCMToken(),
+                  ),
+                  _buildActionButton(
+                    'Register Device',
+                    Icons.phone_android,
+                    () => _registerDevice(),
+                  ),
                 ],
               ),
             ),
@@ -287,6 +297,47 @@ class _DebugNotificationsPageState extends NyState<DebugNotificationsPage> {
       showToast(
         title: 'Error',
         description: 'Failed to check permissions: $e',
+        style: ToastNotificationStyleType.danger,
+      );
+    }
+  }
+
+  Future<void> _getFCMToken() async {
+    try {
+      final token = _firebaseMessaging.fcmToken;
+      if (token != null) {
+        showToast(
+          title: 'FCM Token',
+          description: 'Token: ${token.substring(0, 20)}...',
+        );
+        print('🔑 Full FCM Token: $token');
+      } else {
+        showToast(
+          title: 'No Token',
+          description: 'FCM token is null',
+          style: ToastNotificationStyleType.danger,
+        );
+      }
+    } catch (e) {
+      showToast(
+        title: 'Error',
+        description: 'Failed to get FCM token: $e',
+        style: ToastNotificationStyleType.danger,
+      );
+    }
+  }
+
+  Future<void> _registerDevice() async {
+    try {
+      await _firebaseMessaging.registerDevice();
+      showToast(
+        title: 'Success',
+        description: 'Device registration completed - see console for details',
+      );
+    } catch (e) {
+      showToast(
+        title: 'Error',
+        description: 'Failed to register device: $e',
         style: ToastNotificationStyleType.danger,
       );
     }

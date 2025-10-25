@@ -13,14 +13,23 @@ class HomePage extends NyStatefulWidget {
 }
 
 class _HomePageState extends NyPage<HomePage> {
+  bool _isCheckingAuth = true;
+
   @override
   get init => () async {
         // Check if user is already authenticated
         final isAuthenticated = await AuthService.instance.isAuthenticated();
         if (isAuthenticated) {
           // User is already logged in, redirect to main app
+          print(
+              '🔐 HomePage: User is authenticated, redirecting to BaseNavigationHub');
           routeTo(BaseNavigationHub.path);
+        } else {
+          print('🔐 HomePage: User is not authenticated, showing home page');
         }
+        setState(() {
+          _isCheckingAuth = false;
+        });
       };
 
   @override
@@ -28,6 +37,14 @@ class _HomePageState extends NyPage<HomePage> {
 
   @override
   Widget view(BuildContext context) {
+    // Show loader while checking authentication
+    if (_isCheckingAuth) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white, // Pure white background
       body: SafeAreaWidget(

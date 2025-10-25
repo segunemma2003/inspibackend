@@ -239,4 +239,5 @@ class CustomAuth extends Auth {
   }
 }
 
-Auth auth = CustomAuth();
+// Export the auth instance globally
+final Auth auth = CustomAuth();
