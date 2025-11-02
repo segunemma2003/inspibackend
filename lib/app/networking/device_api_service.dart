@@ -19,10 +19,6 @@ class DeviceApiService extends NyApiService {
         BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
-  // Authentication is now handled by BearerAuthInterceptor
-  // No need for setAuthHeaders method
-
-  /// Register a new device for push notifications
   Future<Map<String, dynamic>?> registerDevice({
     required String deviceToken,
     required String deviceType,
@@ -41,7 +37,6 @@ class DeviceApiService extends NyApiService {
     );
   }
 
-  /// Get user's devices
   Future<Map<String, dynamic>?> getDevices() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/devices"),
@@ -50,7 +45,6 @@ class DeviceApiService extends NyApiService {
     );
   }
 
-  /// Update device information
   Future<Map<String, dynamic>?> updateDevice({
     required int deviceId,
     String? deviceName,
@@ -68,26 +62,22 @@ class DeviceApiService extends NyApiService {
     );
   }
 
-  /// Deactivate device
   Future<Map<String, dynamic>?> deactivateDevice(int deviceId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.put("/devices/$deviceId/deactivate"),
     );
   }
 
-  /// Delete device
   Future<Map<String, dynamic>?> deleteDevice(int deviceId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/devices/$deviceId"),
     );
   }
 
-  /// Get device type (iOS or Android)
   static String getDeviceType() {
     return Platform.isIOS ? 'ios' : 'android';
   }
 
-  /// Get device name
   static String getDeviceName() {
     if (Platform.isIOS) {
       return 'iOS Device';
@@ -98,7 +88,6 @@ class DeviceApiService extends NyApiService {
     }
   }
 
-  /// Get OS version
   static String getOsVersion() {
     return Platform.operatingSystemVersion;
   }

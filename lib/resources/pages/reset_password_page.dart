@@ -3,7 +3,6 @@ import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/app/networking/auth_api_service.dart';
 import 'package:flutter_app/resources/pages/sign_in_page.dart';
 import 'package:flutter_app/config/keys.dart';
-// import 'dart:convert'; // Removed - no longer needed
 
 class ResetPasswordPage extends NyStatefulWidget {
   static RouteView path = (
@@ -28,7 +27,7 @@ class _ResetPasswordPageState extends NyPage<ResetPasswordPage> {
   @override
   get init => () {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          // Use the data() method from NyPage instead of widget.data
+
           final pageData = await data();
           email = pageData?[EmailKey] as String?;
 
@@ -88,7 +87,6 @@ class _ResetPasswordPageState extends NyPage<ResetPasswordPage> {
       print('🔐 ResetPassword: Response type: ${response.runtimeType}');
       print('🔐 ResetPassword: Response: $response');
 
-      // AuthApiService.resetPassword is expected to return Map<String, dynamic>?
       final Map<String, dynamic>? responseData = response;
 
       if (responseData == null) {
@@ -105,7 +103,6 @@ class _ResetPasswordPageState extends NyPage<ResetPasswordPage> {
         return;
       }
 
-      // Check for success
       final isSuccess = responseData['success'] == true ||
           (responseData['message'] != null &&
               responseData['message']
@@ -379,7 +376,7 @@ class _ResetPasswordPageState extends NyPage<ResetPasswordPage> {
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
-                // Spacer(), // Removed Spacer as it conflicts with MainAxisSize.min
+
               ],
             ),
           ),

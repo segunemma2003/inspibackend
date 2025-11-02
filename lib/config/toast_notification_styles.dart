@@ -29,17 +29,4 @@ class NyToastNotificationStyleMetaHelper
     return ToastMeta.danger();
   }
 
-  // Example customizing the default notification
-  // for 'ToastNotificationStyleType.SUCCESS'
-  // onSuccess() {
-  //   return ToastMeta.success(
-  //     title: "Hello",
-  //     description: "World",
-  //     action: () {},
-  //     backgroundColor: Colors.Yellow,
-  //     metaData: {
-  //       "add_extra": "meta_data"
-  //     }
-  //   );
-  // }
 }

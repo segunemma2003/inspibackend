@@ -2,33 +2,31 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class LocationService {
-  /// Checks if location services are enabled and requests permissions if needed
+
   Future<bool> _checkLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are disabled, prompt user to enable them
+
       return false;
     }
 
-    // Check location permissions
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Permissions are denied, prompt user to enable them
+
         return false;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Permissions are permanently denied, we cannot request permissions
+
       return false;
     }
 
     return true;
   }
 
-  /// Gets the current position of the device
   Future<Position> getCurrentPosition() async {
     final hasPermission = await _checkLocationPermission();
     if (!hasPermission) {
@@ -48,7 +46,6 @@ class LocationService {
     }
   }
 
-  /// Gets the current location with address
   Future<Map<String, dynamic>?> getCurrentLocation() async {
     try {
       final position = await getCurrentPosition();
@@ -68,7 +65,6 @@ class LocationService {
     }
   }
 
-  /// Gets the address from coordinates
   Future<String> getAddressFromCoordinates(double lat, double lng) async {
     try {
       final placemarks = await placemarkFromCoordinates(lat, lng);

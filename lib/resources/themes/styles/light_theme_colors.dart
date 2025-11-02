@@ -5,7 +5,7 @@ import '/resources/themes/styles/color_styles.dart';
 |-------------------------------------------------------------------------- */
 
 class LightThemeColors implements ColorStyles {
-  // general
+
   @override
   Color get background => const Color(0xFFFFFFFF);
 
@@ -19,13 +19,11 @@ class LightThemeColors implements ColorStyles {
   @override
   Color get surfaceContent => Colors.black;
 
-  // app bar
   @override
   Color get appBarBackground => Colors.blue;
   @override
   Color get appBarPrimaryContent => Colors.white;
 
-  // buttons
   @override
   Color get buttonBackground => Colors.blue;
   @override
@@ -37,23 +35,19 @@ class LightThemeColors implements ColorStyles {
   Color get buttonSecondaryContent =>
       Colors.white.withAlpha((255.0 * 0.9).round());
 
-  // bottom tab bar
   @override
   Color get bottomTabBarBackground => Colors.white;
 
-  // bottom tab bar - icons
   @override
   Color get bottomTabBarIconSelected => Colors.blue;
   @override
   Color get bottomTabBarIconUnselected => Colors.black54;
 
-  // bottom tab bar - label
   @override
   Color get bottomTabBarLabelUnselected => Colors.black45;
   @override
   Color get bottomTabBarLabelSelected => Colors.black;
 
-  // toast notification
   @override
   Color get toastNotificationBackground => Colors.white;
 }

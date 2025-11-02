@@ -18,17 +18,15 @@ class _SupportPageState extends NyPage<SupportPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // Support Content
             Expanded(
               child: _buildSupportContent(),
             ),
@@ -44,7 +42,7 @@ class _SupportPageState extends NyPage<SupportPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -55,7 +53,7 @@ class _SupportPageState extends NyPage<SupportPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'SUPPORT',
             style: TextStyle(
@@ -64,7 +62,7 @@ class _SupportPageState extends NyPage<SupportPage> {
               color: Colors.black,
             ),
           ),
-          // Empty space for alignment
+
           SizedBox(width: 24),
         ],
       ),
@@ -74,7 +72,7 @@ class _SupportPageState extends NyPage<SupportPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 60,
@@ -84,7 +82,6 @@ class _SupportPageState extends NyPage<SupportPage> {
 
         const SizedBox(height: 8),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -126,7 +123,7 @@ class _SupportPageState extends NyPage<SupportPage> {
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: 24.0),
       children: [
-        // FAQ Section
+
         _buildSection(
           'Frequently Asked Questions',
           Icons.help_outline,
@@ -144,7 +141,6 @@ class _SupportPageState extends NyPage<SupportPage> {
 
         SizedBox(height: 24),
 
-        // Contact Section
         _buildSection(
           'Contact Us',
           Icons.contact_support,
@@ -159,7 +155,6 @@ class _SupportPageState extends NyPage<SupportPage> {
 
         SizedBox(height: 24),
 
-        // Help Resources
         _buildSection(
           'Help Resources',
           Icons.book_outlined,
@@ -175,7 +170,6 @@ class _SupportPageState extends NyPage<SupportPage> {
 
         SizedBox(height: 32),
 
-        // Submit Feedback Button
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(16),

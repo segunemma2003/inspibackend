@@ -34,35 +34,28 @@ class _SignInPageState extends NyPage<SignInPage> {
               children: [
                 const SizedBox(height: 40),
 
-                // Logo Section
                 _buildLogoSection(),
 
-                // Tagline
                 _buildTagline(),
 
                 const SizedBox(height: 40),
 
-                // Input Fields
                 _buildInputFields(),
 
                 const SizedBox(height: 30),
 
-                // Login Button
                 _buildLoginButton(),
 
                 const SizedBox(height: 30),
 
-                // Divider
                 _buildDivider(),
 
                 const SizedBox(height: 30),
 
-                // Social Login Buttons
                 _buildSocialButtons(),
 
                 const SizedBox(height: 40),
 
-                // Sign Up Link
                 _buildSignUpLink(),
 
                 const SizedBox(height: 40),
@@ -77,7 +70,7 @@ class _SignInPageState extends NyPage<SignInPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 120,
@@ -85,7 +78,6 @@ class _SignInPageState extends NyPage<SignInPage> {
           fit: BoxFit.contain,
         ).localAsset(),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -139,7 +131,7 @@ class _SignInPageState extends NyPage<SignInPage> {
   Widget _buildInputFields() {
     return Column(
       children: [
-        // Email Field
+
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -165,7 +157,6 @@ class _SignInPageState extends NyPage<SignInPage> {
 
         const SizedBox(height: 20),
 
-        // Password Field
         TextFormField(
           controller: _passwordController,
           obscureText: !_isPasswordVisible,
@@ -202,7 +193,6 @@ class _SignInPageState extends NyPage<SignInPage> {
 
         const SizedBox(height: 12),
 
-        // Forgot Password Link
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -326,7 +316,6 @@ class _SignInPageState extends NyPage<SignInPage> {
     );
   }
 
-  // Validation methods
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Email is required';
@@ -345,9 +334,8 @@ class _SignInPageState extends NyPage<SignInPage> {
     return null;
   }
 
-  // API Integration
   Future<void> _signIn() async {
-    // Validate form first
+
     if (!_formKey.currentState!.validate()) {
       showToast(
           title: 'Validation Error',
@@ -365,7 +353,6 @@ class _SignInPageState extends NyPage<SignInPage> {
         ),
       );
 
-      // Ensure the response is a Map before proceeding with specific error parsing
       if (response == null || !(response is Map<String, dynamic>)) {
         showToastNotification(
           context,
@@ -379,7 +366,7 @@ class _SignInPageState extends NyPage<SignInPage> {
       }
 
       if (response['success'] == true) {
-        // Store user data and token for session management
+
         if (response['data'] != null) {
           final userData = response['data']['user'];
           final token = response['data']['token'];
@@ -388,7 +375,6 @@ class _SignInPageState extends NyPage<SignInPage> {
           print('🔐 SignIn: Token: $token');
           print('🔐 SignIn: User: $userData');
 
-          // Store authentication data for session management
           await Auth.authenticate(data: {
             'token': token,
             'user': userData,
@@ -405,15 +391,14 @@ class _SignInPageState extends NyPage<SignInPage> {
           );
         }
 
-        // Navigate to main app
         routeTo('/base');
       } else {
-        // Handle API validation errors
+
         final message = response['message'] ?? 'Failed to sign in'.tr();
         final errors = response['errors'];
 
         if (errors != null) {
-          // Show specific field errors
+
           final fieldErrors = <String>[];
           (errors as Map<String, dynamic>).forEach((field, errorList) {
             if (errorList is List && errorList.isNotEmpty) {

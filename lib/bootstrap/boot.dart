@@ -13,11 +13,10 @@ import 'package:nylo_framework/nylo_framework.dart';
 |-------------------------------------------------------------------------- */
 
 class Boot {
-  /// This method is called to initialize Inspiritag.
+
   static Future<Nylo> nylo() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    // Initialize Firebase Core FIRST, before anything else
     try {
       print('🔥 ===== INITIALIZING FIREBASE CORE =====');
       await Firebase.initializeApp();
@@ -37,7 +36,6 @@ class Boot {
     return await bootApplication(providers);
   }
 
-  /// This method is called after Inspiritag is initialized.
   static Future<void> finished(Nylo nylo) async {
     await bootFinished(nylo, providers);
 
@@ -52,6 +50,6 @@ class Boot {
 |-------------------------------------------------------------------------- */
 
 _setup() async {
-  // Minimal setup - heavy initialization moved to after app startup
+
   print('✅ Boot setup completed');
 }

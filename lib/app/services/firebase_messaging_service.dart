@@ -7,8 +7,6 @@ import '/app/networking/device_api_service.dart';
 import '/app/services/notification_counter_service.dart';
 import '/app/services/notification_logging_service.dart';
 
-/// Firebase Cloud Messaging Service
-/// Handles push notifications, token management, and notification processing
 class FirebaseMessagingService {
   static final FirebaseMessagingService _instance =
       FirebaseMessagingService._internal();
@@ -19,13 +17,10 @@ class FirebaseMessagingService {
   String? _fcmToken;
   bool _isInitialized = false;
 
-  /// Get the current FCM token
   String? get fcmToken => _fcmToken;
 
-  /// Check if the service is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Register device for push notifications
   Future<void> registerDevice() async {
     if (_fcmToken == null) {
       print(
@@ -81,7 +76,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Initialize Firebase Messaging
   Future<void> initialize() async {
     if (_isInitialized) {
       print('🔥 Firebase Messaging already initialized');
@@ -93,19 +87,14 @@ class FirebaseMessagingService {
       print('🔥 Platform: ${Platform.isIOS ? "iOS" : "Android"}');
       print('🔥 Firebase Messaging version: ${_firebaseMessaging.toString()}');
 
-      // Request permission for notifications
       await _requestPermission();
 
-      // Get FCM token
       await _getFCMToken();
 
-      // Set up message handlers
       _setupMessageHandlers();
 
-      // Set up token refresh listener
       _setupTokenRefreshListener();
 
-      // Initialize notification counter
       await NotificationCounterService().initialize();
 
       _isInitialized = true;
@@ -119,7 +108,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Request notification permissions
   Future<void> _requestPermission() async {
     try {
       NotificationSettings settings =
@@ -141,7 +129,7 @@ class FirebaseMessagingService {
       print('🔥 Announcement Setting: ${settings.announcement}');
       print('🔥 Car Play Setting: ${settings.carPlay}');
       print('🔥 Critical Alert Setting: ${settings.criticalAlert}');
-      // Provisional setting not available in this version
+
       print('🔥 =================================');
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
@@ -158,7 +146,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Get FCM token
   Future<void> _getFCMToken() async {
     try {
       _fcmToken = await _firebaseMessaging.getToken();
@@ -176,7 +163,6 @@ class FirebaseMessagingService {
         );
       }
 
-      // Send token to server if user is authenticated
       if (await Auth.isAuthenticated()) {
         await _sendTokenToServer(_fcmToken);
       }
@@ -189,7 +175,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Send FCM token to server
   Future<void> _sendTokenToServer(String? token) async {
     if (token == null) return;
 
@@ -204,34 +189,28 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Set up message handlers
   void _setupMessageHandlers() {
-    // Handle messages when app is in foreground
+
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // Handle messages when app is in background but not terminated
     FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
 
-    // Handle messages when app is terminated and opened via notification
     _handleTerminatedMessage();
   }
 
-  /// Set up token refresh listener
   void _setupTokenRefreshListener() {
     _firebaseMessaging.onTokenRefresh.listen((String token) async {
       print('🔄 FCM token refreshed: $token');
       _fcmToken = token;
 
-      // Send new token to server if user is authenticated
       if (await Auth.isAuthenticated()) {
         _sendTokenToServer(token);
-        // Also register device with new token
+
         await registerDevice();
       }
     });
   }
 
-  /// Handle foreground messages
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('🔥 ===== FOREGROUND NOTIFICATION RECEIVED =====');
     print('🔥 Timestamp: ${DateTime.now().toIso8601String()}');
@@ -247,7 +226,6 @@ class FirebaseMessagingService {
     print('🔥 Data: ${message.data}');
     print('🔥 Data Keys: ${message.data.keys.toList()}');
 
-    // Log detailed data payload
     if (message.data.isNotEmpty) {
       print('🔥 ===== NOTIFICATION DATA PAYLOAD =====');
       message.data.forEach((key, value) {
@@ -258,7 +236,6 @@ class FirebaseMessagingService {
 
     print('🔥 ===========================================');
 
-    // Log notification received
     NotificationLoggingService.logNotificationReceived(
       messageId: message.messageId ?? 'unknown',
       from: message.from ?? 'unknown',
@@ -268,14 +245,11 @@ class FirebaseMessagingService {
       appState: 'foreground',
     );
 
-    // Show local notification for foreground messages
     _showLocalNotification(message);
 
-    // Increment notification counter
     await NotificationCounterService().incrementCount();
   }
 
-  /// Handle background messages
   void _handleBackgroundMessage(RemoteMessage message) {
     print('🔥 ===== BACKGROUND NOTIFICATION RECEIVED =====');
     print('🔥 Timestamp: ${DateTime.now().toIso8601String()}');
@@ -291,7 +265,6 @@ class FirebaseMessagingService {
     print('🔥 Data: ${message.data}');
     print('🔥 Data Keys: ${message.data.keys.toList()}');
 
-    // Log detailed data payload
     if (message.data.isNotEmpty) {
       print('🔥 ===== BACKGROUND NOTIFICATION DATA PAYLOAD =====');
       message.data.forEach((key, value) {
@@ -302,7 +275,6 @@ class FirebaseMessagingService {
 
     print('🔥 ===========================================');
 
-    // Log notification received
     NotificationLoggingService.logNotificationReceived(
       messageId: message.messageId ?? 'unknown',
       from: message.from ?? 'unknown',
@@ -312,14 +284,11 @@ class FirebaseMessagingService {
       appState: 'background',
     );
 
-    // Handle navigation based on message data
     _handleMessageNavigation(message);
 
-    // Increment notification counter
     NotificationCounterService().incrementCount();
   }
 
-  /// Handle terminated messages
   Future<void> _handleTerminatedMessage() async {
     RemoteMessage? initialMessage =
         await _firebaseMessaging.getInitialMessage();
@@ -338,7 +307,6 @@ class FirebaseMessagingService {
       print('🔥 Data: ${initialMessage.data}');
       print('🔥 Data Keys: ${initialMessage.data.keys.toList()}');
 
-      // Log detailed data payload
       if (initialMessage.data.isNotEmpty) {
         print('🔥 ===== TERMINATED NOTIFICATION DATA PAYLOAD =====');
         initialMessage.data.forEach((key, value) {
@@ -349,7 +317,6 @@ class FirebaseMessagingService {
 
       print('🔥 ===========================================');
 
-      // Log notification received
       NotificationLoggingService.logNotificationReceived(
         messageId: initialMessage.messageId ?? 'unknown',
         from: initialMessage.from ?? 'unknown',
@@ -359,15 +326,12 @@ class FirebaseMessagingService {
         appState: 'terminated',
       );
 
-      // Handle navigation based on message data
       _handleMessageNavigation(initialMessage);
 
-      // Increment notification counter
       await NotificationCounterService().incrementCount();
     }
   }
 
-  /// Show local notification for foreground messages
   void _showLocalNotification(RemoteMessage message) {
     final notification = message.notification;
     if (notification == null) {
@@ -380,7 +344,7 @@ class FirebaseMessagingService {
     print('🔥 Body: ${notification.body}');
 
     try {
-      // Use Nylo's local notification system
+
       pushNotification(
         notification.title ?? 'New Notification',
         notification.body ?? '',
@@ -391,11 +355,9 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Handle navigation based on message data
   void _handleMessageNavigation(RemoteMessage message) {
     final data = message.data;
 
-    // Handle different notification types
     if (data.containsKey('type')) {
       final type = data['type'];
 
@@ -420,43 +382,38 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Navigate to specific post
   void _navigateToPost(String? postId) {
     if (postId != null) {
-      // Navigate to post details
+
       routeTo('/post/$postId');
     } else {
       _navigateToHome();
     }
   }
 
-  /// Navigate to user profile
   void _navigateToProfile(String? userId) {
     if (userId != null) {
-      // Navigate to user profile
+
       routeTo('/profile/$userId');
     } else {
       _navigateToHome();
     }
   }
 
-  /// Navigate to messages
   void _navigateToMessages(String? conversationId) {
     if (conversationId != null) {
-      // Navigate to specific conversation
+
       routeTo('/messages/$conversationId');
     } else {
-      // Navigate to messages list
+
       routeTo('/messages');
     }
   }
 
-  /// Navigate to home
   void _navigateToHome() {
     routeTo('/');
   }
 
-  /// Subscribe to topic
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
@@ -466,7 +423,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Unsubscribe from topic
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
@@ -476,14 +432,12 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Send token to server when user logs in
   Future<void> onUserLogin() async {
     if (_fcmToken != null) {
       await _sendTokenToServer(_fcmToken);
     }
   }
 
-  /// Clear token when user logs out
   Future<void> onUserLogout() async {
     try {
       await _firebaseMessaging.deleteToken();
@@ -494,20 +448,17 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Debug method to test notification setup
   Future<void> debugNotificationSetup() async {
     print('🔍 ===== NOTIFICATION DEBUG INFO =====');
     print('🔍 FCM Token: $_fcmToken');
     print('🔍 Is Initialized: $_isInitialized');
 
-    // Check notification permissions
     final settings = await _firebaseMessaging.getNotificationSettings();
     print('🔍 Authorization Status: ${settings.authorizationStatus}');
     print('🔍 Alert Setting: ${settings.alert}');
     print('🔍 Badge Setting: ${settings.badge}');
     print('🔍 Sound Setting: ${settings.sound}');
 
-    // Check if device is registered
     if (_fcmToken != null) {
       print('🔍 Device Token Length: ${_fcmToken!.length}');
       print('🔍 Device Token Preview: ${_fcmToken!.substring(0, 20)}...');
@@ -518,12 +469,10 @@ class FirebaseMessagingService {
     print('🔍 =====================================');
   }
 
-  /// Test method to send a local notification
   Future<void> testLocalNotification() async {
     try {
       print('🧪 ===== TESTING LOCAL NOTIFICATION =====');
 
-      // Create a test message
       final testMessage = RemoteMessage(
         messageId: 'test_${DateTime.now().millisecondsSinceEpoch}',
         from: 'test_sender',
@@ -534,7 +483,6 @@ class FirebaseMessagingService {
         ),
       );
 
-      // Simulate receiving the message
       await _handleForegroundMessage(testMessage);
 
       print('🧪 ======================================');
@@ -543,12 +491,10 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Test notification display directly
   Future<void> testNotificationDisplay() async {
     try {
       print('🧪 ===== TESTING NOTIFICATION DISPLAY =====');
 
-      // Test Nylo's pushNotification system directly
       pushNotification(
         'Direct Test Notification',
         'This is a direct test of the notification system',
@@ -561,7 +507,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Check and request notification permissions
   Future<void> checkAndRequestPermissions() async {
     try {
       print('🔍 ===== CHECKING NOTIFICATION PERMISSIONS =====');
@@ -597,7 +542,6 @@ class FirebaseMessagingService {
   }
 }
 
-/// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('🔥 ===== BACKGROUND HANDLER TRIGGERED =====');
@@ -614,7 +558,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('🔥 Data: ${message.data}');
   print('🔥 Data Keys: ${message.data.keys.toList()}');
 
-  // Log detailed data payload
   if (message.data.isNotEmpty) {
     print('🔥 ===== BACKGROUND HANDLER DATA PAYLOAD =====');
     message.data.forEach((key, value) {
@@ -625,11 +568,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   print('🔥 ===========================================');
 
-  // Initialize Firebase if not already done
   await Firebase.initializeApp();
   print('🔥 Firebase initialized in background handler');
 
-  // Increment notification counter in background
   try {
     await NotificationCounterService().incrementCount();
     print('🔥 Notification counter incremented in background');

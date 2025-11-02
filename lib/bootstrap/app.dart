@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/resources/widgets/loader_widget.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
-/// Main entry point for the application
 class Main extends StatefulWidget {
   final String? initialRoute;
   final ThemeMode themeMode;
@@ -34,11 +33,9 @@ class _MainState extends NyPage<Main> {
 
   };
 
-  /// Map of lifecycle actions
   @override
   get lifecycleActions => widget.nylo?.appLifecycleStates ?? {};
 
-  /// Loading style for the page.
   @override
   LoadingStyle get loadingStyle => LoadingStyle.normal(
     child: MaterialApp(
@@ -56,7 +53,6 @@ class _MainState extends NyPage<Main> {
     )
   );
 
-  /// The [view] method displays your page.
   @override
   Widget view(BuildContext context) {
     List<AppTheme> appThemes = Nylo.getAppThemes();

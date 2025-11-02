@@ -21,7 +21,6 @@ class NotificationApiService extends NyApiService {
     return headers;
   }
 
-  /// Get notifications with pagination
   Future<Map<String, dynamic>?> getNotifications({
     int perPage = 20,
     int page = 1,
@@ -41,7 +40,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Mark notification as read
   Future<Map<String, dynamic>?> markNotificationAsRead(
       int notificationId) async {
     return await network<Map<String, dynamic>>(
@@ -51,7 +49,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Mark notification as unread
   Future<Map<String, dynamic>?> markNotificationAsUnread(
       int notificationId) async {
     return await network<Map<String, dynamic>>(
@@ -62,7 +59,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Mark all notifications as read
   Future<Map<String, dynamic>?> markAllNotificationsAsRead() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.put("/notifications/mark-all-read"),
@@ -71,7 +67,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Mark multiple notifications as read
   Future<Map<String, dynamic>?> markMultipleAsRead(
       List<int> notificationIds) async {
     return await network<Map<String, dynamic>>(
@@ -84,7 +79,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Get unread count
   Future<Map<String, dynamic>?> getUnreadCount() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/notifications/unread-count"),
@@ -93,7 +87,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Get notification statistics
   Future<Map<String, dynamic>?> getNotificationStatistics() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/notifications/statistics"),
@@ -102,7 +95,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Delete notification
   Future<Map<String, dynamic>?> deleteNotification(int notificationId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/notifications/$notificationId"),
@@ -111,7 +103,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Delete all notifications
   Future<Map<String, dynamic>?> deleteAllNotifications() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/notifications/"),
@@ -120,7 +111,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Send test notification
   Future<Map<String, dynamic>?> sendTestNotification() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/notifications/test"),
@@ -129,7 +119,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Register FCM token
   Future<Map<String, dynamic>?> registerFCMToken({
     required String fcmToken,
     required String deviceType,
@@ -142,7 +131,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Get notification settings
   Future<Map<String, dynamic>?> getNotificationSettings() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.get("/notifications/settings"),
@@ -151,7 +139,6 @@ class NotificationApiService extends NyApiService {
     );
   }
 
-  /// Update notification settings
   Future<Map<String, dynamic>?> updateNotificationSettings({
     required Map<String, dynamic> settings,
   }) async {

@@ -5,6 +5,7 @@ import 'package:flutter_app/app/models/post.dart';
 import 'package:flutter_app/app/networking/user_api_service.dart'; // Re-add UserApiService
 import 'package:flutter_app/app/models/user.dart'; // Re-add User model
 import '/resources/widgets/smart_media_widget.dart';
+import '/resources/pages/post_details_page.dart';
 import '/config/cache.dart';
 
 class Profile extends StatefulWidget {
@@ -20,13 +21,12 @@ class _ProfileState extends NyState<Profile> {
   User? _currentUser;
   int _refreshTrigger = 0;
 
-  // User content categories
   Map<String, int> _userCategories = {};
   bool _isLoadingCategories = false;
 
   @override
   get init => () async {
-        await _loadUserData(); // Ensure user data is loaded on init
+        await _loadUserData();
       };
 
   Future<void> _loadUserData() async {
@@ -60,6 +60,11 @@ class _ProfileState extends NyState<Profile> {
     }
 
     try {
+
+      if (forceRefresh) {
+        await _clearUserPostsCache();
+      }
+
       print(
           '📱 Profile: Loading user posts for user ${_currentUser!.id} (page: $page, forceRefresh: $forceRefresh)');
 
@@ -84,14 +89,15 @@ class _ProfileState extends NyState<Profile> {
 
         print('📱 Profile: Loaded ${posts.length} user posts');
 
-        // Load categories on first page (only if not forcing refresh as the categories are from the posts themselves)
         if (page == 1 && posts.isNotEmpty) {
           _loadUserCategories(posts);
         }
 
         return posts;
       } else {
-        throw Exception('Failed to load user posts');
+        print(
+            '❌ Profile: API returned unsuccessful response: ${response?['message']}');
+        return [];
       }
     } catch (e) {
       print('❌ Profile: Error loading user posts: $e');
@@ -176,16 +182,22 @@ class _ProfileState extends NyState<Profile> {
   }
 
   String _getStateNameForTab() {
+    String baseName;
     switch (_selectedTabIndex) {
       case 0:
-        return 'user_posts_$_refreshTrigger';
+
+        baseName = 'user_posts_$_refreshTrigger';
+        break;
       case 1:
-        return 'liked_posts_$_refreshTrigger';
+        baseName = 'liked_posts_$_refreshTrigger';
+        break;
       case 2:
-        return 'saved_posts_$_refreshTrigger';
+        baseName = 'saved_posts_$_refreshTrigger';
+        break;
       default:
-        return 'posts_$_refreshTrigger';
+        baseName = 'posts_$_refreshTrigger';
     }
+    return baseName;
   }
 
   @override
@@ -199,36 +211,44 @@ class _ProfileState extends NyState<Profile> {
               children: [
                 _buildTopBar(),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return NyPullToRefresh.grid(
-                        key: ValueKey(_getStateNameForTab()),
-                        stateName: _getStateNameForTab(),
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 2,
-                        crossAxisSpacing: 2,
-                        padding: EdgeInsets.zero,
-                        header: _buildProfileHeader(), // Header content here
-                        child: (context, post) => _buildPostItem(post as Post),
-                        data: (int iteration) async {
-                          print(
-                              '📱 Profile: Loading posts - tab: $_selectedTabIndex, page: $iteration');
+                  child: Column(
+                    children: [
+                      _buildProfileHeader(),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return NyPullToRefresh.grid(
+                              key: ValueKey(_getStateNameForTab()),
+                              stateName: _getStateNameForTab(),
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 2,
+                              crossAxisSpacing: 2,
+                              padding: EdgeInsets.zero,
+                              child: (context, post) =>
+                                  _buildPostItem(post as Post),
+                              data: (int iteration) async {
+                                print(
+                                    '📱 Profile: Loading posts - tab: $_selectedTabIndex, page: $iteration');
 
-                          switch (_selectedTabIndex) {
-                            case 0:
-                              return await _loadUserPosts(iteration,
-                                  forceRefresh: true);
-                            case 1:
-                              return await _loadLikedPosts(iteration);
-                            case 2:
-                              return await _loadSavedPosts(iteration);
-                            default:
-                              return [];
-                          }
-                        },
-                        empty: _buildEmptyState(),
-                      );
-                    },
+                                switch (_selectedTabIndex) {
+                                  case 0:
+
+                                    return await _loadUserPosts(iteration,
+                                        forceRefresh: iteration == 1);
+                                  case 1:
+                                    return await _loadLikedPosts(iteration);
+                                  case 2:
+                                    return await _loadSavedPosts(iteration);
+                                  default:
+                                    return [];
+                                }
+                              },
+                              empty: _buildEmptyState(),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -244,15 +264,15 @@ class _ProfileState extends NyState<Profile> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         _buildProfilePicture(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         _buildNameAndBio(),
-        const SizedBox(height: 30),
-        _buildUserCategoriesSection(),
-        const SizedBox(height: 30),
-        _buildTabBar(),
         const SizedBox(height: 20),
+        _buildUserCategoriesSection(),
+        const SizedBox(height: 20),
+        _buildTabBar(),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -387,7 +407,6 @@ class _ProfileState extends NyState<Profile> {
           ),
           const SizedBox(height: 20),
 
-          // Followers and Following counts
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -455,106 +474,15 @@ class _ProfileState extends NyState<Profile> {
     routeTo('/search-users');
   }
 
-  Future<void> _deletePost(Post post) async {
-    // Show confirmation dialog
-    final bool? shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Post'),
-          content: const Text(
-              'Are you sure you want to delete this post? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldDelete != true) return;
-
-    try {
-      // Show loading indicator and store reference
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      // Call delete API
-      final response = await api<PostApiService>(
-        (request) => request.deletePost(post.id!),
-      );
-
-      // Close loading dialog explicitly
-      Navigator.of(context).pop();
-
-      if (response != null && response['success'] == true) {
-        // Close the post detail modal
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        }
-
-        // Clear user posts cache to remove deleted post
-        await _clearUserPostsCache();
-
-        // Show success message
-        showToast(
-          title: "Success",
-          description: "Post deleted successfully",
-          style: ToastNotificationStyleType.success,
-        );
-
-        // Refresh the profile data
-        if (mounted) {
-          setState(() {
-            _refreshTrigger++;
-          });
-        }
-      } else {
-        showToast(
-          title: "Error",
-          description: "Failed to delete post. Please try again.",
-          style: ToastNotificationStyleType.danger,
-        );
-      }
-    } catch (e) {
-      // Close loading dialog if it's still open
-      Navigator.of(context).pop();
-
-      // print('❌ Profile: Error deleting post: $e');
-      showToast(
-        title: "Error",
-        description: "Network error. Please try again.",
-        style: ToastNotificationStyleType.danger,
-      );
-    }
-  }
-
   Future<void> _clearUserPostsCache() async {
     try {
-      // print('🗑️ Profile: Clearing user posts cache...');
 
-      // Clear post-related cache using CacheConfig
       await CacheConfig.clearPostCache();
 
-      // Clear user-specific cache
       await CacheConfig.clearUserCache();
 
-      // Clear any feed cache that might contain the deleted post
       await cache().clear('feed_*');
 
-      // Clear any user posts cache
       final keys = await cache().documents();
       for (String key in keys) {
         if (key.startsWith('user_posts_') ||
@@ -565,9 +493,8 @@ class _ProfileState extends NyState<Profile> {
         }
       }
 
-      // print('✅ Profile: User posts cache cleared successfully');
     } catch (e) {
-      // print('❌ Profile: Error clearing user posts cache: $e');
+
     }
   }
 
@@ -788,7 +715,7 @@ class _ProfileState extends NyState<Profile> {
                         height: double.infinity,
                         fit: BoxFit.cover,
                       ),
-                      // Video indicator
+
                       if (post.mediaType == 'video')
                         const Positioned(
                           top: 8,
@@ -796,7 +723,7 @@ class _ProfileState extends NyState<Profile> {
                           child: Icon(Icons.play_circle_filled,
                               color: Colors.white, size: 20),
                         ),
-                      // Likes indicator
+
                       if (post.likesCount != null && post.likesCount! > 0)
                         Positioned(
                           bottom: 8,
@@ -849,223 +776,22 @@ class _ProfileState extends NyState<Profile> {
     );
   }
 
-  void _showPostDetail(Post post) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+  void _showPostDetail(Post post) async {
 
-                // Close button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Post Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(),
-
-                // Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // User info
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: post.user?.profilePicture !=
-                                        null
-                                    ? NetworkImage(post.user!.profilePicture!)
-                                    : null,
-                                backgroundColor: const Color(0xFF9ACD32),
-                                child: post.user?.profilePicture == null
-                                    ? Text(
-                                        post.user?.name
-                                                ?.substring(0, 1)
-                                                .toUpperCase() ??
-                                            'U',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post.user?.fullName ??
-                                          post.user?.name ??
-                                          'Unknown User',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      '@${post.user?.username ?? 'unknown'}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Category tag
-                              if (post.category != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFF69B4),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    post.category!.name ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        // Media
-                        if (post.mediaUrl != null)
-                          Container(
-                            height: 400,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: SmartMediaWidget(
-                                post: post,
-                                width: double.infinity,
-                                height: 400,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-
-                        // Caption
-                        if (post.caption != null && post.caption!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              post.caption!,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-
-                        // Location
-                        if (post.location != null && post.location!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.location_on,
-                                    size: 16, color: Colors.grey[600]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  post.location!,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Stats
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.favorite, size: 16, color: Colors.red),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.likesCount ?? 0} likes',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 16),
-                              Icon(Icons.bookmark,
-                                  size: 16, color: Colors.blue),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.savesCount ?? 0} saves',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PostDetailsPage(post: post),
       ),
     );
+
+    if (result == true) {
+      if (mounted) {
+        setState(() {
+          _refreshTrigger++;
+        });
+        print('🔄 Profile: Post deleted, refreshing profile');
+      }
+    }
   }
 
   Widget _buildSidebarOverlay() {
@@ -1190,7 +916,6 @@ class _ProfileState extends NyState<Profile> {
                       _buildSidebarItem(Icons.notifications_outlined,
                           'Notifications', '/notification'),
 
-                      // Policy and Support Section
                       const SizedBox(height: 16),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -1219,7 +944,6 @@ class _ProfileState extends NyState<Profile> {
                       _buildSidebarItem(
                           Icons.info_outline, 'About Us', '/about'),
 
-                      // Debug section
                       const SizedBox(height: 16),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),

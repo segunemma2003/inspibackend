@@ -19,7 +19,7 @@ class _ForgotPasswordPageState extends NyPage<ForgotPasswordPage> {
 
   @override
   get init => () {
-        // No incoming data expected for this page from direct navigation
+
       };
 
   @override
@@ -40,7 +40,6 @@ class _ForgotPasswordPageState extends NyPage<ForgotPasswordPage> {
         email: _emailController.text.trim(),
       );
 
-      // Ensure the response is a Map before proceeding with specific error parsing
       if (response == null || !(response is Map<String, dynamic>)) {
         showToastNotification(
           context,
@@ -71,7 +70,7 @@ class _ForgotPasswordPageState extends NyPage<ForgotPasswordPage> {
             },
           );
         }
-        // Navigate to OTP verification page for password reset
+
       } else {
         final message =
             response['message'] ?? "Failed to request password reset.".tr();

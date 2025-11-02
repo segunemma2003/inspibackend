@@ -62,7 +62,7 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
           _searchResults = [];
           _isSearching = false;
         });
-        // Show error message
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to search users: $e'),
@@ -155,10 +155,9 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Selected users display
+
         _buildSelectedUsers(),
 
-        // Search field
         TextField(
           controller: _searchController,
           decoration: InputDecoration(
@@ -175,7 +174,7 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
             border: const OutlineInputBorder(),
           ),
           onChanged: (value) {
-            // Debounce search
+
             Future.delayed(const Duration(milliseconds: 500), () {
               if (_searchController.text == value) {
                 _searchUsers(value);
@@ -186,7 +185,6 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
 
         const SizedBox(height: 16),
 
-        // Search results
         if (_searchResults.isNotEmpty)
           Container(
             constraints: const BoxConstraints(maxHeight: 200),
@@ -204,7 +202,6 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
             ),
           ),
 
-        // Instructions
         if (_searchResults.isEmpty && _searchController.text.isEmpty)
           const Padding(
             padding: EdgeInsets.all(16.0),

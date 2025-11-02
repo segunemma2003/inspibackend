@@ -25,7 +25,7 @@ class _FollowingPageState extends NyPage<FollowingPage> {
 
   Future<void> _loadFollowing({bool refresh = false}) async {
     if (_userId == null) {
-      // print('❌ FollowingPage: No userId provided');
+
       setState(() {
         _isLoading = false;
       });
@@ -71,7 +71,7 @@ class _FollowingPageState extends NyPage<FollowingPage> {
       print('📱 FollowingPage: Response data: ${response?['data']}');
 
       if (response != null && response['success'] == true) {
-        // Handle different response structures
+
         List<dynamic> followingData = [];
 
         if (response['data'] is Map && response['data']['data'] != null) {
@@ -105,7 +105,6 @@ class _FollowingPageState extends NyPage<FollowingPage> {
         print('📱 FollowingPage: API returned unsuccessful response or null');
         print('📱 FollowingPage: Response: $response');
 
-        // Try to clear cache and retry once
         if (_currentPage == 1) {
           print('📱 FollowingPage: Attempting to clear cache and retry...');
           try {

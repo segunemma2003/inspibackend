@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 class FormStyle extends NyFormStyle {
-  /// TextField styles
+
   @override
   FormStyleTextField textField(BuildContext context, Field field) {
     return {
@@ -102,13 +102,4 @@ class FormStyle extends NyFormStyle {
     };
   }
 
-  /// Checkbox styles
-  // @override
-  // FormStyleCheckbox checkbox(BuildContext context, Field field) {
-  //   return {
-  //     'default': () => FormCast.checkbox(
-  //
-  //     ),
-  //   };
-  // }
 }

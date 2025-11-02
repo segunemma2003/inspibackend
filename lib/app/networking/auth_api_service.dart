@@ -21,10 +21,6 @@ class AuthApiService extends NyApiService {
         BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
-  // Authentication is now handled by BearerAuthInterceptor
-  // No need for setAuthHeaders method
-
-  /// Register a new user
   Future<Map<String, dynamic>?> register({
     required String fullName,
     required String email,
@@ -39,7 +35,7 @@ class AuthApiService extends NyApiService {
     String? osVersion,
   }) async {
     final rawResponse = await network<dynamic>(
-      // Use dynamic to get raw response
+
       request: (request) => request.post("/register", data: {
         "full_name": fullName,
         "email": email,
@@ -58,7 +54,7 @@ class AuthApiService extends NyApiService {
     if (rawResponse == null) return null;
 
     if (rawResponse is String) {
-      // Attempt to fix concatenated JSON (e.g., {"key": "val"}{"error": "msg"})
+
       if (rawResponse.startsWith('{') && rawResponse.contains('}{')) {
         try {
           final parts = rawResponse.split('}{');
@@ -97,7 +93,7 @@ class AuthApiService extends NyApiService {
               '🐛 AuthApiService.register: Error fixing concatenated JSON: $e');
         }
       }
-      // If it's a string but not concatenated JSON, try decoding as a single JSON object
+
       try {
         return jsonDecode(rawResponse) as Map<String, dynamic>;
       } catch (e) {
@@ -128,7 +124,6 @@ class AuthApiService extends NyApiService {
     };
   }
 
-  /// Login user
   Future<Map<String, dynamic>?> login({
     required String email,
     required String password,
@@ -213,7 +208,7 @@ class AuthApiService extends NyApiService {
             '🔑 AuthApiService: Calling storeAuthData with authData: $authData');
         await AuthService.instance.storeAuthData(authData);
       } else {
-        // If the response is a Map but not successful, clear authentication data
+
         await AuthService.instance.clearAuth();
       }
       return rawResponse;
@@ -224,14 +219,12 @@ class AuthApiService extends NyApiService {
     };
   }
 
-  /// Logout user
   Future<Map<String, dynamic>?> logout() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/logout"),
     );
   }
 
-  /// Forgot password (request OTP)
   Future<Map<String, dynamic>?> forgotPassword({required String email}) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/forgot-password", data: {
@@ -299,7 +292,6 @@ class AuthApiService extends NyApiService {
     };
   }
 
-  /// Verify OTP
   Future<Map<String, dynamic>?> verifyOtp({
     required String email,
     required String otp,
@@ -381,7 +373,6 @@ class AuthApiService extends NyApiService {
     };
   }
 
-  /// Resend OTP
   Future<Map<String, dynamic>?> resendOtp({
     required String email,
     required String type, // "registration" or "password_reset"
@@ -394,7 +385,6 @@ class AuthApiService extends NyApiService {
     );
   }
 
-  /// Reset password with OTP
   Future<Map<String, dynamic>?> resetPassword({
     required String email,
     required String otp, // Changed from 'token' to 'otp'
@@ -473,7 +463,7 @@ class AuthApiService extends NyApiService {
       };
     } on DioException catch (e) {
       if (e.response != null && e.response!.data != null) {
-        // Handle Dio's error response which contains the actual error data
+
         final errorResponse = e.response!.data;
         if (errorResponse is String) {
           try {
@@ -501,7 +491,6 @@ class AuthApiService extends NyApiService {
     }
   }
 
-  /// Verify Firebase token and create/update user
   Future<Map<String, dynamic>?> verifyFirebaseToken({
     required String token,
     required String provider,
@@ -615,7 +604,6 @@ class AuthApiService extends NyApiService {
     };
   }
 
-  /// Get current user
   Future<User?> getCurrentUser() async {
     return await network<User>(
       request: (request) => request.get("/me"),
@@ -624,7 +612,6 @@ class AuthApiService extends NyApiService {
     );
   }
 
-  /// Delete account
   Future<Map<String, dynamic>?> deleteAccount() async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/delete-account"),

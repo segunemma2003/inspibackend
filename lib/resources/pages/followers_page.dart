@@ -25,7 +25,7 @@ class _FollowersPageState extends NyPage<FollowersPage> {
 
   Future<void> _loadFollowers({bool refresh = false}) async {
     if (_userId == null) {
-      // print('❌ FollowersPage: No userId provided');
+
       setState(() {
         _isLoading = false;
       });
@@ -65,7 +65,7 @@ class _FollowersPageState extends NyPage<FollowersPage> {
       print('📱 FollowersPage: API response: $response');
 
       if (response != null && response['success'] == true) {
-        // Handle different response structures
+
         List<dynamic> followersData = [];
 
         if (response['data'] is Map && response['data']['data'] != null) {

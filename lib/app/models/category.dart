@@ -14,12 +14,11 @@ class Category extends Model {
   Category() : super(key: key);
 
   Category.fromJson(dynamic data) : super(key: key) {
-    // Handle case where data might be null or not a Map
+
     if (data == null) {
       return;
     }
 
-    // Convert to Map if it's not already
     Map<String, dynamic> categoryData;
     if (data is Map<String, dynamic>) {
       categoryData = data;

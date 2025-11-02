@@ -26,7 +26,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
   @override
   get init => () {
-        // Empty init - no async operations needed on page load
+
       };
 
   @override
@@ -42,7 +42,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
               children: [
                 const SizedBox(height: 20),
 
-                // Back arrow at top left
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -61,47 +60,38 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
                 const SizedBox(height: 20),
 
-                // Logo Section
                 _buildLogoSection(),
 
                 const SizedBox(height: 30),
 
-                // Page Title
                 _buildPageTitle(),
 
                 const SizedBox(height: 20),
 
-                // Tagline
                 _buildTagline(),
 
                 const SizedBox(height: 40),
 
-                // Input Fields
                 _buildInputFields(),
 
                 const SizedBox(height: 30),
 
-                // Terms and Policy Checkbox
                 _buildTermsCheckbox(),
 
                 const SizedBox(height: 40),
 
-                // Create Account Button
                 _buildCreateAccountButton(),
 
                 const SizedBox(height: 30),
 
-                // Divider
                 _buildDivider(),
 
                 const SizedBox(height: 30),
 
-                // Social Login Buttons
                 _buildSocialButtons(),
 
                 const SizedBox(height: 30),
 
-                // Sign In Link
                 _buildSignInLink(),
 
                 const SizedBox(height: 20),
@@ -116,7 +106,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 120,
@@ -126,7 +116,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
         const SizedBox(height: 20),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -191,7 +180,7 @@ class _SignUpPageState extends NyPage<SignUpPage> {
   Widget _buildInputFields() {
     return Column(
       children: [
-        // Full Name Field
+
         _buildTextField(
           controller: _fullNameController,
           hintText: 'Full Name',
@@ -200,7 +189,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
         const SizedBox(height: 20),
 
-        // Email Field
         _buildTextField(
           controller: _emailController,
           hintText: 'Email',
@@ -210,7 +198,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
         const SizedBox(height: 20),
 
-        // Username Field
         _buildTextField(
           controller: _usernameController,
           hintText: 'Username',
@@ -219,7 +206,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
         const SizedBox(height: 20),
 
-        // Password Field
         _buildPasswordField(
           controller: _passwordController,
           hintText: 'Password',
@@ -234,7 +220,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
 
         const SizedBox(height: 20),
 
-        // Confirm Password Field
         _buildPasswordField(
           controller: _confirmPasswordController,
           hintText: 'Confirm Password',
@@ -496,7 +481,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
     );
   }
 
-  // Validation methods
   String? _validateFullName(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Full name is required';
@@ -558,9 +542,8 @@ class _SignUpPageState extends NyPage<SignUpPage> {
     return null;
   }
 
-  // API Integration
   Future<void> _createAccount() async {
-    // Validate form first
+
     if (!_formKey.currentState!.validate()) {
       print('⚠️ SignUp Toast: Validation Error - Please fix the errors above');
       showToast(
@@ -595,7 +578,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
       print('🔐 SignUp: Raw API response type: ${response.runtimeType}');
       print('🔐 SignUp: Raw API response content: $response');
 
-      // Check if response is valid
       if (response == null || !(response is Map<String, dynamic>)) {
         print(
             '⚠️ SignUp Toast: Error - An unexpected server response was received');
@@ -612,7 +594,6 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         return;
       }
 
-      // Process successful response
       if (response['success'] == true) {
         print('✅ SignUp: Registration successful, navigating to OTP...');
 
@@ -626,10 +607,8 @@ class _SignUpPageState extends NyPage<SignUpPage> {
             style: ToastNotificationStyleType.success,
           );
 
-          // Small delay for toast visibility
           await Future.delayed(Duration(milliseconds: 800));
 
-          // Navigate to OTP verification using Nylo route
           if (mounted) {
             routeTo(
               '/verify-otp',
@@ -643,12 +622,12 @@ class _SignUpPageState extends NyPage<SignUpPage> {
         }
         return;
       } else {
-        // Handle API validation errors
+
         final message = response['message'] ?? 'Failed to create account'.tr();
         final errors = response['errors'];
 
         if (errors != null && mounted) {
-          // Show specific field errors
+
           final fieldErrors = <String>[];
           (errors as Map<String, dynamic>).forEach((field, errorList) {
             if (errorList is List && errorList.isNotEmpty) {

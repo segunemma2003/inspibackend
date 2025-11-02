@@ -19,7 +19,6 @@ import 'package:nylo_framework/nylo_framework.dart';
 | -------------------------------------------------------------------------- */
 
 final TextStyle appFont = GoogleFonts.outfit();
-// e.g. final TextStyle appThemeFont = GoogleFonts.lato();
 
 /* App Logo
 |--------------------------------------------------------------------------
@@ -28,7 +27,6 @@ final TextStyle appFont = GoogleFonts.outfit();
 | -------------------------------------------------------------------------- */
 
 final Widget logo = const Logo();
-// File: resources/widgets/logo_widget.dart
 
 /* Loader
 |--------------------------------------------------------------------------
@@ -37,7 +35,6 @@ final Widget logo = const Logo();
 | -------------------------------------------------------------------------- */
 
 final Widget loader = const Loader();
-// File: resources/widgets/loader_widget.dart
 
 /* Toast Notification
 |--------------------------------------------------------------------------
@@ -57,4 +54,4 @@ Widget getToastNotificationWidget(
 
   return ToastNotification(toastMeta, onDismiss: onDismiss);
 }
-// File: resources/widgets/toast_notification_styles.dart
+

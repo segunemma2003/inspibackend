@@ -21,47 +21,39 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
           SafeArea(
             child: Column(
               children: [
-                // Top Bar
+
                 _buildTopBar(),
 
-                // Content
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
                         const SizedBox(height: 20),
 
-                        // Profile Picture
                         _buildProfilePicture(),
 
                         const SizedBox(height: 20),
 
-                        // Name and Title
                         _buildNameAndTitle(),
 
                         const SizedBox(height: 20),
 
-                        // Book Now Button
                         _buildBookNowButton(),
 
                         const SizedBox(height: 30),
 
-                        // Business Info
                         _buildBusinessInfo(),
 
                         const SizedBox(height: 20),
 
-                        // Social Media Icons
                         _buildSocialMediaIcons(),
 
                         const SizedBox(height: 30),
 
-                        // Likes Section
                         _buildLikesSection(),
 
                         const SizedBox(height: 20),
 
-                        // Posts Grid
                         _buildPostsGrid(),
                       ],
                     ),
@@ -71,8 +63,6 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
             ),
           ),
 
-          // Sidebar Overlay
-          // Removed sidebar functionality
         ],
       ),
     );
@@ -83,7 +73,7 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
       child: Row(
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
@@ -107,7 +97,6 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
             ),
           ),
 
-          // Business Account Label
           Expanded(
             child: Center(
               child: Text(
@@ -121,7 +110,6 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
             ),
           ),
 
-          // Empty space to balance the layout
           Container(width: 36),
         ],
       ),
@@ -294,7 +282,7 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
   }
 
   Widget _buildPostsGrid() {
-    // Sample post data matching the image layout
+
     final posts = [
       {'id': 0, 'hasMultiple': true, 'hasVideo': false},
       {'id': 1, 'hasMultiple': false, 'hasVideo': false},
@@ -325,7 +313,7 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
   }
 
   Widget _buildPostItem(Map<String, dynamic> post) {
-    // Different gradient colors for variety
+
     final gradients = [
       [Colors.blue[200]!, Colors.green[200]!],
       [Colors.orange[200]!, Colors.pink[200]!],
@@ -348,7 +336,7 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
       ),
       child: Stack(
         children: [
-          // Base content
+
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -359,7 +347,6 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
             ),
           ),
 
-          // Video indicator
           if (post['hasVideo'] == true)
             Positioned(
               top: 8,
@@ -371,7 +358,6 @@ class _BusinessprofilePageState extends NyPage<BusinessprofilePage> {
               ),
             ),
 
-          // Multiple images indicator
           if (post['hasMultiple'] == true)
             Positioned(
               top: 8,

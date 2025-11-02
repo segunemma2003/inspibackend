@@ -136,7 +136,7 @@ class _TaggedPostsPageState extends NyState<TaggedPostsPage> {
               width: double.infinity,
               height: double.infinity,
             ),
-            // Tagged indicator
+
             Positioned(
               top: 4,
               right: 4,

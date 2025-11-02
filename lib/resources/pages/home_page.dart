@@ -17,10 +17,10 @@ class _HomePageState extends NyPage<HomePage> {
 
   @override
   get init => () async {
-        // Check if user is already authenticated
+
         final isAuthenticated = await AuthService.instance.isAuthenticated();
         if (isAuthenticated) {
-          // User is already logged in, redirect to main app
+
           print(
               '🔐 HomePage: User is authenticated, redirecting to BaseNavigationHub');
           routeTo(BaseNavigationHub.path);
@@ -37,7 +37,7 @@ class _HomePageState extends NyPage<HomePage> {
 
   @override
   Widget view(BuildContext context) {
-    // Show loader while checking authentication
+
     if (_isCheckingAuth) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -52,13 +52,11 @@ class _HomePageState extends NyPage<HomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              // Top spacing
+
               const SizedBox(height: 40),
 
-              // Logo Section
               _buildLogoSection(),
 
-              // Tagline in center
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -68,7 +66,6 @@ class _HomePageState extends NyPage<HomePage> {
                 ),
               ),
 
-              // Action Buttons at bottom
               _buildActionButtons(),
 
               const SizedBox(height: 40),
@@ -82,7 +79,7 @@ class _HomePageState extends NyPage<HomePage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 300,
@@ -90,7 +87,6 @@ class _HomePageState extends NyPage<HomePage> {
           fit: BoxFit.contain,
         ).localAsset(),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -144,7 +140,7 @@ class _HomePageState extends NyPage<HomePage> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Create Account Button
+
         SizedBox(
           width: double.infinity,
           height: 50,
@@ -172,7 +168,6 @@ class _HomePageState extends NyPage<HomePage> {
 
         const SizedBox(height: 16),
 
-        // Sign In Button
         SizedBox(
           width: double.infinity,
           height: 50,

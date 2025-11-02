@@ -5,7 +5,6 @@ import 'dart:math';
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
-  /// Create a new instance of the MaterialApp
   static MaterialApp app() {
     return MaterialApp(
       home: SplashScreen(),

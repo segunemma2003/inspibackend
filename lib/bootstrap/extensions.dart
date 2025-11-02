@@ -3,7 +3,6 @@ import '/bootstrap/helpers.dart';
 import '/resources/themes/styles/color_styles.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
-/// [Text] Extensions
 extension NyText on Text {
   Text setColor(
       BuildContext context, Color Function(ColorStyles color) newColor,
@@ -14,13 +13,11 @@ extension NyText on Text {
   }
 }
 
-/// [BuildContext] Extensions
 extension NyApp on BuildContext {
-  /// Get the current theme color
+
   ColorStyles get color => ThemeColor.get(this);
 }
 
-/// [TextStyle] Extensions
 extension NyTextStyle on TextStyle {
   TextStyle? setColor(
       BuildContext context, Color Function(ColorStyles color) newColor,

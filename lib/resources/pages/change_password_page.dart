@@ -32,7 +32,7 @@ class _ChangePasswordPageState extends NyPage<ChangePasswordPage> {
         }
 
         if (email == null || otp == null) {
-          // Handle case where email or OTP is not passed, maybe navigate back or show error
+
           Navigator.pop(context);
           return;
         }
@@ -83,7 +83,6 @@ class _ChangePasswordPageState extends NyPage<ChangePasswordPage> {
         passwordConfirmation: _confirmPasswordController.text,
       );
 
-      // Ensure the response is a Map before proceeding with specific error parsing
       if (response == null || !(response is Map<String, dynamic>)) {
         showToastNotification(
           context,

@@ -13,30 +13,22 @@ class BaseNavigationHub extends NyStatefulWidget with BottomNavPageControls {
             child: () => _BaseNavigationHubState(),
             stateName: path.stateName());
 
-  /// State actions
   static NavigationHubStateActions stateActions =
       NavigationHubStateActions(path.stateName());
 }
 
 class _BaseNavigationHubState extends NavigationHub<BaseNavigationHub> {
-  /// Layouts:
-  /// - [NavigationHubLayout.bottomNav] Bottom navigation
-  /// - [NavigationHubLayout.topNav] Top navigation
-  /// - [NavigationHubLayout.journey] Journey navigation
+
   NavigationHubLayout? layout = NavigationHubLayout.bottomNav(
-      // backgroundColor: Colors.white,
+
       );
 
-  /// Should the state be maintained
   @override
   bool get maintainState => false;
 
-  /// Navigation pages
   _BaseNavigationHubState()
       : super(() async {
-          /// * Creating Navigation Tabs
-          /// [Navigation Tabs] 'dart run nylo_framework:main make:stateful_widget home_tab,settings_tab'
-          /// [Journey States] 'dart run nylo_framework:main make:journey_widget welcome_tab,users_dob,users_info --parent=Base'
+
           return {
             0: NavigationTab(
               title: "Feed",
@@ -65,21 +57,17 @@ class _BaseNavigationHubState extends NavigationHub<BaseNavigationHub> {
           };
         });
 
-  /// Handle the tap event
   @override
   onTap(int index) {
     super.onTap(index);
 
-    // Pause all videos when switching tabs (except when going to Feed tab)
     if (index != 0) {
-      // Not on Feed tab, pause any playing videos
+
       _pauseAllVideosInFeed();
     }
   }
 
-  /// Method to pause all videos in the Feed widget
   void _pauseAllVideosInFeed() {
-    // This will be handled by the Feed widget's own lifecycle
-    // The Feed widget will pause videos when it's not visible
+
   }
 }

@@ -109,7 +109,7 @@ class _HelpCenterPageState extends NyPage<HelpCenterPage> {
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to support page
+
                       routeTo('/support');
                     },
                     style: ElevatedButton.styleFrom(

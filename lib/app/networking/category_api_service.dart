@@ -20,10 +20,6 @@ class CategoryApiService extends NyApiService {
         BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
-  // Authentication is now handled by BearerAuthInterceptor
-  // No need for setAuthHeaders method
-
-  /// Get all categories
   Future<List<Category>?> getCategories() async {
     print('🌐 CategoryApiService: Starting getCategories request...');
     final rawResponse = await network<dynamic>(
@@ -100,7 +96,6 @@ class CategoryApiService extends NyApiService {
     return null;
   }
 
-  /// Create category (Admin only)
   Future<Category?> createCategory({
     required String name,
     required String description,
@@ -178,7 +173,6 @@ class CategoryApiService extends NyApiService {
     return null;
   }
 
-  /// Update category (Admin only)
   Future<Category?> updateCategory({
     required int categoryId,
     String? name,
@@ -259,7 +253,6 @@ class CategoryApiService extends NyApiService {
     return null;
   }
 
-  /// Delete category (Admin only)
   Future<Map<String, dynamic>?> deleteCategory(int categoryId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/categories/$categoryId"),

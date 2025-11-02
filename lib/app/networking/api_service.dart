@@ -15,12 +15,7 @@ class ApiService extends NyApiService {
       : super(
           buildContext,
           decoders: modelDecoders,
-          // baseOptions: (BaseOptions baseOptions) {
-          //   return baseOptions
-          //             ..connectTimeout = Duration(seconds: 5)
-          //             ..sendTimeout = Duration(seconds: 5)
-          //             ..receiveTimeout = Duration(seconds: 5);
-          // },
+
         );
 
   @override
@@ -39,7 +34,6 @@ class ApiService extends NyApiService {
     );
   }
 
-  /// Example to fetch the Inspiritag repository info from Github
   Future githubInfo() async {
     return await network(
       request: (request) => request
@@ -58,19 +52,11 @@ class ApiService extends NyApiService {
   | Authenticate your API requests using a bearer token or any other method
   |-------------------------------------------------------------------------- */
 
-  // Authentication is now handled by BearerAuthInterceptor
-  // No need for setAuthHeaders method
-
   /* Should Refresh Token
   |--------------------------------------------------------------------------
   | Check if your Token should be refreshed
   | Set `false` if your API does not require a token refresh
   |-------------------------------------------------------------------------- */
-
-  // @override
-  // Future<bool> shouldRefreshToken() async {
-  //   return false;
-  // }
 
   /* Refresh Token
   |--------------------------------------------------------------------------
@@ -79,10 +65,4 @@ class ApiService extends NyApiService {
   | local storage and then use the value in `setAuthHeaders`.
   |-------------------------------------------------------------------------- */
 
-  // @override
-  // refreshToken(Dio dio) async {
-  //  dynamic response = (await dio.get("https://example.com/refresh-token")).data;
-  //  // Save the new token
-  //   await Keys.bearerToken.save(response['token']);
-  // }
 }

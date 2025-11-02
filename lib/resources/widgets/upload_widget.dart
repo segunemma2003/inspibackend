@@ -19,7 +19,7 @@ class Upload extends StatefulWidget {
 }
 
 class _UploadState extends NyState<Upload> {
-  // File handling
+
   PlatformFile? _selectedFile;
   bool _isUploading = false;
   bool _isUploadComplete = false;
@@ -28,22 +28,18 @@ class _UploadState extends NyState<Upload> {
   double _uploadProgress = 0.0;
   String _uploadStatus = '';
 
-  // Video player
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
 
-  // Form state
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _captionController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   bool _isSubmitting = false;
 
-  // Categories
   List<Category> _categories = [];
   Category? _selectedCategory;
 
-  // User tagging
   List<Map<String, dynamic>> _taggedUsers = [];
 
   @override
@@ -132,19 +128,15 @@ class _UploadState extends NyState<Upload> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Top bar with back button
+
           _buildTopBar(),
 
-          // File preview section
           _buildFilePreview(),
 
-          // Status indicator
           _buildStatusIndicator(),
 
-          // Show upload progress if uploading
           if (_isUploading) _buildUploadProgress(),
 
-          // Show form after upload is complete
           if (_isUploadComplete)
             _buildPostForm()
           else if (!_isUploading)
@@ -226,14 +218,14 @@ class _UploadState extends NyState<Upload> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Video player
+
             Center(
               child: AspectRatio(
                 aspectRatio: _videoController!.value.aspectRatio,
                 child: VideoPlayer(_videoController!),
               ),
             ),
-            // Play/Pause overlay
+
             Center(
               child: GestureDetector(
                 onTap: () {
@@ -262,7 +254,7 @@ class _UploadState extends NyState<Upload> {
                 ),
               ),
             ),
-            // Video info overlay
+
             Positioned(
               bottom: 16,
               left: 16,
@@ -303,7 +295,7 @@ class _UploadState extends NyState<Upload> {
         ),
       );
     } else {
-      // Fallback for when video is not initialized
+
       return Container(
         width: double.infinity,
         height: 300,
@@ -359,14 +351,14 @@ class _UploadState extends NyState<Upload> {
     String statusText;
 
     if (_isSubmitting) {
-      // Creating post
+
       statusIcon = Icons.cloud_upload;
       statusColor = Colors.blue[700]!;
       bgColor = Colors.blue[50]!;
       borderColor = Colors.blue[200]!;
       statusText = 'Creating your post...';
     } else if (_isUploadComplete) {
-      // Upload complete, ready to create post
+
       statusIcon = Icons.check_circle;
       statusColor = Colors.green[700]!;
       bgColor = Colors.green[50]!;
@@ -374,7 +366,7 @@ class _UploadState extends NyState<Upload> {
       statusText =
           'File uploaded successfully! Fill in the details to create your post.';
     } else if (_isUploading) {
-      // Currently uploading
+
       statusIcon = Icons.upload_file;
       statusColor = Colors.orange[700]!;
       bgColor = Colors.orange[50]!;
@@ -383,7 +375,7 @@ class _UploadState extends NyState<Upload> {
           ? _uploadStatus
           : 'Uploading file to cloud storage...';
     } else {
-      // File selected, ready to upload
+
       statusIcon = Icons.cloud_upload_outlined;
       statusColor = Colors.teal[700]!;
       bgColor = Colors.teal[50]!;
@@ -569,7 +561,6 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 20),
 
-            // Caption field
             _buildTextField(
               controller: _captionController,
               label: 'Caption *',
@@ -579,11 +570,9 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 16),
 
-            // Category dropdown
             _buildCategoryDropdown(),
             const SizedBox(height: 16),
 
-            // Tags field
             _buildTextField(
               controller: _tagsController,
               label: 'Tags',
@@ -591,7 +580,6 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 16),
 
-            // Location field
             _buildTextField(
               controller: _locationController,
               label: 'Location',
@@ -599,7 +587,6 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 16),
 
-            // User Tagging Section
             const Text(
               'Tag People',
               style: TextStyle(
@@ -619,7 +606,6 @@ class _UploadState extends NyState<Upload> {
             ),
             const SizedBox(height: 24),
 
-            // Submit button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -758,7 +744,7 @@ class _UploadState extends NyState<Upload> {
                 filled: true,
                 fillColor: Colors.white,
                 hintStyle: TextStyle(color: Colors.grey[500]),
-                // Remove border definitions from InputDecoration to avoid conflicts
+
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -1058,7 +1044,6 @@ class _UploadState extends NyState<Upload> {
     );
   }
 
-  // File picker and video player methods
   Future<void> _initializeVideoPlayer(PlatformFile file) async {
     await _disposeVideoController();
 
@@ -1125,7 +1110,7 @@ class _UploadState extends NyState<Upload> {
         print('📁 File extension: ${file.extension}');
         print('📁 File path: ${file.path}');
       } else {
-        // User cancelled the picker
+
         print('📁 File picking cancelled');
       }
     } catch (e) {
@@ -1139,7 +1124,6 @@ class _UploadState extends NyState<Upload> {
     }
   }
 
-  // Upload methods - Always use presigned URL
   Future<void> _uploadFile() async {
     if (_selectedFile == null) return;
 
@@ -1198,7 +1182,6 @@ class _UploadState extends NyState<Upload> {
       print(
           '📤 Upload: - fileSize: $fileSize bytes (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)');
 
-      // Step 1: Get upload URL from API
       print('🔵 REQUEST: getUploadUrl()');
       print('  - filename: $filename');
       print('  - contentType: $contentType');
@@ -1229,10 +1212,10 @@ class _UploadState extends NyState<Upload> {
       print('📤 Upload: File path: "$filePath"');
 
       if (uploadMethod == 'chunked') {
-        // For very large files, use chunked upload
+
         await _uploadChunkedFile(filePath);
       } else {
-        // For regular files, use presigned URL upload
+
         await _uploadDirectToS3(uploadData);
       }
 
@@ -1280,7 +1263,6 @@ class _UploadState extends NyState<Upload> {
       try {
         print('📤 Upload: Attempt $attempt of $maxRetries');
 
-        // Read the entire file into memory
         final bytes = await file.readAsBytes();
 
         setState(() {
@@ -1288,7 +1270,6 @@ class _UploadState extends NyState<Upload> {
           _uploadProgress = 0.3;
         });
 
-        // Create request with proper headers
         final request = http.Request('PUT', Uri.parse(uploadUrl));
         request.headers['Content-Type'] = contentType;
         request.bodyBytes = bytes;
@@ -1352,7 +1333,6 @@ class _UploadState extends NyState<Upload> {
       const chunkSize = 5 * 1024 * 1024; // 5MB chunks
       final totalChunks = (_selectedFile!.size / chunkSize).ceil();
 
-      // Step 2: Get chunked upload URLs
       final chunkedResponse = await api<PostApiService>(
         (request) => request.getChunkedUploadUrl(
           filename: _selectedFile!.name,
@@ -1371,7 +1351,6 @@ class _UploadState extends NyState<Upload> {
 
       print('📤 Upload: Total chunks: $totalChunks');
 
-      // Step 3: Upload each chunk
       final file = File(_selectedFile!.path!);
       for (int i = 0; i < totalChunks; i++) {
         final chunkStart = i * chunkSize;
@@ -1409,7 +1388,6 @@ class _UploadState extends NyState<Upload> {
         _uploadProgress = 0.95;
       });
 
-      // Step 4: Complete chunked upload
       print('🔵 REQUEST: completeChunkedUpload()');
       print('  - filePath: $filePath');
       print('  - totalChunks: $totalChunks');
@@ -1442,7 +1420,7 @@ class _UploadState extends NyState<Upload> {
   }
 
   Future<void> _submitPost() async {
-    // Validate form
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -1535,16 +1513,10 @@ class _UploadState extends NyState<Upload> {
           style: ToastNotificationStyleType.success,
         );
 
-        // Wait a moment for the toast to show
         await Future.delayed(const Duration(milliseconds: 500));
 
-        // Check if widget is still mounted before navigation
         if (!mounted) return;
 
-        // Navigate to BaseNavigationHub with feed tab (index 0)
-        // Use pushAndRemoveUntil to clear the navigation stack
-
-        // Alternative: If you want to use Nylo's routeTo (uncomment this and comment above)
         routeTo(
           BaseNavigationHub.path,
           navigationType: NavigationType.pushAndForgetAll,
@@ -1568,7 +1540,6 @@ class _UploadState extends NyState<Upload> {
         errorMessage = 'Invalid data. Please check your inputs';
       }
 
-      // Only show toast if widget is still mounted
       if (mounted) {
         showToast(
           title: 'Error',
@@ -1577,7 +1548,7 @@ class _UploadState extends NyState<Upload> {
         );
       }
     } finally {
-      // Only update state if widget is still mounted
+
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -1587,7 +1558,6 @@ class _UploadState extends NyState<Upload> {
     }
   }
 
-  // Helper methods
   bool _isImageFile(PlatformFile file) {
     final extension = file.extension?.toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(extension);

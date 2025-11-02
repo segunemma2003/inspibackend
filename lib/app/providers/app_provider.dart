@@ -22,7 +22,6 @@ class AppProvider implements NyProvider {
       _isLoading = true;
       print('📱 AppProvider: Loading categories from API...');
 
-      // Use real API call to fetch categories
       final categories = await api<CategoryApiService>(
         (request) => request.getCategories(),
         cacheKey: "app_categories",
@@ -68,13 +67,6 @@ class AppProvider implements NyProvider {
     nylo.addFormStyle(formStyle);
     nylo.addAuthKey(Keys.auth);
     await nylo.syncKeys(Keys.syncedOnBoot);
-
-    // Auth is configured via the global auth instance exported from auth_service.dart
-
-    // Optional
-    // nylo.showDateTimeInLogs(); // Show date time in logs
-    // nylo.monitorAppUsage(); // Monitor the app usage
-    // nylo.broadcastEvents(); // Broadcast events in the app
 
     return nylo;
   }

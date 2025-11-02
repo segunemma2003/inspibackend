@@ -19,10 +19,9 @@ class _SavedState extends NyState<Saved> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
-            // Saved Posts with NyPullToRefresh
             Expanded(
               child: NyPullToRefresh.separated(
                 child: (BuildContext context, dynamic data) {
@@ -87,7 +86,7 @@ class _SavedState extends NyState<Saved> {
           const Spacer(),
           IconButton(
             onPressed: () {
-              // Refresh the saved posts
+
               setState(() {});
             },
             icon: const Icon(Icons.refresh),
@@ -153,7 +152,7 @@ class _SavedState extends NyState<Saved> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User info
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -232,7 +231,6 @@ class _SavedState extends NyState<Saved> {
             ),
           ),
 
-          // Media content
           if (post.mediaUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -244,7 +242,6 @@ class _SavedState extends NyState<Saved> {
               ),
             ),
 
-          // Caption
           if (post.caption != null && post.caption!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
@@ -254,7 +251,6 @@ class _SavedState extends NyState<Saved> {
               ),
             ),
 
-          // Tags
           if (post.tags != null && post.tags!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -273,7 +269,6 @@ class _SavedState extends NyState<Saved> {
               ),
             ),
 
-          // Location
           if (post.location != null && post.location!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -361,7 +356,6 @@ class _SavedState extends NyState<Saved> {
     try {
       print('❤️ Saved: Toggling like for post ${post.id}');
 
-      // Optimistic update
       final wasLiked = post.isLiked ?? false;
       final oldLikesCount = post.likesCount ?? 0;
 
@@ -380,7 +374,7 @@ class _SavedState extends NyState<Saved> {
           post.likesCount = response['data']['likes_count'] ?? oldLikesCount;
         });
       } else {
-        // Revert on failure
+
         setState(() {
           post.isLiked = wasLiked;
           post.likesCount = oldLikesCount;
@@ -412,7 +406,7 @@ class _SavedState extends NyState<Saved> {
           title: 'Success',
           description: 'Post removed from saved',
         );
-        // Refresh the list
+
         setState(() {});
       } else {
         showToast(

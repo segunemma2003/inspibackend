@@ -29,10 +29,9 @@ class AppTheme {
     );
   }
 
-  // Add dark theme if needed
   static ThemeData get darkTheme {
     return ThemeData.dark().copyWith(
-      // Customize dark theme here
+
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,

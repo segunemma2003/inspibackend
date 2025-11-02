@@ -8,12 +8,10 @@ class UserService {
   factory UserService() => _instance;
   UserService._internal();
 
-  /// Get current user with fallback to API
   static Future<User?> getCurrentUserWithFallback() async {
     try {
       print('🔍 UserService: Getting current user...');
 
-      // First try to get from cache
       final cachedUser = await AuthService.instance.getUserProfile();
       if (cachedUser != null) {
         print(
@@ -23,7 +21,6 @@ class UserService {
 
       print('⚠️ UserService: No cached user found, fetching from API...');
 
-      // If no cached user, fetch from API using token
       final response = await api<AuthApiService>(
         (request) => request.getCurrentUser(),
       );
@@ -31,7 +28,6 @@ class UserService {
       if (response != null) {
         print('✅ UserService: API returned user data');
 
-        // Handle different response structures
         User? user;
         if (response is User) {
           user = response;
@@ -55,7 +51,7 @@ class UserService {
 
         if (user != null) {
           print('✅ UserService: Successfully created user: ${user.fullName}');
-          // Update cache with fresh data
+
           await AuthService.instance.updateUserProfile(user.toJson());
           return user;
         }
@@ -69,7 +65,6 @@ class UserService {
     }
   }
 
-  /// Check if user is authenticated and has valid data
   static Future<bool> isUserAuthenticated() async {
     try {
       final token = await AuthService.instance.getToken();
@@ -94,34 +89,26 @@ class UserService {
     }
   }
 
-  /// Handle unauthenticated user - logout and redirect to sign-in
   static Future<void> _handleUnauthenticatedUser() async {
     try {
       print('🚪 UserService: Handling unauthenticated user...');
 
-      // Clear all auth data
       await AuthService.instance.logout();
 
-      // User will be redirected to sign-in page
-
-      // Redirect to sign-in page
       routeTo('/sign-in');
     } catch (e) {
       print('❌ UserService: Error handling unauthenticated user: $e');
-      // Force redirect even if there's an error
+
       routeTo('/sign-in');
     }
   }
 
-  /// Force refresh user data from API
   static Future<User?> refreshCurrentUser() async {
     try {
       print('🔄 UserService: Force refreshing user data...');
 
-      // Clear cache first
       await AuthService.instance.clearAuth();
 
-      // Fetch fresh data
       return await getCurrentUserWithFallback();
     } catch (e) {
       print('❌ UserService: Error refreshing user: $e');
@@ -129,16 +116,14 @@ class UserService {
     }
   }
 
-  /// Validate token and get current user with automatic logout on failure
   static Future<User?> getCurrentUserWithAuthCheck() async {
     try {
-      // Check if user is authenticated
+
       final isAuthenticated = await isUserAuthenticated();
       if (!isAuthenticated) {
         return null; // User will be redirected to sign-in
       }
 
-      // Get current user
       return await getCurrentUserWithFallback();
     } catch (e) {
       print('❌ UserService: Error in auth check: $e');
@@ -147,7 +132,6 @@ class UserService {
     }
   }
 
-  /// Check if token is valid by making a test API call
   static Future<bool> isTokenValid() async {
     try {
       final token = await AuthService.instance.getToken();
@@ -155,7 +139,6 @@ class UserService {
         return false;
       }
 
-      // Make a simple API call to validate token
       final response = await api<AuthApiService>(
         (request) => request.getCurrentUser(),
       );

@@ -36,11 +36,11 @@ ThemeData darkTheme(ColorStyles color) {
       dialTextColor: Colors.white,
       dayPeriodTextColor: Colors.white,
       helpTextStyle: TextStyle(color: Colors.white),
-      // For the AM/PM selector
+
       dayPeriodBorderSide: BorderSide(color: Colors.white),
-      // For the dial background
+
       dialBackgroundColor: Colors.grey[800],
-      // For the input decoration if using text input mode
+
       inputDecorationTheme: InputDecorationTheme(
         labelStyle: TextStyle(color: Colors.white),
         hintStyle: TextStyle(color: Colors.white70),

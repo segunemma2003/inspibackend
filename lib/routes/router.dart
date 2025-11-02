@@ -1,3 +1,4 @@
+import '/resources/pages/post_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/routes/guards/auth_route_guard.dart';
 
@@ -54,10 +55,6 @@ import 'package:flutter_app/app/services/auth_service.dart';
 appRouter() => nyRoutes((router) {
       router.add(HomePage.path).initialRoute();
 
-      // Add your routes here ...
-      // router.add(NewPage.path, transitionType: TransitionType.fade());
-
-      // Example using grouped routes
       router.group(
           () => {
                 "route_guards": [AuthRouteGuard()],
@@ -91,7 +88,7 @@ appRouter() => nyRoutes((router) {
           (
             "/logout",
             (context) => FutureBuilder(
-                // Use FutureBuilder to show loading while logging out
+
                 future: AuthService.instance
                     .logout()
                     .then((_) => Navigator.pushAndRemoveUntil(
@@ -119,4 +116,5 @@ appRouter() => nyRoutes((router) {
       router.add(ChangePasswordPage.path);
       router.add(SignUpPage.path);
       router.add(ForgotPasswordPage.path);
-    });
+      router.add(PostDetailsPage.path);
+});

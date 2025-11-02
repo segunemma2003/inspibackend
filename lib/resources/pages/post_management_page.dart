@@ -140,7 +140,7 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post media
+
           if (post.mediaUrl != null)
             ClipRRect(
               borderRadius:
@@ -153,13 +153,12 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
               ),
             ),
 
-          // Post details
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Caption
+
                 if (post.caption != null && post.caption!.isNotEmpty)
                   Text(
                     post.caption!,
@@ -170,7 +169,6 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
 
                 const SizedBox(height: 8),
 
-                // Stats
                 Row(
                   children: [
                     Icon(Icons.favorite, size: 16, color: Colors.red),
@@ -181,15 +179,15 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
                     const SizedBox(width: 4),
                     Text('${post.savesCount ?? 0}'),
                     const SizedBox(width: 16),
-                    Icon(Icons.comment, size: 16, color: Colors.grey),
+                    Icon(Icons.share, size: 16, color: Colors.green),
                     const SizedBox(width: 4),
-                    Text('${post.commentsCount ?? 0}'),
+                    Text('${post.sharesCount ?? 0}'),
+                    const SizedBox(width: 16),
                   ],
                 ),
 
                 const SizedBox(height: 8),
 
-                // Created date
                 Text(
                   'Posted ${_formatDate(post.createdAt)}',
                   style: TextStyle(
@@ -200,7 +198,6 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
 
                 const SizedBox(height: 12),
 
-                // Delete button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

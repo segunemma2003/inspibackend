@@ -171,7 +171,7 @@ class _TermsPageState extends NyPage<TermsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
+
             Row(
               children: [
                 Container(
@@ -234,7 +234,6 @@ class _TermsPageState extends NyPage<TermsPage> {
 
             const SizedBox(height: 32),
 
-            // Terms Content
             _buildTermsContent(),
           ],
         ),
@@ -323,7 +322,6 @@ class _TermsPageState extends NyPage<TermsPage> {
 
         const SizedBox(height: 24),
 
-        // Footer
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

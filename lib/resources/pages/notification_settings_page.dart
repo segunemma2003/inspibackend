@@ -16,7 +16,6 @@ class NotificationSettingsPage extends StatefulWidget {
 class _NotificationSettingsPageState extends NyState<NotificationSettingsPage> {
   bool _isLoading = true;
 
-  // Notification settings
   bool _likesEnabled = true;
   bool _commentsEnabled = true;
   bool _followsEnabled = true;

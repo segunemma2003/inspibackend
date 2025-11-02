@@ -12,21 +12,13 @@ class FirebaseAuthService {
   factory FirebaseAuthService() => _instance;
   FirebaseAuthService._internal();
 
-  /// Check if user is authenticated
   bool get isAuthenticated => _auth.currentUser != null;
 
-  /// Get current user
   User? get currentUser => _auth.currentUser;
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
-      // Create a new GoogleAuthProvider instance
       final GoogleAuthProvider googleProvider = GoogleAuthProvider();
 
-      // Add any additional scopes if needed
-      // googleProvider.addScope('https://www.googleapis.com/auth/userinfo.email');
-      // googleProvider.addScope('https://www.googleapis.com/auth/userinfo.profile');
-
-      // Sign in with the Google provider
       final UserCredential userCredential =
           await _auth.signInWithProvider(googleProvider);
 
@@ -38,7 +30,6 @@ class FirebaseAuthService {
         );
       }
 
-      // Get the ID token for backend authentication
       final String? idToken = await user.getIdToken();
       if (idToken == null) {
         throw FirebaseAuthException(
@@ -47,7 +38,6 @@ class FirebaseAuthService {
         );
       }
 
-      // Send to backend
       return await _sendToBackend(
         user: user,
         idToken: idToken,
@@ -59,10 +49,8 @@ class FirebaseAuthService {
     }
   }
 
-  /// Sign in with Apple
   Future<Map<String, dynamic>> signInWithApple() async {
     try {
-      // Request Apple ID credential
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
@@ -70,14 +58,12 @@ class FirebaseAuthService {
         ],
       );
 
-      // Create OAuth credential for Firebase
       final oAuthProvider = OAuthProvider('apple.com');
       final credential = oAuthProvider.credential(
         idToken: appleCredential.identityToken,
         accessToken: appleCredential.authorizationCode,
       );
 
-      // Sign in to Firebase
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
@@ -88,7 +74,6 @@ class FirebaseAuthService {
         );
       }
 
-      // Get the ID token for backend authentication
       final String? idToken = await userCredential.user?.getIdToken();
       if (idToken == null) {
         throw FirebaseAuthException(
@@ -97,14 +82,12 @@ class FirebaseAuthService {
         );
       }
 
-      // Prepare user data for backend
       final userData = {
         'givenName': appleCredential.givenName,
         'familyName': appleCredential.familyName,
         'email': appleCredential.email,
       };
 
-      // Send to backend
       return await _sendToBackend(
         user: userCredential.user!,
         idToken: idToken,
@@ -117,7 +100,6 @@ class FirebaseAuthService {
     }
   }
 
-  /// Verifies the Firebase token with the backend and handles the session
   Future<Map<String, dynamic>> _sendToBackend({
     required User user,
     required String idToken,
@@ -125,7 +107,6 @@ class FirebaseAuthService {
     Map<String, dynamic>? additionalData,
   }) async {
     try {
-      // Get user email and name
       final email = user.email ?? additionalData?['email'];
       if (email == null) {
         throw Exception('Email is required but not provided');
@@ -135,7 +116,6 @@ class FirebaseAuthService {
           '${additionalData?['givenName'] ?? ''} ${additionalData?['familyName'] ?? ''}'
               .trim();
 
-      // Call backend API
       final response = await _authApiService.verifyFirebaseToken(
         token: idToken,
         provider: provider,
@@ -154,7 +134,6 @@ class FirebaseAuthService {
         throw Exception('No authentication token received');
       }
 
-      // Save the auth token and update auth state
       await _updateAuthState(token, userData);
 
       return {
@@ -168,7 +147,6 @@ class FirebaseAuthService {
     }
   }
 
-  /// Updates the authentication state in the app
   Future<void> _updateAuthState(
       String token, Map<String, dynamic> userData) async {
     try {
@@ -203,13 +181,10 @@ class FirebaseAuthService {
     }
   }
 
-  /// Sign out the current user
   Future<void> signOut() async {
     try {
-      // Sign out from Firebase
       await _auth.signOut();
 
-      // Clear Nylo auth state
       await AuthService.instance.clearAuth();
       cache().flush();
     } catch (e) {

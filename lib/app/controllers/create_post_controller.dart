@@ -2,8 +2,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class CreatePostController {
-  /// Uploads a file to S3 using presigned URL
-  /// Returns true if upload is successful, false otherwise
+
   Future<bool> uploadToS3({
     required File file,
     required String uploadUrl,
@@ -12,18 +11,15 @@ class CreatePostController {
     try {
       final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
 
-      // Add form fields
       fields.forEach((key, value) {
         request.fields[key] = value;
       });
 
-      // Add file
       request.files.add(await http.MultipartFile.fromPath(
         'file',
         file.path,
       ));
 
-      // Send request
       final response = await request.send();
 
       if (response.statusCode == 204) {
@@ -39,7 +35,6 @@ class CreatePostController {
     }
   }
 
-  /// Validates the post data before submission
   bool validatePost({
     required String caption,
     required File? mediaFile,
@@ -55,7 +50,6 @@ class CreatePostController {
     return true;
   }
 
-  /// Formats tags for the API
   List<String> formatTags(List<String> tags) {
     return tags
         .map((tag) => tag.trim())

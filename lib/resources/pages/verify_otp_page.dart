@@ -6,7 +6,6 @@ import 'package:flutter_app/app/networking/auth_api_service.dart';
 import 'package:flutter_app/resources/pages/change_password_page.dart';
 import 'package:flutter_app/config/keys.dart';
 import 'package:flutter_app/app/services/firebase_auth_service.dart';
-// Import AuthService
 
 class VerifyOtpPage extends NyStatefulWidget {
   static RouteView path = ("/verify-otp", (_) => VerifyOtpPage());
@@ -27,13 +26,13 @@ class _VerifyOtpPageState extends NyPage<VerifyOtpPage> {
 
   @override
   get init => () {
-        // Get query parameters from Nylo route
+
         final queryParams = queryParameters();
         email = queryParams != null ? queryParams[EmailKey] : null;
         type = queryParams != null ? queryParams[OtpTypeKey] : null;
 
         if (email == null) {
-          // Schedule navigation for after build completes
+
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               pop();
@@ -119,18 +118,17 @@ class _VerifyOtpPageState extends NyPage<VerifyOtpPage> {
             style: ToastNotificationStyleType.success,
           );
 
-          // Small delay for toast visibility
           await Future.delayed(Duration(milliseconds: 800));
 
           if (type == OtpTypeKey_PasswordReset) {
-            // Navigate to change password using Nylo route
+
             routeTo(
               ChangePasswordPage.path.$1,
               navigationType: NavigationType.pushReplace,
               queryParameters: {EmailKey: email!, OtpKey: _otpController.text},
             );
           } else {
-            // Registration OTP verified - store authentication data
+
             print(
                 '🔑 VerifyOtpPage: Registration OTP verified, storing authentication data:');
             print('  - Token: ${response['data']?['token']}');

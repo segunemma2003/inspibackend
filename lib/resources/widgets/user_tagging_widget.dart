@@ -74,7 +74,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
       } else {
         print(
             '🔍 UserTaggingWidget: API call failed or returned no data, showing dummy users for testing');
-        // Fallback: Show dummy users for testing
+
         final List<User> dummyUsers = [
           User.fromJson({
             'id': 1,
@@ -103,7 +103,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
       }
     } catch (e) {
       print('❌ UserTaggingWidget: Error searching users: $e');
-      // Fallback: Show dummy users even on error for testing
+
       final List<User> dummyUsers = [
         User.fromJson({
           'id': 1,
@@ -152,7 +152,7 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search input
+
         Container(
           decoration: BoxDecoration(
             color: AppColors.backgroundSecondary,
@@ -186,7 +186,6 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
           ),
         ),
 
-        // Suggestions dropdown
         if (_showSuggestions && _suggestions.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -271,7 +270,6 @@ class _UserTaggingWidgetState extends NyState<UserTaggingWidget> {
             ),
           ),
 
-        // Selected users
         if (widget.selectedUsers.isNotEmpty) ...[
           const SizedBox(height: 12),
           const Text(

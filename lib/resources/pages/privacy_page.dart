@@ -18,17 +18,15 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // Privacy Content
             Expanded(
               child: _buildPrivacyContent(),
             ),
@@ -44,7 +42,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -55,7 +53,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'PRIVACY POLICY',
             style: TextStyle(
@@ -64,7 +62,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
               color: Colors.black,
             ),
           ),
-          // Empty space for alignment
+
           SizedBox(width: 24),
         ],
       ),
@@ -74,7 +72,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 60,
@@ -84,7 +82,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         const SizedBox(height: 8),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -137,7 +134,7 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: 24.0),
       children: [
-        // Introduction
+
         _buildSection(
           'Introduction',
           Icons.info_outline,
@@ -146,7 +143,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // Information We Collect
         _buildSection(
           'Information We Collect',
           Icons.data_usage,
@@ -155,7 +151,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // How We Use Information
         _buildSection(
           'How We Use Your Information',
           Icons.settings,
@@ -164,7 +159,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // Information Sharing
         _buildSection(
           'Information Sharing',
           Icons.share,
@@ -173,7 +167,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // Data Security
         _buildSection(
           'Data Security',
           Icons.security,
@@ -182,7 +175,6 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // Your Rights
         _buildSection(
           'Your Rights',
           Icons.account_balance,
@@ -191,12 +183,10 @@ class _PrivacyPageState extends NyPage<PrivacyPage> {
 
         SizedBox(height: 20),
 
-        // Contact Information
         _buildContactSection(),
 
         SizedBox(height: 32),
 
-        // Agreement
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(

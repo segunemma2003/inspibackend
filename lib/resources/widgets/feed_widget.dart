@@ -29,28 +29,22 @@ class _FeedState extends NyState<Feed> {
       TextEditingController(); // Controller for search input
   String _searchQuery = ''; // State for search query
 
-  // Store posts locally for immediate UI updates
   Map<int, Post> _postsCache = {};
-  // Map to store active video controllers
-  final Map<int, VideoPlayerController?> _activeVideoControllers = {};
-  // Map to store SmartMediaWidget keys for direct access
-  // final Map<int, GlobalKey> _smartMediaKeys = {};
 
-  // Current user ID for profile click prevention
+  final Map<int, VideoPlayerController?> _activeVideoControllers = {};
+
   int? _currentUserId;
 
-  // Pagination state
   bool _hasMorePages = true;
   int _currentPage = 1;
   int _lastPage = 1;
 
   @override
   void dispose() {
-    // Pause all videos globally using SmartMediaWidget
+
     print('🎥 Feed: Disposing feed widget, pausing all videos globally');
     SmartMediaWidget.pauseAllVideos();
 
-    // Also pause and dispose local video controllers
     _activeVideoControllers.values.forEach((controller) {
       if (controller != null) {
         controller.pause();
@@ -68,7 +62,6 @@ class _FeedState extends NyState<Feed> {
         await _loadInitialData();
       };
 
-  // Method to pause all videos when leaving the feed
   void pauseAllVideos() {
     print(
         '🎥 Feed: pauseAllVideos called, controllers: ${_activeVideoControllers.length}');
@@ -80,26 +73,17 @@ class _FeedState extends NyState<Feed> {
     });
   }
 
-  // Override didChangeDependencies to pause videos when widget becomes inactive
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pause videos when navigating away
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        print('🎥 Feed: Widget not mounted, pausing all videos');
-        forcePauseAllVideos();
-      }
-    });
+    SmartMediaWidget.pauseAllVideos();
   }
 
-  // Method to force pause all videos and clear controllers
   void forcePauseAllVideos() {
     print('🎥 Feed: forcePauseAllVideos called');
-    // Use global video pausing from SmartMediaWidget
+
     SmartMediaWidget.pauseAllVideos();
 
-    // Also pause and dispose local video controllers
     _activeVideoControllers.values.forEach((controller) {
       if (controller != null) {
         print(
@@ -123,7 +107,6 @@ class _FeedState extends NyState<Feed> {
 
       print('👤 Feed: Current user response: $currentUserResponse');
 
-      // Store current user ID for profile click prevention
       if (currentUserResponse != null) {
         final userData = currentUserResponse;
         if (userData != null && userData.id != null) {
@@ -140,13 +123,11 @@ class _FeedState extends NyState<Feed> {
     } catch (e) {
       print('❌ Feed: Error in _loadInitialData: $e');
 
-      // Check if it's an authentication error
       if (e.toString().contains('401') ||
           e.toString().contains('Unauthorized')) {
         print(
             '🔑 Feed: Authentication error in initial data load, checking token validity...');
 
-        // Check if token is expired
         final isExpired = await AuthService.instance.isTokenExpired();
         if (isExpired) {
           print(
@@ -157,7 +138,6 @@ class _FeedState extends NyState<Feed> {
             style: ToastNotificationStyleType.warning,
           );
 
-          // Logout and redirect to sign in
           await AuthService.instance.logout();
           routeTo('/sign-in');
           return;
@@ -199,7 +179,6 @@ class _FeedState extends NyState<Feed> {
       print(
           '📱 Feed: Loading posts (page: $page, category: $_selectedCategory, forceRefresh: $forceRefresh, query: $_searchQuery)');
 
-      // Check if we've already reached the last page
       if (page > _lastPage && _lastPage > 0) {
         print(
             '📱 Feed: Already at last page ($_lastPage), returning empty list');
@@ -239,14 +218,12 @@ class _FeedState extends NyState<Feed> {
         final List<Post> posts =
             postsData.map((json) => Post.fromJson(json)).toList();
 
-        // Cache posts for immediate UI updates
         for (var post in posts) {
           if (post.id != null) {
             _postsCache[post.id!] = post;
           }
         }
 
-        // Update pagination state
         _currentPage = feedResponse['data']['current_page'] ?? page;
         _lastPage = feedResponse['data']['last_page'] ?? 1;
         _hasMorePages = _currentPage < _lastPage;
@@ -255,7 +232,6 @@ class _FeedState extends NyState<Feed> {
             '📱 Feed: Loaded ${posts.length} posts (page $_currentPage of $_lastPage)');
         print('📱 Feed: Has more pages: $_hasMorePages');
 
-        // Return empty list if no posts to stop pagination
         if (posts.isEmpty) {
           print('📱 Feed: No posts found, stopping pagination');
           _hasMorePages = false;
@@ -269,13 +245,11 @@ class _FeedState extends NyState<Feed> {
     } catch (e) {
       print('❌ Feed: Error loading posts: $e');
 
-      // Check if it's an authentication error
       if (e.toString().contains('401') ||
           e.toString().contains('Unauthorized')) {
         print(
             '🔑 Feed: Authentication error detected, checking token validity...');
 
-        // Check if token is expired
         final isExpired = await AuthService.instance.isTokenExpired();
         if (isExpired) {
           print('🔑 Feed: Token is expired, logging out user...');
@@ -285,7 +259,6 @@ class _FeedState extends NyState<Feed> {
             style: ToastNotificationStyleType.warning,
           );
 
-          // Logout and redirect to sign in
           await AuthService.instance.logout();
           routeTo('/sign-in');
           return [];
@@ -305,7 +278,6 @@ class _FeedState extends NyState<Feed> {
         _refreshTrigger++;
         _postsCache.clear(); // Clear cache when changing category
 
-        // Reset pagination state
         _hasMorePages = true;
         _currentPage = 1;
         _lastPage = 1;
@@ -347,7 +319,7 @@ class _FeedState extends NyState<Feed> {
                     forceRefresh: true); // Force refresh on pull-to-refresh
               },
               empty: _buildEmptyState(),
-              // These properties control when to load more
+
               transform: (data) => data, // Pass through the data as-is
             ),
           ),
@@ -444,7 +416,6 @@ class _FeedState extends NyState<Feed> {
     ];
     print('📱 Feed: All categories: $allCategories');
 
-    // Define the specific colors for categories
     final categoryColors = [
       Color(0xFF00C3F1), // #00C3F1
       Color(0xFFFD4CC0), // #FD4CC0
@@ -463,7 +434,6 @@ class _FeedState extends NyState<Feed> {
           final category = allCategories[index];
           final isSelected = _selectedCategory == category;
 
-          // Get color for this category (cycle through colors)
           final categoryColor = categoryColors[index % categoryColors.length];
 
           return Padding(
@@ -510,7 +480,7 @@ class _FeedState extends NyState<Feed> {
   }
 
   Widget _buildPostCard(Post post) {
-    // Use cached version if available (for optimistic updates)
+
     final displayPost = _postsCache[post.id] ?? post;
 
     return Container(
@@ -530,7 +500,7 @@ class _FeedState extends NyState<Feed> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User info header
+
           Padding(
             padding: EdgeInsets.all(16),
             child: Row(
@@ -540,7 +510,6 @@ class _FeedState extends NyState<Feed> {
                     print(
                         '👤 Tapping on user profile: ${displayPost.user?.id}');
 
-                    // Check if this is the current user's own post
                     if (displayPost.user?.id != null &&
                         _currentUserId != null &&
                         displayPost.user!.id == _currentUserId) {
@@ -555,7 +524,7 @@ class _FeedState extends NyState<Feed> {
                     if (displayPost.user?.id != null) {
                       print(
                           '👤 Navigating to user profile with ID: ${displayPost.user!.id}');
-                      // Force pause all videos before navigation using global method
+
                       print(
                           '🎥 Feed: Force pausing all videos before navigation');
                       SmartMediaWidget.pauseAllVideos();
@@ -587,7 +556,7 @@ class _FeedState extends NyState<Feed> {
                               )
                             : null,
                       ),
-                      // Show a small indicator for own posts
+
                       if (displayPost.user?.id != null &&
                           _currentUserId != null &&
                           displayPost.user!.id == _currentUserId)
@@ -624,7 +593,7 @@ class _FeedState extends NyState<Feed> {
                             style: TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 14),
                           ),
-                          // Show "You" indicator for own posts
+
                           if (displayPost.user?.id != null &&
                               _currentUserId != null &&
                               displayPost.user!.id == _currentUserId)
@@ -682,7 +651,6 @@ class _FeedState extends NyState<Feed> {
             ),
           ),
 
-          // Caption
           if (displayPost.caption != null && displayPost.caption!.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -692,7 +660,6 @@ class _FeedState extends NyState<Feed> {
           if (displayPost.caption != null && displayPost.caption!.isNotEmpty)
             SizedBox(height: 12),
 
-          // Tagged Users
           if (displayPost.taggedUsers != null &&
               displayPost.taggedUsers!.isNotEmpty)
             Padding(
@@ -700,14 +667,13 @@ class _FeedState extends NyState<Feed> {
               child: TaggedUsersChipsWidget(
                 taggedUsers: displayPost.taggedUsers!,
                 onUserTap: (user) {
-                  // Navigate to user profile
+
                   Navigator.pushNamed(context, '/user-profile',
                       arguments: user.id);
                 },
               ),
             ),
 
-          // Media with proper aspect ratio and full width
           if (displayPost.mediaUrl != null)
             Stack(
               children: [
@@ -728,7 +694,7 @@ class _FeedState extends NyState<Feed> {
                     ),
                   ),
                 ),
-                // Fullscreen button
+
                 Positioned(
                   top: 12,
                   right: 12,
@@ -753,7 +719,6 @@ class _FeedState extends NyState<Feed> {
 
           SizedBox(height: 12),
 
-          // Action buttons
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -793,7 +758,6 @@ class _FeedState extends NyState<Feed> {
     );
   }
 
-  // Share post functionality
   void _sharePost(Post post) async {
     if (post.mediaUrl != null) {
       await Share.share('Check out this post: ${post.mediaUrl}');
@@ -824,12 +788,10 @@ class _FeedState extends NyState<Feed> {
     );
   }
 
-  // Open fullscreen viewer
   void _openFullscreen(Post post) {
     print('🎥 Feed: Opening fullscreen for post ${post.id}');
     Duration? currentPosition;
 
-    // Pause all currently playing videos before opening fullscreen
     _activeVideoControllers.values.forEach((controller) {
       if (controller != null && controller.value.isPlaying) {
         print('🎥 Feed: Pausing video controller before fullscreen');
@@ -852,7 +814,7 @@ class _FeedState extends NyState<Feed> {
           _FullscreenMediaViewer(post: post, startPosition: currentPosition),
     ).then((_) {
       print('🎥 Feed: Fullscreen dialog closed, pausing all videos');
-      // Pause all videos when fullscreen is closed
+
       pauseAllVideos();
     });
   }
@@ -860,7 +822,6 @@ class _FeedState extends NyState<Feed> {
   Future<void> _toggleLike(Post post) async {
     if (post.id == null) return;
 
-    // OPTIMISTIC UPDATE: Update UI immediately
     final wasLiked = post.isLiked ?? false;
     final oldLikesCount = post.likesCount ?? 0;
 
@@ -870,20 +831,19 @@ class _FeedState extends NyState<Feed> {
       _postsCache[post.id!] = post;
     });
 
-    // Then sync with backend in background
     try {
       final response =
           await api<PostApiService>((request) => request.toggleLike(post.id!));
 
       if (response != null && response['success'] == true) {
-        // Update with actual server values
+
         setState(() {
           post.isLiked = response['data']['liked'] ?? !wasLiked;
           post.likesCount = response['data']['likes_count'] ?? post.likesCount;
           _postsCache[post.id!] = post;
         });
       } else {
-        // Revert on failure
+
         setState(() {
           post.isLiked = wasLiked;
           post.likesCount = oldLikesCount;
@@ -897,7 +857,7 @@ class _FeedState extends NyState<Feed> {
       }
     } catch (e) {
       print('❌ Feed: Error toggling like: $e');
-      // Revert on error
+
       setState(() {
         post.isLiked = wasLiked;
         post.likesCount = oldLikesCount;
@@ -914,7 +874,6 @@ class _FeedState extends NyState<Feed> {
   Future<void> _toggleSave(Post post) async {
     if (post.id == null) return;
 
-    // OPTIMISTIC UPDATE: Update UI immediately
     final wasSaved = post.isSaved ?? false;
     final oldSavesCount = post.savesCount ?? 0;
 
@@ -924,20 +883,19 @@ class _FeedState extends NyState<Feed> {
       _postsCache[post.id!] = post;
     });
 
-    // Then sync with backend in background
     try {
       final response =
           await api<PostApiService>((request) => request.toggleSave(post.id!));
 
       if (response != null && response['success'] == true) {
-        // Update with actual server values
+
         setState(() {
           post.isSaved = response['data']['saved'] ?? !wasSaved;
           post.savesCount = response['data']['saves_count'] ?? post.savesCount;
           _postsCache[post.id!] = post;
         });
       } else {
-        // Revert on failure
+
         setState(() {
           post.isSaved = wasSaved;
           post.savesCount = oldSavesCount;
@@ -951,7 +909,7 @@ class _FeedState extends NyState<Feed> {
       }
     } catch (e) {
       print('❌ Feed: Error toggling save: $e');
-      // Revert on error
+
       setState(() {
         post.isSaved = wasSaved;
         post.savesCount = oldSavesCount;
@@ -966,7 +924,6 @@ class _FeedState extends NyState<Feed> {
   }
 }
 
-// Fullscreen Media Viewer Widget
 class _FullscreenMediaViewer extends StatefulWidget {
   final Post post;
   final Duration? startPosition;
@@ -980,9 +937,9 @@ class _FullscreenMediaViewer extends StatefulWidget {
 class _FullscreenMediaViewerState extends State<_FullscreenMediaViewer> {
   @override
   void dispose() {
-    // Force pause all videos when disposing
+
     print('🎥 Feed: Disposing feed widget, force pausing all videos');
-    // forcePauseAllVideos();
+
     super.dispose();
   }
 
@@ -992,7 +949,7 @@ class _FullscreenMediaViewerState extends State<_FullscreenMediaViewer> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Media centered
+
           Center(
             child: InteractiveViewer(
               minScale: 0.5,
@@ -1006,7 +963,6 @@ class _FullscreenMediaViewerState extends State<_FullscreenMediaViewer> {
             ),
           ),
 
-          // Close button
           Positioned(
             top: 40,
             right: 16,
@@ -1027,7 +983,6 @@ class _FullscreenMediaViewerState extends State<_FullscreenMediaViewer> {
             ),
           ),
 
-          // User info at bottom (optional)
           Positioned(
             bottom: 40,
             left: 16,

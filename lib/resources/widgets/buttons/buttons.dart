@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 class Button {
-  /// Primary button
+
   static Widget primary({
     required String text,
     VoidCallback? onPressed,
@@ -38,7 +38,6 @@ class Button {
         });
   }
 
-  /// Secondary button
   static Widget secondary({
     required String text,
     VoidCallback? onPressed,
@@ -66,7 +65,6 @@ class Button {
         });
   }
 
-  /// Outlined button
   static Widget outlined({
     required String text,
     VoidCallback? onPressed,
@@ -97,7 +95,6 @@ class Button {
     );
   }
 
-  /// Text only button
   static Widget textOnly({
     required String text,
     VoidCallback? onPressed,
@@ -125,7 +122,6 @@ class Button {
         });
   }
 
-  /// Icon button
   static Widget icon({
     required String text,
     VoidCallback? onPressed,
@@ -156,7 +152,6 @@ class Button {
     );
   }
 
-  /// Gradient button
   static Widget gradient({
     required String text,
     VoidCallback? onPressed,
@@ -184,7 +179,6 @@ class Button {
         });
   }
 
-  /// Rounded button
   static Widget rounded({
     required String text,
     VoidCallback? onPressed,
@@ -214,7 +208,6 @@ class Button {
         });
   }
 
-  /// Transparency button
   static Widget transparency({
     required String text,
     VoidCallback? onPressed,

@@ -6,7 +6,7 @@ class BearerAuthInterceptor extends Interceptor {
   void onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
     try {
-      // Get token from AuthService instead of Keys.auth
+
       final token = await AuthService.instance.getToken();
       if (token != null) {
         options.headers.addAll({"Authorization": "Bearer $token"});
@@ -29,13 +29,12 @@ class BearerAuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Handle 401 Unauthorized errors
+
     if (err.response?.statusCode == 401) {
       print('🔑 BearerAuthInterceptor: 401 Unauthorized error detected');
 
       try {
-        // If server returns 401, the token is invalid/expired regardless of client-side check
-        // Log out the user immediately to force re-authentication
+
         print(
             '🔑 BearerAuthInterceptor: Server rejected token, logging out user');
         await AuthService.instance.logout();

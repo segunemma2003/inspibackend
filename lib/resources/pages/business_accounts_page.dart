@@ -132,7 +132,7 @@ class _BusinessAccountsPageState extends NyState<BusinessAccountsPage> {
       ),
       child: Column(
         children: [
-          // Search bar
+
           Container(
             decoration: BoxDecoration(
               color: AppColors.backgroundSecondary,
@@ -154,7 +154,7 @@ class _BusinessAccountsPageState extends NyState<BusinessAccountsPage> {
             ),
           ),
           const SizedBox(height: 12),
-          // Filter chips
+
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -455,7 +455,7 @@ class _BusinessAccountsPageState extends NyState<BusinessAccountsPage> {
         Expanded(
           child: GestureDetector(
             onTap: () {
-              // Navigate to business profile
+
               showToast(
                   title: "Business",
                   description: "Viewing ${account['business_name']}");
@@ -483,7 +483,7 @@ class _BusinessAccountsPageState extends NyState<BusinessAccountsPage> {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                // Handle booking
+
                 showToast(
                     title: "Booking",
                     description: "Booking ${account['business_name']}");

@@ -15,6 +15,7 @@ class Post extends Model {
   int? likesCount;
   int? savesCount;
   int? commentsCount;
+  int? sharesCount;
   bool? isLiked;
   bool? isSaved;
   DateTime? createdAt;
@@ -40,6 +41,7 @@ class Post extends Model {
     likesCount = data['likes_count'];
     savesCount = data['saves_count'];
     commentsCount = data['comments_count'];
+    sharesCount = data['shares_count'];
     isLiked = data['is_liked'];
     isSaved = data['is_saved'];
     createdAt =
@@ -72,6 +74,7 @@ class Post extends Model {
       "likes_count": likesCount,
       "saves_count": savesCount,
       "comments_count": commentsCount,
+      "shares_count": sharesCount,
       "is_liked": isLiked,
       "is_saved": isSaved,
       "created_at": createdAt?.toIso8601String(),

@@ -24,11 +24,10 @@ class _SocialLoginButtonsState extends NyState<SocialLoginButtons> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Google Sign In Button
+
         _buildGoogleButton(),
         const SizedBox(height: 16),
 
-        // Apple Sign In Button
         _buildAppleButton(),
       ],
     );

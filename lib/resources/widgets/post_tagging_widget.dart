@@ -44,8 +44,7 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
   }
 
   void _loadTaggedUsers() {
-    // Extract tagged users from post data
-    // This would need to be implemented based on your post model structure
+
     setState(() {
       _taggedUsers = []; // Initialize with existing tagged users
     });
@@ -223,7 +222,6 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
 
           const SizedBox(height: 12),
 
-          // Add tag section
           if (_showAddTag) ...[
             Container(
               decoration: BoxDecoration(
@@ -336,7 +334,6 @@ class _PostTaggingWidgetState extends NyState<PostTaggingWidget> {
             const SizedBox(height: 12),
           ],
 
-          // Tagged users list
           if (_taggedUsers.isNotEmpty) ...[
             const Text(
               'Currently Tagged:',

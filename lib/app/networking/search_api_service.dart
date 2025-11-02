@@ -22,7 +22,6 @@ class SearchApiService extends NyApiService {
     return headers;
   }
 
-  /// Search posts, users, or tags
   Future<Map<String, dynamic>?> search({
     required String query,
     String? type, // posts, users, tags
@@ -97,7 +96,6 @@ class SearchApiService extends NyApiService {
     return response;
   }
 
-  /// Get list of available interests
   Future<List<String>?> getInterests() async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.get("/interests"),

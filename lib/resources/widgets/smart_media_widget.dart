@@ -23,7 +23,6 @@ class SmartMediaWidget extends StatefulWidget {
   @override
   State<SmartMediaWidget> createState() => _SmartMediaWidgetState();
 
-  // Static method to pause all videos globally
   static void pauseAllVideos() {
     _SmartMediaWidgetState.pauseAllVideos();
   }
@@ -36,7 +35,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   bool _isVisible = false;
   bool _hasError = false;
 
-  // Static list to track all video controllers globally
   static final Set<VideoPlayerController> _allVideoControllers =
       <VideoPlayerController>{};
 
@@ -56,7 +54,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     super.dispose();
   }
 
-  // Static method to pause all videos globally
   static void pauseAllVideos() {
     print(
         '🎥 SmartMediaWidget: Pausing all videos globally (${_allVideoControllers.length} controllers)');
@@ -69,14 +66,12 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     }
   }
 
-  // Register video controller
   void _registerVideoController(VideoPlayerController controller) {
     _allVideoControllers.add(controller);
     print(
         '🎥 SmartMediaWidget: Registered controller: ${controller.hashCode} (total: ${_allVideoControllers.length})');
   }
 
-  // Unregister video controller
   void _unregisterVideoController(VideoPlayerController controller) {
     _allVideoControllers.remove(controller);
     print(
@@ -95,7 +90,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
 
       _videoController!.setLooping(true);
 
-      // Register the video controller globally
       _registerVideoController(_videoController!);
 
       _videoController!.initialize().then((_) {
@@ -158,7 +152,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     }
   }
 
-  // Method to force pause video (public method)
   void forcePauseVideo() {
     print('🎥 SmartMediaWidget: forcePauseVideo called');
     pauseVideo();
@@ -195,8 +188,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   void _onVideoTap() {
     print('🎥 SmartMediaWidget: Video tapped, isPlaying: $_isVideoPlaying');
 
-    // Always just toggle playback when video is tapped
-    // The expand functionality should be handled by a separate expand button
     print('🎥 SmartMediaWidget: Toggling video playback');
     _toggleVideoPlayback();
   }
@@ -228,7 +219,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Video player with consistent height
+
           Container(
             height: widget.height ?? 400,
             width: widget.width ?? double.infinity,
@@ -243,7 +234,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
             ),
           ),
 
-          // Play/pause overlay
           if (!_isVideoPlaying)
             Container(
               height: widget.height ?? 400,
@@ -258,7 +248,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
               ),
             ),
 
-          // Video duration indicator
           Positioned(
             bottom: 12,
             right: 12,
@@ -333,10 +322,10 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
           placeholder: (context, url) => _buildLoadingWidget(),
           errorWidget: (context, url, error) =>
               _buildErrorWidget('Failed to load image'),
-          // High quality disk cache settings (Instagram uses 1080p)
+
           maxHeightDiskCache: 1920,
           maxWidthDiskCache: 1080,
-          // Remove memory cache limits for best quality
+
           filterQuality: FilterQuality.high,
         ),
       ),

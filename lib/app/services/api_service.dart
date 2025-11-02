@@ -20,7 +20,6 @@ class ApiService {
       ),
     );
 
-    // Add logging interceptor in debug mode
     if (kDebugMode) {
       _dio.interceptors.add(
         PrettyDioLogger(
@@ -34,10 +33,9 @@ class ApiService {
       );
     }
 
-    // Add auth interceptor
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Add auth token if available
+
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('auth_token');
         if (token != null) {
@@ -46,22 +44,21 @@ class ApiService {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        // Handle 401 Unauthorized
+
         if (e.response?.statusCode == 401) {
-          // If token exists but still unauthorized, logout user
+
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString('auth_token');
           if (token != null) {
             await logout();
           }
-          // Try to refresh token
+
           try {
             await _refreshToken();
-            // Retry the original request
+
             return handler.resolve(await _retry(e.requestOptions));
           } catch (e) {
-            // If refresh fails, redirect to login
-            // You can use a global key or event bus to handle this
+
             return handler.reject(e as DioException);
           }
         }
@@ -108,21 +105,19 @@ class ApiService {
         }
       }
     } catch (e) {
-      // Clear auth data if refresh fails
+
       await prefs.remove('auth_token');
       await prefs.remove('refresh_token');
       rethrow;
     }
   }
 
-  // Authentication
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await _dio.post(
       ApiConfig.login,
       data: {'email': email, 'password': password},
     );
 
-    // Save tokens
     if (response.data['access_token'] != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', response.data['access_token']);
@@ -136,20 +131,18 @@ class ApiService {
     try {
       await _dio.post('/auth/logout');
     } finally {
-      // Clear auth data regardless of API call result
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('refresh_token');
     }
   }
 
-  // User
   Future<Map<String, dynamic>> getUserProfile() async {
     final response = await _dio.get(ApiConfig.userProfile);
     return response.data;
   }
 
-  // Posts
   Future<List<dynamic>> getFeed({int page = 1, int limit = 10}) async {
     final response = await _dio.get(
       ApiConfig.getFeed,
@@ -170,7 +163,6 @@ class ApiService {
     return response.data;
   }
 
-  // Upload
   Future<List<String>> uploadMedia(List<String> filePaths) async {
     final formData = FormData();
 

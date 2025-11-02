@@ -19,7 +19,6 @@ abstract class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context);
 
-  // Helper method for common button structure
   Widget buildButtonChild(
     BuildContext context, {
     required Color textColor,

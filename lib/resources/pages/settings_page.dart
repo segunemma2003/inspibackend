@@ -27,17 +27,15 @@ class _SettingsPageState extends NyPage<SettingsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // Settings Content
             Expanded(
               child: _buildSettingsContent(),
             ),
@@ -53,7 +51,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -64,7 +62,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'SETTINGS',
             style: TextStyle(
@@ -73,7 +71,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               color: Colors.black,
             ),
           ),
-          // Empty space for alignment
+
           SizedBox(width: 24),
         ],
       ),
@@ -83,7 +81,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 60,
@@ -93,7 +91,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         const SizedBox(height: 8),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -135,7 +132,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: 24.0),
       children: [
-        // Account Settings
+
         _buildSection(
           'Account',
           Icons.person_outline,
@@ -163,7 +160,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 24),
 
-        // Notifications
         _buildSection(
           'Notifications',
           Icons.notifications_outlined,
@@ -187,7 +183,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 24),
 
-        // App Settings
         _buildSection(
           'App Settings',
           Icons.settings_outlined,
@@ -218,7 +213,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 24),
 
-        // Legal & Policies
         _buildSection(
           'Legal & Policies',
           Icons.gavel_outlined,
@@ -264,7 +258,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 24),
 
-        // Support
         _buildSection(
           'Support',
           Icons.help_outline,
@@ -299,7 +292,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 32),
 
-        // Logout Button
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(16),
@@ -341,7 +333,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
 
         SizedBox(height: 20),
 
-        // Danger Zone
         _buildSection(
           'Danger Zone',
           Icons.warning_amber_outlined,

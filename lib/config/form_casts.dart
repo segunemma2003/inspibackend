@@ -5,6 +5,5 @@
 |-------------------------------------------------------------------------- */
 
 final Map<String, dynamic> formCasts = {
-  /// Example
-  // "age_picker": (Field field, Function(dynamic value)? onChanged) => MyCustomField(field, onChanged),
+
 };

@@ -22,31 +22,24 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
   String? _errorMessage;
   int? _userId;
 
-  // Posts and follow functionality
   List<Post> _userPosts = [];
   bool _isLoadingFollow = false;
   int _followersCount = 0;
 
-  // Tab functionality
   int _selectedTabIndex = 0;
   int _refreshTrigger = 0;
 
   @override
   get init => () async {
-        // print('👤 UserProfilePage: Initializing...');
 
-        // Get userId from route data
         final routeData = widget.data();
-        // print('👤 UserProfilePage: Route data: $routeData');
 
         if (routeData != null && routeData is Map) {
           _userId = routeData['userId'];
         }
 
-        // print('👤 UserProfilePage: Retrieved userId: $_userId');
-
         if (_userId == null) {
-          // print('❌ UserProfilePage: User ID is null');
+
           setState(() {
             _hasError = true;
             _errorMessage = 'User ID not provided';
@@ -68,7 +61,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
 
   @override
   void dispose() {
-    // Pause all videos when leaving the page
+
     SmartMediaWidget.pauseAllVideos();
     super.dispose();
   }
@@ -83,8 +76,6 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
       return;
     }
 
-    // print('👤 UserProfilePage: Loading user profile for ID: $_userId');
-
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -92,25 +83,12 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
     });
 
     try {
-      // print('👤 UserProfilePage: Calling getUser API...');
 
       final userResponse = await api<UserApiService>(
         (request) => request.getUser(_userId!),
       );
 
-      // print('👤 UserProfilePage: API response received');
-      // print('👤 UserProfilePage: Response type: ${userResponse.runtimeType}');
-
       if (userResponse != null) {
-        // print(
-        //     '👤 UserProfilePage: User profile loaded: ${userResponse.username}');
-        // print('👤 UserProfilePage: User ID: ${userResponse.id}');
-        // print(
-        //     '👤 UserProfilePage: User posts count: ${userResponse.postsCount}');
-        // print(
-        //     '👤 UserProfilePage: User followers: ${userResponse.followersCount}');
-        // print(
-        //     '👤 UserProfilePage: User following: ${userResponse.followingCount}');
 
         setState(() {
           _userProfile = userResponse;
@@ -119,7 +97,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
           _followersCount = userResponse.followersCount ?? 0;
         });
       } else {
-        // print('❌ UserProfilePage: User profile is null');
+
         setState(() {
           _hasError = true;
           _errorMessage = 'User not found';
@@ -298,7 +276,6 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
     final bool wasFollowing = _userProfile?.isFollowed ?? false;
     final int previousFollowersCount = _followersCount;
 
-    // Optimistic UI update
     setState(() {
       _isLoadingFollow = true;
       _userProfile!.isFollowed = !wasFollowing;
@@ -331,7 +308,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
           style: ToastNotificationStyleType.success,
         );
       } else {
-        // Revert on failure
+
         setState(() {
           _userProfile!.isFollowed = wasFollowing;
           _followersCount = previousFollowersCount;
@@ -347,7 +324,6 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
     } catch (e) {
       print("❌ Error toggling follow status: $e");
 
-      // Revert on error
       setState(() {
         _isLoadingFollow = false;
         _userProfile!.isFollowed = wasFollowing;
@@ -886,7 +862,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
                             color: Colors.white, size: 30),
                       ),
               ),
-              // Video indicator
+
               if (post.mediaType == 'video')
                 const Positioned(
                   top: 8,
@@ -894,7 +870,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
                   child: Icon(Icons.play_circle_filled,
                       color: Colors.white, size: 20),
                 ),
-              // Likes indicator
+
               if (post.likesCount != null && post.likesCount! > 0)
                 Positioned(
                   bottom: 8,
@@ -994,226 +970,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
   void _showPostDetail(Post post) {
     print(
         '📱 UserProfilePage: Showing post detail for post ${post.id}, mediaType: ${post.mediaType}');
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
 
-                // Close button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Post Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(),
-
-                // Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // User info
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: post.user?.profilePicture !=
-                                        null
-                                    ? NetworkImage(post.user!.profilePicture!)
-                                    : null,
-                                backgroundColor: const Color(0xFF9ACD32),
-                                child: post.user?.profilePicture == null
-                                    ? Text(
-                                        post.user?.name
-                                                ?.substring(0, 1)
-                                                .toUpperCase() ??
-                                            'U',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post.user?.fullName ??
-                                          post.user?.name ??
-                                          'Unknown User',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      '@${post.user?.username ?? 'unknown'}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Category tag
-                              if (post.category != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFF69B4),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    post.category!.name ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        // Media
-                        if (post.mediaUrl != null)
-                          Container(
-                            width: double.infinity,
-                            height: 400,
-                            child: post.mediaType == 'video'
-                                ? SmartMediaWidget(
-                                    post: post,
-                                  )
-                                : Image.network(
-                                    post.mediaUrl!,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[200],
-                                        child:
-                                            const Icon(Icons.image, size: 50),
-                                      );
-                                    },
-                                  ),
-                          ),
-
-                        // Caption
-                        if (post.caption != null && post.caption!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              post.caption!,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-
-                        // Location
-                        if (post.location != null && post.location!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.location_on,
-                                    size: 16, color: Colors.grey[600]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  post.location!,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Stats
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.favorite, size: 16, color: Colors.red),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.likesCount ?? 0} likes',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 16),
-                              Icon(Icons.bookmark,
-                                  size: 16, color: Colors.blue),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.savesCount ?? 0} saves',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    ).then((_) {
-      // Pause videos when modal is dismissed
-      SmartMediaWidget.pauseAllVideos();
-    });
+    routeTo('/post-details', data: {'post': post});
   }
 }

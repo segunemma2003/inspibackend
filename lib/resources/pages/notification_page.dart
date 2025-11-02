@@ -27,17 +27,15 @@ class _NotificationPageState extends NyPage<NotificationPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // Notifications List
             Expanded(
               child: _isLoading && notifications.isEmpty
                   ? const Center(child: CircularProgressIndicator())
@@ -55,7 +53,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -66,7 +64,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'NOTIFICATIONS',
             style: TextStyle(
@@ -75,7 +73,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
               color: Colors.black,
             ),
           ),
-          // Settings Icon
+
           GestureDetector(
             onTap: () {
               showDialog(
@@ -106,7 +104,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 60,
@@ -116,7 +114,6 @@ class _NotificationPageState extends NyPage<NotificationPage> {
 
         const SizedBox(height: 8),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -226,7 +223,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Notification Icon
+
             Container(
               width: 40,
               height: 40,
@@ -241,7 +238,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
               ),
             ),
             SizedBox(width: 16),
-            // Content
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +274,7 @@ class _NotificationPageState extends NyPage<NotificationPage> {
                 ],
               ),
             ),
-            // Unread indicator
+
             if (notification.readAt == null)
               Container(
                 width: 8,
@@ -352,7 +349,6 @@ class _NotificationPageState extends NyPage<NotificationPage> {
     }
   }
 
-  // API Methods
   Future<void> _loadNotifications({bool refresh = false}) async {
     if (refresh) {
       _currentPage = 1;

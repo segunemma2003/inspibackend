@@ -1,12 +1,11 @@
-/// Notification Logging Service
-/// Provides comprehensive logging for Firebase push notifications
+
+
 class NotificationLoggingService {
   static final NotificationLoggingService _instance =
       NotificationLoggingService._internal();
   factory NotificationLoggingService() => _instance;
   NotificationLoggingService._internal();
 
-  /// Log when a notification is sent from server
   static void logNotificationSent({
     required String title,
     required String body,
@@ -34,7 +33,6 @@ class NotificationLoggingService {
     print('📤 ===========================================');
   }
 
-  /// Log when a notification is received by the app
   static void logNotificationReceived({
     required String messageId,
     required String from,
@@ -62,7 +60,6 @@ class NotificationLoggingService {
     print('📥 ===========================================');
   }
 
-  /// Log notification delivery status
   static void logNotificationDelivery({
     required String messageId,
     required bool delivered,
@@ -80,7 +77,6 @@ class NotificationLoggingService {
     print('📊 =========================================');
   }
 
-  /// Log notification click/tap events
   static void logNotificationTapped({
     required String messageId,
     required String from,
@@ -108,7 +104,6 @@ class NotificationLoggingService {
     print('👆 ===========================================');
   }
 
-  /// Log FCM token events
   static void logFCMTokenEvent({
     required String event,
     String? token,
@@ -124,7 +119,6 @@ class NotificationLoggingService {
     print('🔑 ===========================================');
   }
 
-  /// Log device registration events
   static void logDeviceRegistration({
     required String event,
     String? deviceToken,
@@ -146,7 +140,6 @@ class NotificationLoggingService {
     print('📱 ===========================================');
   }
 
-  /// Log notification permission events
   static void logPermissionEvent({
     required String event,
     bool? granted,
@@ -164,7 +157,6 @@ class NotificationLoggingService {
     print('🔐 ===========================================');
   }
 
-  /// Log notification counter events
   static void logCounterEvent({
     required String event,
     int? count,

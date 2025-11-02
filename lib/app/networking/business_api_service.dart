@@ -23,7 +23,6 @@ class BusinessApiService extends NyApiService {
     return headers;
   }
 
-  /// Get business accounts with pagination
   Future<Map<String, dynamic>?> getBusinessAccounts({
     int perPage = 20,
     int page = 1,
@@ -38,7 +37,6 @@ class BusinessApiService extends NyApiService {
     );
   }
 
-  /// Create business account
   Future<Map<String, dynamic>?> createBusinessAccount({
     required String name,
     required String description,
@@ -125,7 +123,6 @@ class BusinessApiService extends NyApiService {
     };
   }
 
-  /// Get specific business account
   Future<Map<String, dynamic>?> getBusinessAccount(
       int businessAccountId) async {
     return await network<Map<String, dynamic>>(
@@ -136,7 +133,6 @@ class BusinessApiService extends NyApiService {
     );
   }
 
-  /// Update business account
   Future<Map<String, dynamic>?> updateBusinessAccount(
     int businessAccountId, {
     String? name,
@@ -227,7 +223,6 @@ class BusinessApiService extends NyApiService {
     };
   }
 
-  /// Delete business account
   Future<Map<String, dynamic>?> deleteBusinessAccount(
       int businessAccountId) async {
     return await network<Map<String, dynamic>>(
@@ -238,7 +233,6 @@ class BusinessApiService extends NyApiService {
     );
   }
 
-  /// Create booking for business account
   Future<Map<String, dynamic>?> createBooking(
     int businessAccountId, {
     required DateTime dateTime,
@@ -257,7 +251,6 @@ class BusinessApiService extends NyApiService {
     );
   }
 
-  /// Get bookings for business account
   Future<Map<String, dynamic>?> getBusinessBookings(
     int businessAccountId, {
     int perPage = 20,

@@ -7,8 +7,6 @@ import 'dart:async'; // Added for StreamController
 import '../../resources/pages/sign_in_page.dart'; // Used for routeTo after logout
 import '/app/services/firebase_messaging_service.dart'; // For device registration
 
-/// Authentication Service
-/// Handles user authentication, session management, and token storage
 class AuthService {
   static AuthService? _instance;
   static AuthService get instance => _instance ??= AuthService._();
@@ -23,7 +21,6 @@ class AuthService {
       StreamController<void>.broadcast();
   Stream<void> get authStateChanges => _authStateChangeController.stream;
 
-  // Helper to store authentication data
   Future<void> storeAuthData(Map<String, dynamic> data) async {
     final token = data['token'];
     final user = data['user'];
@@ -58,12 +55,11 @@ class AuthService {
       print(
           '🔑 AuthService: Immediately read back authenticated_at: $storedAuthenticatedAt');
     }
-    // The overall authentication status will be derived from the presence of the token.
+
     _authStateChangeController
         .add(null); // Notify listeners of auth state change
   }
 
-  // Helper to retrieve authentication data
   Future<Map<String, dynamic>?> retrieveAuthData() async {
     print(
         '🔑 AuthService.retrieveAuthData: Attempting to retrieve all auth data.');
@@ -102,30 +98,25 @@ class AuthService {
     };
   }
 
-  /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
     final authData = await retrieveAuthData();
     return authData != null && authData['token'] != null;
   }
 
-  /// Get current user data
   Future<Map<String, dynamic>?> getCurrentUser() async {
     return await retrieveAuthData();
   }
 
-  /// Get authentication token
   Future<String?> getToken() async {
     final authData = await retrieveAuthData();
     return authData?['token'];
   }
 
-  /// Get user profile data
   Future<Map<String, dynamic>?> getUserProfile() async {
     final authData = await getCurrentUser();
     return authData?['user'];
   }
 
-  /// Check if token is expired (optional - depends on your backend)
   Future<bool> isTokenExpired() async {
     final authData = await getCurrentUser();
     if (authData == null) return true;
@@ -136,11 +127,9 @@ class AuthService {
     final authTime = DateTime.parse(authenticatedAt);
     final now = DateTime.now();
 
-    // Token expires after 24 hours (adjust as needed)
     return now.difference(authTime).inHours > 24;
   }
 
-  /// Refresh authentication if needed
   Future<bool> refreshAuthIfNeeded() async {
     if (await isTokenExpired()) {
       await logout();
@@ -149,12 +138,10 @@ class AuthService {
     return true;
   }
 
-  /// Logout user
   Future<void> logout() async {
     await clearAuth();
   }
 
-  /// Get headers for API requests
   Future<Map<String, String>> getAuthHeaders() async {
     final token = await getToken();
     print('🔑 AuthService: Getting token: $token');
@@ -174,7 +161,6 @@ class AuthService {
     return headers;
   }
 
-  /// Update user profile data
   Future<void> updateUserProfile(Map<String, dynamic> userData) async {
     final authData = await getCurrentUser();
     if (authData != null) {
@@ -185,7 +171,6 @@ class AuthService {
     }
   }
 
-  /// Clear all authentication data
   Future<void> clearAuth() async {
     await _secureStorage.delete(key: _authTokenKey);
     print('🔑 AuthService: Attempted to delete authToken key.');
@@ -202,19 +187,17 @@ class AuthService {
   }
 }
 
-/// Custom implementation of Auth for persistence
 class CustomAuth extends Auth {
   Future<bool> authenticate({Map<String, dynamic>? data}) async {
     if (data != null) {
       await AuthService.instance.storeAuthData(data);
 
-      // Register device for push notifications after successful authentication
       try {
         await FirebaseMessagingService().registerDevice();
         print('📱 AuthService: Device registered for push notifications');
       } catch (e) {
         print('❌ AuthService: Failed to register device: $e');
-        // Don't fail authentication if device registration fails
+
       }
 
       return true;
@@ -239,5 +222,4 @@ class CustomAuth extends Auth {
   }
 }
 
-// Export the auth instance globally
 final Auth auth = CustomAuth();

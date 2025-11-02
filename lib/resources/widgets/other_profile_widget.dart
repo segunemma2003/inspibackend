@@ -22,7 +22,6 @@ class _OtherProfileState extends NyState<OtherProfile> {
   int _currentUserPostsPage = 1;
   bool _isLoadingFollow = false;
 
-  // Store follower count separately to handle updates
   int _followersCount = 0;
 
   @override
@@ -30,10 +29,8 @@ class _OtherProfileState extends NyState<OtherProfile> {
         print(
             '📱 OtherProfile: Initializing with user: ${widget.user.username} (ID: ${widget.user.id})');
 
-        // Initialize follower count
         _followersCount = widget.user.followersCount ?? 0;
 
-        // Check if user is already being followed
         await _checkFollowingStatus();
 
         print('📱 OtherProfile: About to load user posts...');
@@ -44,10 +41,10 @@ class _OtherProfileState extends NyState<OtherProfile> {
   Future<void> _checkFollowingStatus() async {
     try {
       if (widget.user.id != null) {
-        // Use the isFollowed field from the User model
+
         print(
             '📱 OtherProfile: User isFollowed status: ${widget.user.isFollowed}');
-        // No need to set state here as we'll use widget.user.isFollowed directly
+
       }
     } catch (e) {
       print('❌ OtherProfile: Error checking following status: $e');
@@ -66,7 +63,6 @@ class _OtherProfileState extends NyState<OtherProfile> {
 
     print('📱 OtherProfile: Starting _loadUserPosts for page $page');
 
-    // Only show loading indicator for the first page
     if (page == 1) {
       setState(() {
         _isLoadingPosts = true;
@@ -229,7 +225,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
               title: Text('Share Profile'),
               onTap: () {
                 Navigator.pop(context);
-                // Implement share functionality
+
               },
             ),
             ListTile(
@@ -237,7 +233,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
               title: Text('Block User'),
               onTap: () {
                 Navigator.pop(context);
-                // Implement block functionality
+
               },
             ),
             ListTile(
@@ -245,7 +241,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
               title: Text('Report User'),
               onTap: () {
                 Navigator.pop(context);
-                // Implement report functionality
+
               },
             ),
           ],
@@ -454,7 +450,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
             flex: 2,
             child: OutlinedButton(
               onPressed: () {
-                // Navigate to message page
+
                 print('📱 Message button tapped');
               },
               style: OutlinedButton.styleFrom(
@@ -485,7 +481,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
       child: GestureDetector(
         onTap: () {
           print('📱 OtherProfile: Post tapped: ${post.id}');
-          // Navigate to post detail page
+
         },
         child: Container(
           decoration: BoxDecoration(
@@ -534,7 +530,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
                             color: Colors.white, size: 30),
                       ),
               ),
-              // Video indicator
+
               if (post.mediaType == 'video')
                 const Positioned(
                   top: 8,
@@ -542,7 +538,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
                   child: Icon(Icons.play_circle_filled,
                       color: Colors.white, size: 20),
                 ),
-              // Likes indicator
+
               if (post.likesCount != null && post.likesCount! > 0)
                 Positioned(
                   bottom: 8,
@@ -622,7 +618,6 @@ class _OtherProfileState extends NyState<OtherProfile> {
     final bool wasFollowing = widget.user.isFollowed ?? false;
     final int previousFollowersCount = _followersCount;
 
-    // Optimistic UI update
     setState(() {
       _isLoadingFollow = true;
       widget.user.isFollowed = !wasFollowing;
@@ -648,7 +643,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
       });
 
       if (response != null && response['success'] == true) {
-        // Update the widget.user object if needed
+
         widget.user.followersCount = _followersCount;
 
         showToast(
@@ -658,7 +653,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
           style: ToastNotificationStyleType.success,
         );
       } else {
-        // Revert on failure
+
         setState(() {
           widget.user.isFollowed = wasFollowing;
           _followersCount = previousFollowersCount;
@@ -674,7 +669,6 @@ class _OtherProfileState extends NyState<OtherProfile> {
     } catch (e) {
       print("❌ Error toggling follow status: $e");
 
-      // Revert on error
       setState(() {
         _isLoadingFollow = false;
         widget.user.isFollowed = wasFollowing;

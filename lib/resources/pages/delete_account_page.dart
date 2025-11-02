@@ -23,7 +23,6 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
             children: [
               const SizedBox(height: 20),
 
-              // Close button at top right
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -42,22 +41,18 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
 
               const SizedBox(height: 40),
 
-              // Logo Section
               _buildLogoSection(),
 
               const SizedBox(height: 40),
 
-              // Tagline
               _buildTagline(),
 
               const SizedBox(height: 40),
 
-              // Confirmation message
               _buildConfirmationMessage(),
 
               const Spacer(),
 
-              // Action buttons
               _buildActionButtons(),
 
               const SizedBox(height: 40),
@@ -71,7 +66,7 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 120,
@@ -79,7 +74,6 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
           fit: BoxFit.contain,
         ).localAsset(),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -146,7 +140,7 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Delete Account Button
+
         SizedBox(
           width: double.infinity,
           height: 50,
@@ -155,7 +149,7 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
               showToastSuccess(
                   title: "Delete Account",
                   description: "Account deletion confirmed");
-              // Add your account deletion logic here
+
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF00BFFF), // Bright blue
@@ -177,7 +171,6 @@ class _DeleteAccountPageState extends NyPage<DeleteAccountPage> {
 
         const SizedBox(height: 16),
 
-        // Cancel Button
         SizedBox(
           width: double.infinity,
           height: 50,

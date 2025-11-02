@@ -19,27 +19,23 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Top Bar
+
               _buildTopBar(),
 
               const SizedBox(height: 20),
 
-              // Profile Section
               _buildProfileSection(),
 
               const SizedBox(height: 20),
 
-              // Business Details
               _buildBusinessDetails(),
 
               const SizedBox(height: 20),
 
-              // Social Media & Likes
               _buildSocialMediaSection(),
 
               const SizedBox(height: 20),
 
-              // Image Grid
               _buildImageGrid(),
             ],
           ),
@@ -64,7 +60,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
           ),
           Row(
             children: [
-              // Edit Button
+
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -88,7 +84,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
                 ),
               ),
               SizedBox(width: 12),
-              // Hamburger Menu
+
               Icon(
                 Icons.menu,
                 size: 24,
@@ -104,7 +100,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
   Widget _buildProfileSection() {
     return Column(
       children: [
-        // Profile Picture
+
         CircleAvatar(
           radius: 60,
           backgroundColor: Colors.grey[200],
@@ -117,7 +113,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
         const SizedBox(height: 16),
 
-        // Name
         Text(
           'Sarah Johnson',
           style: TextStyle(
@@ -129,7 +124,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
         const SizedBox(height: 8),
 
-        // Title
         Text(
           'Senior Hair Stylist',
           style: TextStyle(
@@ -141,7 +135,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
         const SizedBox(height: 20),
 
-        // Book Now Button
         Container(
           width: 200,
           height: 45,
@@ -176,7 +169,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Business Name
+
           Text(
             'Serenity Hair Salon',
             style: TextStyle(
@@ -188,7 +181,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
           const SizedBox(height: 12),
 
-          // Address
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -213,7 +205,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
           const SizedBox(height: 12),
 
-          // Phone
           Row(
             children: [
               Icon(
@@ -241,7 +232,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
-          // Social Media Icons
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -255,7 +246,6 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
 
           const SizedBox(height: 16),
 
-          // Likes
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -340,7 +330,7 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
               color: Colors.grey[400],
             ),
           ),
-          // Gallery/Play icon in top right
+
           if (index == 0 || index == 2)
             Positioned(
               top: 4,
@@ -363,5 +353,4 @@ class _BusinessProfilePageState extends NyPage<BusinessProfilePage> {
     );
   }
 }
-
 

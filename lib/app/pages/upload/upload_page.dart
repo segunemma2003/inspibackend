@@ -202,7 +202,7 @@ class _UploadPageState extends NyState<UploadPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Media Preview/Upload Button
+
                     GestureDetector(
                       onTap: _pickMedia,
                       child: Container(
@@ -240,7 +240,6 @@ class _UploadPageState extends NyState<UploadPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Caption Field
                     TextFormField(
                       controller: _captionController,
                       maxLines: 3,
@@ -261,7 +260,6 @@ class _UploadPageState extends NyState<UploadPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Category Dropdown
                     DropdownButtonFormField<Category>(
                       value: _selectedCategory,
                       decoration: InputDecoration(
@@ -296,7 +294,6 @@ class _UploadPageState extends NyState<UploadPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Tags Input
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -333,7 +330,6 @@ class _UploadPageState extends NyState<UploadPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Location Toggle
                     Row(
                       children: [
                         Checkbox(
@@ -359,7 +355,6 @@ class _UploadPageState extends NyState<UploadPage> {
                       ],
                     ),
 
-                    // Location Input
                     TextFormField(
                       controller: _locationController,
                       enabled: !_useCurrentLocation,
@@ -374,7 +369,6 @@ class _UploadPageState extends NyState<UploadPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Upload Button
                     ElevatedButton(
                       onPressed: _submitPost,
                       style: ElevatedButton.styleFrom(

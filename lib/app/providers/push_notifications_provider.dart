@@ -5,10 +5,9 @@ import '/app/services/firebase_messaging_service.dart';
 class PushNotificationsProvider implements NyProvider {
   @override
   boot(Nylo nylo) async {
-    // Initialize local notifications
+
     nylo.useLocalNotifications();
 
-    // Set up Firebase Cloud Messaging background handler
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     return nylo;
@@ -16,7 +15,7 @@ class PushNotificationsProvider implements NyProvider {
 
   @override
   afterBoot(Nylo nylo) async {
-    // Initialize Firebase Messaging service
+
     try {
       await FirebaseMessagingService().initialize();
       print('✅ Push Notifications Provider initialized successfully');

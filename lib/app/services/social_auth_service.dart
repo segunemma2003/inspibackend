@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '../networking/auth_api_service.dart';
 
-// Initialize Firebase Auth
 final FirebaseAuth _auth = FirebaseAuth.instance;
 
 class SocialAuthService {
@@ -12,17 +11,11 @@ class SocialAuthService {
   factory SocialAuthService() => _instance;
   SocialAuthService._internal();
 
-  /// Signs in with Google using Firebase's built-in provider
-  /// Returns null if the user cancels the sign-in
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Create a new GoogleAuthProvider instance
+
       final GoogleAuthProvider googleProvider = GoogleAuthProvider();
 
-      // Optional: Add additional scopes if needed
-      // googleProvider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-
-      // Sign in with the Google provider
       final UserCredential userCredential =
           await _auth.signInWithProvider(googleProvider);
       final User? user = userCredential.user;
@@ -34,7 +27,6 @@ class SocialAuthService {
         );
       }
 
-      // Get the ID token for backend authentication
       final String? idToken = await user.getIdToken();
       if (idToken == null) {
         throw FirebaseAuthException(
@@ -43,7 +35,6 @@ class SocialAuthService {
         );
       }
 
-      // Send user data to backend
       await _sendToBackend(
         user: user,
         idToken: idToken,
@@ -57,7 +48,6 @@ class SocialAuthService {
     }
   }
 
-  /// Verifies the Firebase token with the backend and handles the session
   Future<void> _sendToBackend({
     required User user,
     required String idToken,
@@ -75,10 +65,9 @@ class SocialAuthService {
           response['success'] == true &&
           response['data'] != null) {
         final token = response['data']['token'];
-        // final userData = response['data']['user'];
 
         if (token != null) {
-          // Update Nylo's auth state
+
           return;
         }
       }
@@ -91,12 +80,10 @@ class SocialAuthService {
     }
   }
 
-  /// Signs out the current user from Firebase
   Future<void> signOut() async {
     try {
       await _auth.signOut();
 
-      // Clear Nylo auth state
       await Auth.logout();
     } catch (e) {
       print('Error signing out: $e');
@@ -104,13 +91,11 @@ class SocialAuthService {
     }
   }
 
-  /// Signs in with Apple using Firebase's built-in provider
   Future<UserCredential?> signInWithApple() async {
     try {
-      // Create a new OAuthProvider for Apple
+
       final appleProvider = OAuthProvider('apple.com');
 
-      // Request the sign-in
       final UserCredential userCredential =
           await _auth.signInWithProvider(appleProvider);
       final User? user = userCredential.user;
@@ -122,7 +107,6 @@ class SocialAuthService {
         );
       }
 
-      // Get the ID token for backend authentication
       final String? idToken = await user.getIdToken();
       if (idToken == null) {
         throw FirebaseAuthException(
@@ -131,7 +115,6 @@ class SocialAuthService {
         );
       }
 
-      // Send user data to backend
       await _sendToBackend(
         user: user,
         idToken: idToken,

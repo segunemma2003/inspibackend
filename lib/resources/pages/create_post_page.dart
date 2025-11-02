@@ -48,18 +48,16 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
         final file = File(filePath);
         final isVideo = _isVideoFile(filePath);
 
-        // Dispose previous video controller if any
         await _videoController?.dispose();
 
         if (isVideo) {
-          // Generate thumbnail for video
+
           final thumbnail = await VideoThumbnail.thumbnailData(
             video: filePath,
             imageFormat: ImageFormat.JPEG,
             quality: 50,
           );
 
-          // Initialize video controller
           _videoController = VideoPlayerController.file(file);
           await _videoController?.initialize();
 
@@ -120,14 +118,9 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
   }
 
   void _handleCaptionChange(String text) {
-    // Check for @mentions in the caption
-    // final mentionRegex = RegExp(r'@(\w+)');
-    // final matches = mentionRegex.allMatches(text);
 
-    // You could implement auto-complete for mentions here
-    // For now, we'll just update the caption
     setState(() {
-      // The caption is already updated by the TextEditingController
+
     });
   }
 
@@ -143,7 +136,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Get upload URL with correct MIME type
+
       final filename = _mediaFile!.path.split('/').last;
       final contentType = _getMimeType(_mediaFile!.path);
       final fileSize = await _mediaFile!.length();
@@ -170,7 +163,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
       print('📱 CreatePost: Presigned URL API Response:');
       print('📱 CreatePost: - Response: $uploadUrlResponse');
 
-      // Upload file to S3
       final uploadResponse = await _controller.uploadToS3(
         file: _mediaFile!,
         uploadUrl: uploadUrlResponse['upload_url'],
@@ -181,7 +173,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
         throw Exception('Failed to upload file');
       }
 
-      // Create post
       final post = await PostApiService().createPost(
         caption: _captionController.text,
         media: uploadUrlResponse['file_url'],
@@ -240,7 +231,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Show thumbnail if available, otherwise show a placeholder
+
         _videoThumbnail != null
             ? Positioned.fill(
                 child: Image.memory(
@@ -256,7 +247,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                 color: Colors.black26,
               ),
 
-        // Play button overlay
         const Center(
           child: Icon(
             Icons.play_circle_fill,
@@ -265,7 +255,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
           ),
         ),
 
-        // Video duration
         if (_videoController != null)
           Positioned(
             bottom: 8,
@@ -318,7 +307,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Media Preview
+
                     GestureDetector(
                       onTap: _pickMedia,
                       child: Container(
@@ -337,7 +326,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Caption
                     TextFormField(
                       controller: _captionController,
                       decoration: const InputDecoration(
@@ -356,7 +344,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Tags
                     TextFormField(
                       controller: _tagController,
                       decoration: InputDecoration(
@@ -371,7 +358,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Selected Tags
                     Wrap(
                       spacing: 8,
                       children: _tags
@@ -383,7 +369,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // User Tagging Section
                     const Text(
                       'Tag People',
                       style: TextStyle(

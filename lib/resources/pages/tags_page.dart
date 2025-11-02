@@ -50,27 +50,23 @@ class _TagsPageState extends NyPage<TagsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // Interactive Elements
             _buildInteractiveElements(),
 
             const SizedBox(height: 20),
 
-            // Instructions
             _buildInstructions(),
 
             const SizedBox(height: 20),
 
-            // Professionals List
             Expanded(
               child: _buildProfessionalsList(),
             ),
@@ -86,7 +82,7 @@ class _TagsPageState extends NyPage<TagsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back to Feed Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -97,7 +93,7 @@ class _TagsPageState extends NyPage<TagsPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'TAGS',
             style: TextStyle(
@@ -106,12 +102,12 @@ class _TagsPageState extends NyPage<TagsPage> {
               color: Colors.black,
             ),
           ),
-          // Info and Notification Icons
+
           Row(
             children: [
               GestureDetector(
                 onTap: () {
-                  // Show info dialog or navigate to info page
+
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -183,7 +179,7 @@ class _TagsPageState extends NyPage<TagsPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 80,
@@ -193,7 +189,6 @@ class _TagsPageState extends NyPage<TagsPage> {
 
         const SizedBox(height: 10),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -236,7 +231,7 @@ class _TagsPageState extends NyPage<TagsPage> {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
         children: [
-          // First button with text
+
           Expanded(
             child: Container(
               height: 40,
@@ -258,7 +253,7 @@ class _TagsPageState extends NyPage<TagsPage> {
             ),
           ),
           SizedBox(width: 12),
-          // Second empty button
+
           Expanded(
             child: Container(
               height: 40,
@@ -270,7 +265,7 @@ class _TagsPageState extends NyPage<TagsPage> {
             ),
           ),
           SizedBox(width: 12),
-          // Third solid button
+
           Expanded(
             child: Container(
               height: 40,
@@ -362,11 +357,11 @@ class _TagsPageState extends NyPage<TagsPage> {
           });
 
           if (direction == DismissDirection.startToEnd) {
-            // Swiped right - Remember
+
             showToastSuccess(
                 description: "Remembered ${professional['name']}!");
           } else {
-            // Swiped left - Forget
+
             showToastSuccess(description: "Forgot ${professional['name']}");
           }
         },
@@ -441,7 +436,7 @@ class _TagsPageState extends NyPage<TagsPage> {
           ),
           child: Row(
             children: [
-              // Profile Picture
+
               CircleAvatar(
                 radius: 30,
                 backgroundColor: Colors.grey[200],
@@ -455,7 +450,7 @@ class _TagsPageState extends NyPage<TagsPage> {
                 ),
               ),
               SizedBox(width: 16),
-              // Name and Profession
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,7 +475,7 @@ class _TagsPageState extends NyPage<TagsPage> {
                   ],
                 ),
               ),
-              // Menu Icon
+
               Container(
                 width: 32,
                 height: 32,

@@ -19,7 +19,6 @@ class UserApiService extends NyApiService {
         BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
-  /// Get paginated list of users
   Future<Map<String, dynamic>?> getUsers({
     String? query,
     int perPage = 20,
@@ -36,7 +35,6 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Get specific user by ID
   Future<User?> getUser(int userId) async {
     print('👤 UserApiService: Getting user with ID: $userId');
     final result = await network<User>(
@@ -48,7 +46,6 @@ class UserApiService extends NyApiService {
     return result;
   }
 
-  /// Get current user profile
   Future<User?> fetchCurrentUser() async {
     try {
       print('👤 UserApiService: Fetching current user profile...');
@@ -73,7 +70,6 @@ class UserApiService extends NyApiService {
     }
   }
 
-  /// Update user profile
   Future<User?> updateProfile({
     String? fullName,
     String? username,
@@ -97,9 +93,7 @@ class UserApiService extends NyApiService {
       if (username != null) data['username'] = username;
       if (bio != null) data['bio'] = bio;
       if (profession != null) data['profession'] = profession;
-      // Interests are handled in FormData or directly passed as List<String> for JSON
 
-      // If there's a profile picture, use FormData
       if (profilePicture != null) {
         final formData = FormData.fromMap(data); // Start with existing data
         if (interests != null && interests.isNotEmpty) {
@@ -154,7 +148,6 @@ class UserApiService extends NyApiService {
         return null;
       }
 
-      // Otherwise, use regular JSON
       final rawResponse = await network<dynamic>(
         request: (request) => request.post("/users/profile",
             data: data
@@ -201,7 +194,6 @@ class UserApiService extends NyApiService {
     }
   }
 
-  /// Helper method to parse API responses that might be concatenated JSON strings
   Map<String, dynamic>? _parseApiResponse(
       dynamic rawResponse, String methodName) {
     if (rawResponse is String) {
@@ -262,21 +254,18 @@ class UserApiService extends NyApiService {
     };
   }
 
-  /// Follow a user
   Future<Map<String, dynamic>?> followUser(int userId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.post("/users/$userId/follow"),
     );
   }
 
-  /// Unfollow a user
   Future<Map<String, dynamic>?> unfollowUser(int userId) async {
     return await network<Map<String, dynamic>>(
       request: (request) => request.delete("/users/$userId/unfollow"),
     );
   }
 
-  /// Get user followers
   Future<Map<String, dynamic>?> getUserFollowers(
     int userId, {
     int perPage = 20,
@@ -293,7 +282,6 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Get user following
   Future<Map<String, dynamic>?> getUserFollowing(
     int userId, {
     int perPage = 20,
@@ -310,7 +298,6 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Search users by interests
   Future<Map<String, dynamic>?> searchUsersByInterests({
     required List<String> interests,
     int perPage = 20,
@@ -327,7 +314,6 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Search users by profession
   Future<Map<String, dynamic>?> searchUsersByProfession({
     required String profession,
     String? username,
@@ -346,7 +332,6 @@ class UserApiService extends NyApiService {
     );
   }
 
-  /// Get available interests
   Future<List<String>?> getInterests() async {
     final response = await network<Map<String, dynamic>>(
       request: (request) => request.get("/interests"),

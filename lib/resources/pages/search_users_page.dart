@@ -60,7 +60,6 @@ class _SearchUsersPageState extends NyPage<SearchUsersPage> {
         final List<User> users =
             usersData.map((json) => User.fromJson(json)).toList();
 
-        // Filter out the current user from the results
         final filteredUsers =
             users.where((user) => user.id != _currentUserId).toList();
 
@@ -99,9 +98,8 @@ class _SearchUsersPageState extends NyPage<SearchUsersPage> {
       _lastQuery = query;
     });
 
-    // Filter users locally from the loaded users (excluding current user)
     final filteredUsers = _allUsers.where((user) {
-      // Double check to exclude current user
+
       if (user.id == _currentUserId) return false;
 
       final name = user.fullName?.toLowerCase() ?? '';
@@ -144,7 +142,7 @@ class _SearchUsersPageState extends NyPage<SearchUsersPage> {
   }
 
   Widget _buildUserItem(User user) {
-    // Define inspirtags colors
+
     final colors = [
       Color(0xFF00C3F1), // #00C3F1
       Color(0xFFFD4CC0), // #FD4CC0
@@ -152,7 +150,6 @@ class _SearchUsersPageState extends NyPage<SearchUsersPage> {
       Color(0xFFB5DA64), // #B5DA64
     ];
 
-    // Get a consistent color for this user
     final userColor = colors[user.id.hashCode.abs() % colors.length];
 
     return ListTile(

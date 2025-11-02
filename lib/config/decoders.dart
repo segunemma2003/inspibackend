@@ -25,37 +25,30 @@ import '/app/networking/api_service.dart';
 final Map<Type, dynamic> modelDecoders = {
   Map<String, dynamic>: (data) => Map<String, dynamic>.from(data),
 
-  // User models
   List<User>: (data) =>
       List.from(data).map((json) => User.fromJson(json)).toList(),
   User: (data) => User.fromJson(data),
 
-  // Post models
   List<Post>: (data) =>
       List.from(data).map((json) => Post.fromJson(json)).toList(),
   Post: (data) => Post.fromJson(data),
 
-  // Tag models
   List<Tag>: (data) =>
       List.from(data).map((json) => Tag.fromJson(json)).toList(),
   Tag: (data) => Tag.fromJson(data),
 
-  // Business Account models
   List<BusinessAccount>: (data) =>
       List.from(data).map((json) => BusinessAccount.fromJson(json)).toList(),
   BusinessAccount: (data) => BusinessAccount.fromJson(data),
 
-  // Booking models
   List<Booking>: (data) =>
       List.from(data).map((json) => Booking.fromJson(json)).toList(),
   Booking: (data) => Booking.fromJson(data),
 
-  // Notification models
   List<Notification>: (data) =>
       List.from(data).map((json) => Notification.fromJson(json)).toList(),
   Notification: (data) => Notification.fromJson(data),
 
-  // Category models
   List<Category>: (data) =>
       List.from(data).map((json) => Category.fromJson(json)).toList(),
   Category: (data) => Category.fromJson(data),
@@ -72,7 +65,6 @@ final Map<Type, dynamic> modelDecoders = {
 final Map<Type, dynamic> apiDecoders = {
   ApiService: () => ApiService(),
 
-  // API Services as singletons for better performance
   AuthApiService: AuthApiService(),
   UserApiService: UserApiService(),
   PostApiService: PostApiService(),
@@ -92,5 +84,4 @@ final Map<Type, dynamic> apiDecoders = {
 final Map<Type, dynamic> controllers = {
   HomeController: () => HomeController(),
 
-  // ...
 };

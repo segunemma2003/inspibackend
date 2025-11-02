@@ -1,13 +1,6 @@
-/* Cache Configuration
-|--------------------------------------------------------------------------
-| Comprehensive caching system for optimal performance
-| Learn more: https://nylo.dev/docs/6.x/configuration
-|-------------------------------------------------------------------------- */
-
 import 'package:nylo_framework/nylo_framework.dart';
 
 class CacheConfig {
-  // Cache durations for different types of data
   static const Duration userFeedCache = Duration(minutes: 2);
   static const Duration userStatsCache = Duration(minutes: 5);
   static const Duration businessAccountsCache = Duration(minutes: 3);
@@ -25,7 +18,6 @@ class CacheConfig {
   static const Duration likedPostsCache = Duration(minutes: 3);
   static const Duration businessBookingsCache = Duration(minutes: 3);
 
-  // Cache keys for different data types
   static const String userFeedKey = "user_feed";
   static const String userStatsKey = "user_stats";
   static const String businessAccountsKey = "business_accounts";
@@ -37,7 +29,6 @@ class CacheConfig {
   static const String currentUserKey = "current_user";
   static const String unreadCountKey = "unread_count";
 
-  // Cache management methods
   static Future<void> clearUserCache() async {
     await cache().clear(userFeedKey);
     await cache().clear(userStatsKey);
@@ -47,9 +38,29 @@ class CacheConfig {
   }
 
   static Future<void> clearPostCache() async {
-    await cache().clear(trendingPostsKey);
-    await cache().clear("saved_posts");
-    await cache().clear("liked_posts");
+    try {
+
+      await cache().clear(trendingPostsKey);
+
+      final keys = await cache().documents();
+      for (String key in keys) {
+        if (key.startsWith('feed_') ||
+            key.startsWith('post_details_') ||
+            key.startsWith('user_posts_') ||
+            key.startsWith('saved_posts') ||
+            key.startsWith('liked_posts') ||
+            key.startsWith('user_liked_posts_') ||
+            key.startsWith('user_saved_posts_') ||
+            key.startsWith('tagged_posts_') ||
+            key.startsWith('posts_by_tags_')) {
+          await cache().clear(key);
+        }
+      }
+
+      print('✅ Post cache cleared successfully');
+    } catch (e) {
+      print('❌ Error clearing post cache: $e');
+    }
   }
 
   static Future<void> clearBusinessCache() async {
@@ -58,7 +69,7 @@ class CacheConfig {
   }
 
   static Future<void> clearSearchCache() async {
-    // Clear all search-related cache
+
     final keys = await cache().documents();
     for (String key in keys) {
       if (key.startsWith('search_') ||
@@ -75,13 +86,11 @@ class CacheConfig {
     await cache().flush();
   }
 
-  // Performance optimization methods
   static Future<void> preloadEssentialData() async {
-    // Preload categories and interests as they change rarely
-    // This can be called during app initialization
+
   }
 
   static Future<void> optimizeCacheForOffline() async {
-    // Implement offline cache optimization
+
   }
 }

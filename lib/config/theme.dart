@@ -13,7 +13,6 @@ import 'package:nylo_framework/nylo_framework.dart';
 | Learn more: https://nylo.dev/docs/6.x/themes-and-styling
 |-------------------------------------------------------------------------- */
 
-// App Themes
 final List<BaseThemeConfig<ColorStyles>> appThemes = [
   BaseThemeConfig<ColorStyles>(
     id: getEnv('LIGHT_THEME_ID'),

@@ -19,7 +19,6 @@ class SavedPostsApiService extends NyApiService {
     return headers;
   }
 
-  /// Get user's saved posts
   Future<Map<String, dynamic>?> getSavedPosts({
     int page = 1,
     int perPage = 20,
@@ -93,7 +92,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Get user's liked posts
   Future<Map<String, dynamic>?> getLikedPosts({
     int page = 1,
     int perPage = 20,
@@ -167,7 +165,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Like a post
   Future<Map<String, dynamic>?> likePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/like"),
@@ -230,7 +227,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Unlike a post
   Future<Map<String, dynamic>?> unlikePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/posts/$postId/like"),
@@ -293,7 +289,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Save a post
   Future<Map<String, dynamic>?> savePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/save"),
@@ -356,7 +351,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Unsave a post
   Future<Map<String, dynamic>?> unsavePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/posts/$postId/save"),
@@ -419,7 +413,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Get a single post
   Future<dynamic> getPost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.get("/posts/$postId"),
@@ -484,7 +477,6 @@ class SavedPostsApiService extends NyApiService {
     return response;
   }
 
-  /// Delete a post
   Future<Map<String, dynamic>?> deletePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/posts/$postId"),

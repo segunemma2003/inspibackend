@@ -10,6 +10,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:flutter_app/app/models/post.dart';
 import 'package:flutter_app/config/decoders.dart';
 import '/app/networking/dio/interceptors/bearer_auth_interceptor.dart';
+import '/config/cache.dart';
 
 class PostApiService extends NyApiService {
   PostApiService({BuildContext? buildContext})
@@ -25,10 +26,6 @@ class PostApiService extends NyApiService {
         BearerAuthInterceptor: BearerAuthInterceptor(),
       };
 
-  // Authentication is now handled by BearerAuthInterceptor
-  // No need for setAuthHeaders method
-
-  /// Get personalized feed with filters
   Future<Map<String, dynamic>?> getFeed({
     int perPage = 20,
     int page = 1,
@@ -46,7 +43,6 @@ class PostApiService extends NyApiService {
       "page": page,
     };
 
-    // Manually format list parameters for array serialization
     if (tags != null && tags.isNotEmpty) {
       for (var tag in tags) {
         queryParams.putIfAbsent('tags[]', () => []).add(tag);
@@ -134,7 +130,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Create a new post (direct upload)
   Future<Post?> createPost({
     required String caption,
     required String media,
@@ -210,12 +205,13 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null && response['success'] == true) {
+
+      await CacheConfig.clearPostCache();
       return Post.fromJson(response['data']);
     }
     return null;
   }
 
-  /// Get presigned URL for S3 upload (smart upload system)
   Future<Map<String, dynamic>?> getUploadUrl({
     required String filename,
     required String contentType,
@@ -301,7 +297,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Get chunked upload URLs for large files
   Future<Map<String, dynamic>?> getChunkedUploadUrl({
     required String filename,
     required String contentType,
@@ -374,7 +369,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Complete chunked upload
   Future<Map<String, dynamic>?> completeChunkedUpload({
     required String filePath,
     required int totalChunks,
@@ -444,7 +438,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Create post after S3 upload
   Future<Map<String, dynamic>?> createPostFromS3({
     required String filePath,
     String? caption,
@@ -524,6 +517,12 @@ class PostApiService extends NyApiService {
       } else if (rawResponse is Map<String, dynamic>) {
         response = rawResponse;
       }
+
+      if (response != null) {
+
+        await CacheConfig.clearPostCache();
+      }
+
       return response;
     } catch (e) {
       print('❌ Error in createPostFromS3: $e');
@@ -531,7 +530,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Get post details
   Future<Post?> getPostDetails(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.get("/posts/$postId"),
@@ -600,7 +598,6 @@ class PostApiService extends NyApiService {
     return null;
   }
 
-  /// Like/Unlike a post
   Future<Map<String, dynamic>?> toggleLike(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/like"),
@@ -660,10 +657,15 @@ class PostApiService extends NyApiService {
     } else if (rawResponse is Map<String, dynamic>) {
       response = rawResponse;
     }
+
+    if (response != null) {
+
+      await cache().clear("post_details_$postId");
+    }
+
     return response;
   }
 
-  /// Save/Unsave a post
   Future<Map<String, dynamic>?> toggleSave(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts/$postId/save"),
@@ -723,10 +725,15 @@ class PostApiService extends NyApiService {
     } else if (rawResponse is Map<String, dynamic>) {
       response = rawResponse;
     }
+
+    if (response != null) {
+
+      await cache().clear("post_details_$postId");
+    }
+
     return response;
   }
 
-  /// Get saved posts
   Future<Map<String, dynamic>?> getSavedPosts({
     int perPage = 20,
     int page = 1,
@@ -814,7 +821,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Get liked posts
   Future<Map<String, dynamic>?> getLikedPosts({
     int perPage = 20,
     int page = 1,
@@ -829,8 +835,7 @@ class PostApiService extends NyApiService {
             'page': page,
           },
         ),
-        // cacheKey: "liked_posts_$page",
-        // cacheDuration: const Duration(minutes: 5),
+
       );
 
       if (rawResponse == null) return null;
@@ -902,7 +907,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Delete a post
   Future<Map<String, dynamic>?> deletePost(int postId) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.delete("/posts/$postId"),
@@ -962,10 +966,15 @@ class PostApiService extends NyApiService {
     } else if (rawResponse is Map<String, dynamic>) {
       response = rawResponse;
     }
+
+    if (response != null && response['success'] == true) {
+
+      await CacheConfig.clearPostCache();
+    }
+
     return response;
   }
 
-  /// Search posts by tags
   Future<Map<String, dynamic>?> searchPostsByTags({
     required List<String> tags,
     int perPage = 20,
@@ -1036,7 +1045,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// General search
   Future<Map<String, dynamic>?> search({
     required String query,
     required String type,
@@ -1108,23 +1116,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  // ==================== UPLOAD METHODS ====================
-
-  // ==================== UPLOAD METHODS ====================
-
-  /// Method 1: Direct Upload (≤ 50MB) - Traditional Laravel upload
-  ///
-  /// This method is suitable for files up to 50MB.
-  /// For larger files, use the chunked upload methods.
-  ///
-  /// Parameters:
-  /// - `mediaFile`: The file to upload (image or video)
-  /// - `caption`: Post caption (optional, max 2000 chars)
-  /// - `categoryId`: ID of the category this post belongs to
-  /// - `tags`: Optional list of tags
-  /// - `location`: Optional location string
-  ///
-  /// Returns: Post data on success, or error details on failure
   Future<Map<String, dynamic>?> createPostDirect({
     required File mediaFile,
     String? caption,
@@ -1132,7 +1123,7 @@ class PostApiService extends NyApiService {
     List<String>? tags,
     String? location,
   }) async {
-    // Create form data
+
     final formData = FormData.fromMap({
       'media': await MultipartFile.fromFile(mediaFile.path),
       if (caption != null) 'caption': caption,
@@ -1207,26 +1198,15 @@ class PostApiService extends NyApiService {
     } else if (rawResponse is Map<String, dynamic>) {
       response = rawResponse;
     }
+
+    if (response != null) {
+
+      await CacheConfig.clearPostCache();
+    }
+
     return response;
   }
 
-  /// Method 2: Presigned URL Upload (any size) - Direct to S3
-  ///
-  /// This method gets a presigned URL from the server and then uploads
-  /// the file directly to S3. It handles both single PUT and chunked uploads
-  /// automatically based on file size.
-  ///
-  /// Parameters:
-  /// - `file`: The file to upload
-  /// - `onProgress`: Callback for upload progress updates
-  /// - `caption`: Post caption (optional)
-  /// - `categoryId`: ID of the category
-  /// - `tags`: Optional list of tags
-  /// - `location`: Optional location string
-  /// - `mediaMetadata`: Optional metadata like duration, resolution, etc.
-  /// - `thumbnailPath`: Optional path to a thumbnail (for videos)
-  ///
-  /// Returns: Post data on success, or error details on failure
   Future<Map<String, dynamic>?> uploadWithPresignedUrl({
     required File file,
     required void Function(double) onProgress,
@@ -1239,7 +1219,7 @@ class PostApiService extends NyApiService {
     List<int>? taggedUsers,
   }) async {
     try {
-      // Step 1: Get upload URL from server
+
       final fileSize = await file.length();
       final fileName = file.path.split('/').last;
       final fileExtension = fileName.split('.').last.toLowerCase();
@@ -1266,12 +1246,11 @@ class PostApiService extends NyApiService {
       String filePath;
 
       if (uploadMethod == 'direct') {
-        // Step 2a: Direct upload to S3 (single PUT)
+
         print('🌐 Using direct upload method');
         final uploadUrl = uploadData['upload_url'] as String;
         filePath = uploadData['file_path'] as String;
 
-        // Upload the file directly to S3
         await _uploadToS3(
           file: file,
           uploadUrl: uploadUrl,
@@ -1279,13 +1258,12 @@ class PostApiService extends NyApiService {
           onProgress: onProgress,
         );
       } else if (uploadMethod == 'chunked') {
-        // Step 2b: Chunked upload to S3
+
         print('🌐 Using chunked upload method');
         filePath = uploadData['file_path'] as String;
         final chunkSize = uploadData['recommended_chunk_size'] as int? ??
             5 * 1024 * 1024; // Default 5MB
 
-        // Upload in chunks
         await _uploadInChunks(
           file: file,
           filePath: filePath,
@@ -1297,7 +1275,6 @@ class PostApiService extends NyApiService {
         throw Exception('Unknown upload method: $uploadMethod');
       }
 
-      // Step 3: Create post with the uploaded file
       print('🌐 File upload complete, creating post...');
       final postResponse = await createPostFromS3(
         filePath: filePath,
@@ -1324,7 +1301,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Helper method to upload a file directly to S3 using a presigned URL
   Future<void> _uploadToS3({
     required File file,
     required String uploadUrl,
@@ -1335,11 +1311,9 @@ class PostApiService extends NyApiService {
       final fileSize = await file.length();
       int uploadedBytes = 0;
 
-      // Open the file stream
       final fileStream = file.openRead();
       final bytesBuilder = BytesBuilder();
 
-      // Read the entire file into memory (for small files)
       await for (var chunk in fileStream) {
         bytesBuilder.add(chunk);
         uploadedBytes += chunk.length;
@@ -1349,7 +1323,6 @@ class PostApiService extends NyApiService {
 
       final bytes = bytesBuilder.toBytes();
 
-      // Upload the file in a single PUT request
       final response = await http.put(
         Uri.parse(uploadUrl),
         headers: {
@@ -1371,7 +1344,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Helper method to upload a file in chunks using presigned URLs
   Future<void> _uploadInChunks({
     required File file,
     required String filePath,
@@ -1386,7 +1358,6 @@ class PostApiService extends NyApiService {
       print(
           '📦 Starting chunked upload of $fileSize bytes in $totalChunks chunks');
 
-      // Get chunked upload URLs from the server
       final chunkedUrlResponse = await getChunkedUploadUrl(
         filename: filePath.split('/').last,
         contentType: contentType,
@@ -1401,7 +1372,6 @@ class PostApiService extends NyApiService {
 
       final chunkUrls = chunkedUrlResponse['data']['chunk_urls'] as List;
 
-      // Upload each chunk
       final fileStream = file.openRead();
       int chunkIndex = 0;
       int uploadedBytes = 0;
@@ -1416,7 +1386,6 @@ class PostApiService extends NyApiService {
         print(
             '📤 Uploading chunk ${chunkIndex + 1}/$totalChunks (${chunk.length} bytes)');
 
-        // Upload the chunk
         final response = await http.put(
           Uri.parse(chunkUrl),
           headers: {
@@ -1438,7 +1407,6 @@ class PostApiService extends NyApiService {
         chunkIndex++;
       }
 
-      // Complete the chunked upload
       print('✅ All chunks uploaded, completing upload...');
       final completeResponse = await completeChunkedUpload(
         filePath: filePath,
@@ -1457,7 +1425,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  /// Get posts by user
   Future<Map<String, dynamic>?> getPostsByUser({
     required int userId,
     int perPage = 20,
@@ -1536,7 +1503,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Get posts that a specific user has liked
   Future<Map<String, dynamic>?> getUserLikedPosts({
     required int userId,
     int perPage = 20,
@@ -1574,7 +1540,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Get posts that a specific user has saved
   Future<Map<String, dynamic>?> getUserSavedPosts({
     required int userId,
     int perPage = 20,
@@ -1612,7 +1577,6 @@ class PostApiService extends NyApiService {
     return response;
   }
 
-  /// Helper method to get MIME type from file extension
   String _getMimeType(String extension) {
     switch (extension.toLowerCase()) {
       case 'jpg':
@@ -1633,9 +1597,6 @@ class PostApiService extends NyApiService {
     }
   }
 
-  // ==================== USER TAGGING METHODS ====================
-
-  /// Search users for tagging
   Future<List<Map<String, dynamic>>?> searchUsersForTagging({
     required String query,
     int limit = 10,
@@ -1653,7 +1614,6 @@ class PostApiService extends NyApiService {
     return null;
   }
 
-  /// Tag users in a post
   Future<Map<String, dynamic>?> tagUsersInPost({
     required int postId,
     required List<int> userIds,
@@ -1665,7 +1625,6 @@ class PostApiService extends NyApiService {
     );
   }
 
-  /// Remove user tags from a post
   Future<Map<String, dynamic>?> untagUsersFromPost({
     required int postId,
     required List<int> userIds,
@@ -1677,7 +1636,6 @@ class PostApiService extends NyApiService {
     );
   }
 
-  /// Get posts where user is tagged
   Future<Map<String, dynamic>?> getTaggedPosts({
     int perPage = 20,
     int page = 1,

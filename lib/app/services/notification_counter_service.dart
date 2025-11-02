@@ -1,11 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service to manage notification counter
 class NotificationCounterService {
   static const String _counterKey = 'notification_counter';
   static const String _lastResetKey = 'notification_last_reset';
 
-  /// Initialize the notification counter service
   Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -16,7 +14,6 @@ class NotificationCounterService {
     }
   }
 
-  /// Get current notification count
   Future<int> getCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -27,7 +24,6 @@ class NotificationCounterService {
     }
   }
 
-  /// Increment notification count
   Future<void> incrementCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -40,7 +36,6 @@ class NotificationCounterService {
     }
   }
 
-  /// Reset notification count
   Future<void> resetCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -52,7 +47,6 @@ class NotificationCounterService {
     }
   }
 
-  /// Get last reset time
   Future<DateTime?> getLastResetTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -67,7 +61,6 @@ class NotificationCounterService {
     }
   }
 
-  /// Clear all notification data
   Future<void> clearAll() async {
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -23,18 +23,15 @@ class _SearchPageState extends NyState<SearchPage>
   late TabController _tabController;
   int _selectedTabIndex = 0;
 
-  // Search results
   List<Post> _posts = [];
   List<User> _users = [];
   List<String> _trendingTags = [];
   List<User> _popularUsers = [];
 
-  // Loading states
   bool _isLoadingPosts = false;
   bool _isLoadingUsers = false;
   bool _isLoadingTrending = false;
 
-  // Search state
   bool _hasSearched = false;
 
   @override
@@ -63,7 +60,7 @@ class _SearchPageState extends NyState<SearchPage>
     });
 
     try {
-      // Load trending searches
+
       final trendingResponse = await api<PostApiService>(
         (request) => request.get("/search/trending?limit=10"),
       );
@@ -531,7 +528,7 @@ class _SearchPageState extends NyState<SearchPage>
   Widget _buildPostItem(Post post) {
     return GestureDetector(
       onTap: () {
-        // Navigate to post detail
+
         showToast(title: "Post", description: "Post ${post.id} tapped.");
       },
       child: Container(

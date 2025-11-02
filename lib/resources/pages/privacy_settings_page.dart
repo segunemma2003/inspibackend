@@ -31,11 +31,9 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Load current privacy settings from API
-      // This would be implemented based on your API structure
+
       await Future.delayed(const Duration(seconds: 1)); // Simulate API call
 
-      // For now, using default values
       setState(() {
         _isPrivateAccount = false;
         _allowTagging = true;
@@ -246,7 +244,7 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
+
             Row(
               children: [
                 Container(
@@ -309,7 +307,6 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
 
             const SizedBox(height: 40),
 
-            // Account Privacy Section
             _buildSectionHeader('Account Privacy'),
             const SizedBox(height: 16),
 
@@ -323,7 +320,6 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
 
             const SizedBox(height: 32),
 
-            // Interactions Section
             _buildSectionHeader('Interactions'),
             const SizedBox(height: 16),
 
@@ -358,7 +354,6 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
 
             const SizedBox(height: 32),
 
-            // Discoverability Section
             _buildSectionHeader('Discoverability'),
             const SizedBox(height: 16),
 
@@ -382,7 +377,6 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
 
             const SizedBox(height: 32),
 
-            // Activity Section
             _buildSectionHeader('Activity'),
             const SizedBox(height: 16),
 
@@ -499,8 +493,7 @@ class _PrivacySettingsPageState extends NyPage<PrivacySettingsPage> {
     setState(() => _isSaving = true);
 
     try {
-      // Save privacy settings via API
-      // This would be implemented based on your API structure
+
       await Future.delayed(const Duration(seconds: 2)); // Simulate API call
 
       showToast(

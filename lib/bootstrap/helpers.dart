@@ -7,7 +7,6 @@ import 'package:nylo_framework/nylo_framework.dart';
 | Add your helper methods here
 |-------------------------------------------------------------------------- */
 
-/// helper to find correct color from the [context].
 class ThemeColor {
   static ColorStyles get(BuildContext context, {String? themeId}) =>
       nyColorStyle<ColorStyles>(context, themeId: themeId);

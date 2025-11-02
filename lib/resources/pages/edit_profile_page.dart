@@ -139,7 +139,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Profile Picture
+
             GestureDetector(
               onTap: () {
                 _pickImage();
@@ -190,11 +190,9 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 30),
 
-            // Divider for visual separation
             Divider(height: 1, thickness: 1, color: Colors.grey[200]),
             SizedBox(height: 30),
 
-            // Full Name
             _buildTextField(
               controller: _fullNameController,
               label: 'Full Name',
@@ -202,7 +200,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 15),
 
-            // Username
             _buildTextField(
               controller: _usernameController,
               label: 'Username',
@@ -214,7 +211,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 15),
 
-            // Bio
             _buildTextField(
               controller: _bioController,
               label: 'Bio',
@@ -223,7 +219,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 15),
 
-            // Profession
             _buildTextField(
               controller: _professionController,
               label: 'Profession',
@@ -231,7 +226,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 15),
 
-            // Interests
             _buildTextField(
               controller: _interestsController,
               label: 'Interests (comma-separated)',
@@ -240,7 +234,6 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
             ),
             SizedBox(height: 30),
 
-            // Save Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -348,7 +341,7 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
     setState(() => _isSaving = true);
 
     try {
-      // Extract data from controllers
+
       final String? fullName = _fullNameController.text.trim().isEmpty
           ? null
           : _fullNameController.text.trim();
@@ -391,10 +384,8 @@ class _EditProfilePageState extends NyPage<EditProfilePage> {
           style: ToastNotificationStyleType.success,
         );
 
-        // Small delay for toast visibility
         await Future.delayed(Duration(milliseconds: 800));
 
-        // Go back to previous page
         if (mounted) {
           pop();
         }

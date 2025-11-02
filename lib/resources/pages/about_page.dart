@@ -18,17 +18,15 @@ class _AboutPageState extends NyPage<AboutPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+
             _buildHeader(),
 
             const SizedBox(height: 20),
 
-            // Logo Section
             _buildLogoSection(),
 
             const SizedBox(height: 30),
 
-            // About Content
             Expanded(
               child: _buildAboutContent(),
             ),
@@ -44,7 +42,7 @@ class _AboutPageState extends NyPage<AboutPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
+
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -55,7 +53,7 @@ class _AboutPageState extends NyPage<AboutPage> {
               color: Colors.black,
             ),
           ),
-          // Title
+
           Text(
             'ABOUT US',
             style: TextStyle(
@@ -64,7 +62,7 @@ class _AboutPageState extends NyPage<AboutPage> {
               color: Colors.black,
             ),
           ),
-          // Empty space for alignment
+
           SizedBox(width: 24),
         ],
       ),
@@ -74,7 +72,7 @@ class _AboutPageState extends NyPage<AboutPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo image
+
         Image.asset(
           'logo.png',
           width: 80,
@@ -84,7 +82,6 @@ class _AboutPageState extends NyPage<AboutPage> {
 
         const SizedBox(height: 12),
 
-        // App name with second 'i' in yellow and 'r' in blue
         RichText(
           text: TextSpan(
             children: [
@@ -137,7 +134,7 @@ class _AboutPageState extends NyPage<AboutPage> {
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: 24.0),
       children: [
-        // Mission Section
+
         _buildSection(
           'Our Mission',
           Icons.flag_outlined,
@@ -146,7 +143,6 @@ class _AboutPageState extends NyPage<AboutPage> {
 
         SizedBox(height: 24),
 
-        // What We Do Section
         _buildSection(
           'What We Do',
           Icons.work_outline,
@@ -155,27 +151,22 @@ class _AboutPageState extends NyPage<AboutPage> {
 
         SizedBox(height: 24),
 
-        // Features Section
         _buildFeaturesSection(),
 
         SizedBox(height: 24),
 
-        // Contact Section
         _buildContactSection(),
 
         SizedBox(height: 24),
 
-        // Social Media Section
         _buildSocialSection(),
 
         SizedBox(height: 24),
 
-        // Policy Links Section
         _buildPolicyLinksSection(),
 
         SizedBox(height: 32),
 
-        // Copyright
         Center(
           child: Text(
             '© 2024 inspirtag. All rights reserved.',
