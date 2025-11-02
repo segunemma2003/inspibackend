@@ -39,7 +39,6 @@ class CacheConfig {
 
   static Future<void> clearPostCache() async {
     try {
-
       await cache().clear(trendingPostsKey);
 
       final keys = await cache().documents();
@@ -69,7 +68,6 @@ class CacheConfig {
   }
 
   static Future<void> clearSearchCache() async {
-
     final keys = await cache().documents();
     for (String key in keys) {
       if (key.startsWith('search_') ||
@@ -86,11 +84,7 @@ class CacheConfig {
     await cache().flush();
   }
 
-  static Future<void> preloadEssentialData() async {
+  static Future<void> preloadEssentialData() async {}
 
-  }
-
-  static Future<void> optimizeCacheForOffline() async {
-
-  }
+  static Future<void> optimizeCacheForOffline() async {}
 }

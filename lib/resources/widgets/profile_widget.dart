@@ -60,7 +60,6 @@ class _ProfileState extends NyState<Profile> {
     }
 
     try {
-
       if (forceRefresh) {
         await _clearUserPostsCache();
       }
@@ -185,7 +184,6 @@ class _ProfileState extends NyState<Profile> {
     String baseName;
     switch (_selectedTabIndex) {
       case 0:
-
         baseName = 'user_posts_$_refreshTrigger';
         break;
       case 1:
@@ -232,7 +230,6 @@ class _ProfileState extends NyState<Profile> {
 
                                 switch (_selectedTabIndex) {
                                   case 0:
-
                                     return await _loadUserPosts(iteration,
                                         forceRefresh: iteration == 1);
                                   case 1:
@@ -406,7 +403,6 @@ class _ProfileState extends NyState<Profile> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 20),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -476,7 +472,6 @@ class _ProfileState extends NyState<Profile> {
 
   Future<void> _clearUserPostsCache() async {
     try {
-
       await CacheConfig.clearPostCache();
 
       await CacheConfig.clearUserCache();
@@ -492,10 +487,7 @@ class _ProfileState extends NyState<Profile> {
           await cache().clear(key);
         }
       }
-
-    } catch (e) {
-
-    }
+    } catch (e) {}
   }
 
   Widget _buildUserCategoriesSection() {
@@ -715,7 +707,6 @@ class _ProfileState extends NyState<Profile> {
                         height: double.infinity,
                         fit: BoxFit.cover,
                       ),
-
                       if (post.mediaType == 'video')
                         const Positioned(
                           top: 8,
@@ -723,7 +714,6 @@ class _ProfileState extends NyState<Profile> {
                           child: Icon(Icons.play_circle_filled,
                               color: Colors.white, size: 20),
                         ),
-
                       if (post.likesCount != null && post.likesCount! > 0)
                         Positioned(
                           bottom: 8,
@@ -777,7 +767,6 @@ class _ProfileState extends NyState<Profile> {
   }
 
   void _showPostDetail(Post post) async {
-
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PostDetailsPage(post: post),
@@ -915,7 +904,6 @@ class _ProfileState extends NyState<Profile> {
                           Icons.settings_outlined, 'Settings', '/settings'),
                       _buildSidebarItem(Icons.notifications_outlined,
                           'Notifications', '/notification'),
-
                       const SizedBox(height: 16),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -930,7 +918,6 @@ class _ProfileState extends NyState<Profile> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
                       _buildSidebarItem(Icons.privacy_tip_outlined,
                           'Privacy Policy', '/privacy-policy'),
                       _buildSidebarItem(Icons.description_outlined,
@@ -943,7 +930,6 @@ class _ProfileState extends NyState<Profile> {
                           'Contact Support', '/support'),
                       _buildSidebarItem(
                           Icons.info_outline, 'About Us', '/about'),
-
                       const SizedBox(height: 16),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -959,7 +945,6 @@ class _ProfileState extends NyState<Profile> {
                       ),
                       const SizedBox(height: 8),
                       _buildDebugNotificationButton(),
-
                       const SizedBox(height: 16),
                       _buildSidebarItem(Icons.logout, 'Logout', '/logout',
                           isDestructive: true),

@@ -205,7 +205,6 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null && response['success'] == true) {
-
       await CacheConfig.clearPostCache();
       return Post.fromJson(response['data']);
     }
@@ -519,7 +518,6 @@ class PostApiService extends NyApiService {
       }
 
       if (response != null) {
-
         await CacheConfig.clearPostCache();
       }
 
@@ -659,7 +657,6 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null) {
-
       await cache().clear("post_details_$postId");
     }
 
@@ -727,7 +724,6 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null) {
-
       await cache().clear("post_details_$postId");
     }
 
@@ -835,7 +831,6 @@ class PostApiService extends NyApiService {
             'page': page,
           },
         ),
-
       );
 
       if (rawResponse == null) return null;
@@ -968,7 +963,6 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null && response['success'] == true) {
-
       await CacheConfig.clearPostCache();
     }
 
@@ -1123,7 +1117,6 @@ class PostApiService extends NyApiService {
     List<String>? tags,
     String? location,
   }) async {
-
     final formData = FormData.fromMap({
       'media': await MultipartFile.fromFile(mediaFile.path),
       if (caption != null) 'caption': caption,
@@ -1200,7 +1193,6 @@ class PostApiService extends NyApiService {
     }
 
     if (response != null) {
-
       await CacheConfig.clearPostCache();
     }
 
@@ -1219,7 +1211,6 @@ class PostApiService extends NyApiService {
     List<int>? taggedUsers,
   }) async {
     try {
-
       final fileSize = await file.length();
       final fileName = file.path.split('/').last;
       final fileExtension = fileName.split('.').last.toLowerCase();
@@ -1246,7 +1237,6 @@ class PostApiService extends NyApiService {
       String filePath;
 
       if (uploadMethod == 'direct') {
-
         print('🌐 Using direct upload method');
         final uploadUrl = uploadData['upload_url'] as String;
         filePath = uploadData['file_path'] as String;
@@ -1258,7 +1248,6 @@ class PostApiService extends NyApiService {
           onProgress: onProgress,
         );
       } else if (uploadMethod == 'chunked') {
-
         print('🌐 Using chunked upload method');
         filePath = uploadData['file_path'] as String;
         final chunkSize = uploadData['recommended_chunk_size'] as int? ??
