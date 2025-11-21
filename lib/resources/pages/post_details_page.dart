@@ -28,7 +28,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
 
   Future<void> _loadData() async {
     try {
-
       _post = widget.post ?? widget.data()?['post'] as Post?;
 
       final user =
@@ -104,7 +103,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
       );
 
       if (response != null && response['success'] == true) {
-
         showToast(
           title: "Success",
           description: "Post deleted successfully",
@@ -170,7 +168,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         actions: [
-
           if (_currentUser?.id == _post?.user?.id)
             IconButton(
               icon: _isDeleting
@@ -188,7 +185,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -235,7 +231,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                       ],
                     ),
                   ),
-
                   if (_post!.category != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -256,7 +251,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                 ],
               ),
             ),
-
             if (_post!.mediaUrl != null)
               Container(
                 width: double.infinity,
@@ -270,7 +264,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                   fit: BoxFit.contain,
                 ),
               ),
-
             if (_post!.caption != null && _post!.caption!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -279,7 +272,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
-
             if (_post!.location != null && _post!.location!.isNotEmpty)
               Padding(
                 padding:
@@ -298,7 +290,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                   ],
                 ),
               ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -326,7 +317,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
           ],
         ),

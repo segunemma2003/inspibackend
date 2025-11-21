@@ -21,14 +21,33 @@ class User extends Model {
   bool?
       isFollowed; // Added isFollowed to check if authenticated user is following this user
 
+  // Professional subscription fields
+  bool? isProfessional;
+  String? subscriptionStatus; // 'active', 'expired', 'cancelled'
+  DateTime? subscriptionStartedAt;
+  DateTime? subscriptionExpiresAt;
+  String? subscriptionPaymentId;
+  String? appleOriginalTransactionId;
+  String? appleTransactionId;
+  String? appleProductId;
+
+  // Social links (Professional users only)
+  String? website;
+  String? bookingLink;
+  String? whatsappLink;
+  String? linkedinLink;
+  String? instagramLink;
+  String? tiktokLink;
+  String? snapchatLink;
+  String? facebookLink;
+  String? twitterLink;
+
   static StorageKey key = 'user';
 
   User() : super(key: key);
 
   User.fromJson(dynamic data) {
-
     if (data == null) {
-
       return;
     }
 
@@ -38,41 +57,32 @@ class User extends Model {
     } else if (data is Map) {
       userData = Map<String, dynamic>.from(data);
     } else {
-
       return;
     }
 
     if (userData.containsKey('data')) {
       userData = userData['data'];
-
     }
 
     if (userData.containsKey('user')) {
-
       if (userData.containsKey('statistics') && userData['statistics'] is Map) {
         final stats = userData['statistics'] as Map<String, dynamic>;
         postsCount = stats['posts_count'] ?? 0;
         followersCount = stats['followers_count'] ?? 0;
         followingCount = stats['following_count'] ?? 0;
-
       }
 
       userData = userData['user'];
-
     } else {
-
       if (userData.containsKey('statistics') && userData['statistics'] is Map) {
         final stats = userData['statistics'] as Map<String, dynamic>;
         postsCount = stats['posts_count'] ?? 0;
         followersCount = stats['followers_count'] ?? 0;
         followingCount = stats['following_count'] ?? 0;
-
       } else {
-
         postsCount = userData['posts_count'] ?? 0;
         followersCount = userData['followers_count'] ?? 0;
         followingCount = userData['following_count'] ?? 0;
-
       }
     }
 
@@ -82,9 +92,7 @@ class User extends Model {
     username = userData['username'];
     email = userData['email'];
 
-    if (id == null) {
-
-    }
+    if (id == null) {}
     profilePicture = userData['profile_picture'];
     bio = userData['bio'];
     profession = userData['profession'];
@@ -103,6 +111,30 @@ class User extends Model {
 
     isFollowed = userData['is_followed'] ?? false; // Parse isFollowed
 
+    // Parse professional subscription fields
+    isProfessional = userData['is_professional'] ?? false;
+    subscriptionStatus = userData['subscription_status'];
+    subscriptionStartedAt = userData['subscription_started_at'] != null
+        ? DateTime.parse(userData['subscription_started_at'])
+        : null;
+    subscriptionExpiresAt = userData['subscription_expires_at'] != null
+        ? DateTime.parse(userData['subscription_expires_at'])
+        : null;
+    subscriptionPaymentId = userData['subscription_payment_id'];
+    appleOriginalTransactionId = userData['apple_original_transaction_id'];
+    appleTransactionId = userData['apple_transaction_id'];
+    appleProductId = userData['apple_product_id'];
+
+    // Parse social links
+    website = userData['website'];
+    bookingLink = userData['booking_link'];
+    whatsappLink = userData['whatsapp_link'];
+    linkedinLink = userData['linkedin_link'];
+    instagramLink = userData['instagram_link'];
+    tiktokLink = userData['tiktok_link'];
+    snapchatLink = userData['snapchat_link'];
+    facebookLink = userData['facebook_link'];
+    twitterLink = userData['twitter_link'];
   }
 
   @override
@@ -125,5 +157,22 @@ class User extends Model {
         "followers_count": followersCount, // Serialize followersCount
         "following_count": followingCount, // Serialize followingCount
         "is_followed": isFollowed, // Serialize isFollowed
+        "is_professional": isProfessional,
+        "subscription_status": subscriptionStatus,
+        "subscription_started_at": subscriptionStartedAt?.toIso8601String(),
+        "subscription_expires_at": subscriptionExpiresAt?.toIso8601String(),
+        "subscription_payment_id": subscriptionPaymentId,
+        "apple_original_transaction_id": appleOriginalTransactionId,
+        "apple_transaction_id": appleTransactionId,
+        "apple_product_id": appleProductId,
+        "website": website,
+        "booking_link": bookingLink,
+        "whatsapp_link": whatsappLink,
+        "linkedin_link": linkedinLink,
+        "instagram_link": instagramLink,
+        "tiktok_link": tiktokLink,
+        "snapchat_link": snapchatLink,
+        "facebook_link": facebookLink,
+        "twitter_link": twitterLink,
       };
 }

@@ -51,7 +51,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
         await _videoController?.dispose();
 
         if (isVideo) {
-
           final thumbnail = await VideoThumbnail.thumbnailData(
             video: filePath,
             imageFormat: ImageFormat.JPEG,
@@ -118,10 +117,7 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
   }
 
   void _handleCaptionChange(String text) {
-
-    setState(() {
-
-    });
+    setState(() {});
   }
 
   void _removeTag(String tag) {
@@ -136,7 +132,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
     setState(() => _isLoading = true);
 
     try {
-
       final filename = _mediaFile!.path.split('/').last;
       final contentType = _getMimeType(_mediaFile!.path);
       final fileSize = await _mediaFile!.length();
@@ -231,7 +226,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
     return Stack(
       fit: StackFit.expand,
       children: [
-
         _videoThumbnail != null
             ? Positioned.fill(
                 child: Image.memory(
@@ -246,7 +240,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                 height: double.infinity,
                 color: Colors.black26,
               ),
-
         const Center(
           child: Icon(
             Icons.play_circle_fill,
@@ -254,7 +247,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
             color: Colors.white70,
           ),
         ),
-
         if (_videoController != null)
           Positioned(
             bottom: 8,
@@ -307,7 +299,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-
                     GestureDetector(
                       onTap: _pickMedia,
                       child: Container(
@@ -325,7 +316,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _captionController,
                       decoration: const InputDecoration(
@@ -343,7 +333,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _tagController,
                       decoration: InputDecoration(
@@ -357,7 +346,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                       onFieldSubmitted: (_) => _addTag(),
                     ),
                     const SizedBox(height: 8),
-
                     Wrap(
                       spacing: 8,
                       children: _tags
@@ -368,7 +356,6 @@ class _CreatePostPageState extends NyPage<CreatePostPage> {
                           .toList(),
                     ),
                     const SizedBox(height: 16),
-
                     const Text(
                       'Tag People',
                       style: TextStyle(

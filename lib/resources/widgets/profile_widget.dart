@@ -6,6 +6,7 @@ import 'package:flutter_app/app/networking/user_api_service.dart'; // Re-add Use
 import 'package:flutter_app/app/models/user.dart'; // Re-add User model
 import '/resources/widgets/smart_media_widget.dart';
 import '/resources/pages/post_details_page.dart';
+import '/resources/pages/subscription_upgrade_page.dart';
 import '/config/cache.dart';
 
 class Profile extends StatefulWidget {
@@ -902,6 +903,8 @@ class _ProfileState extends NyState<Profile> {
                           '/edit-profile'),
                       _buildSidebarItem(
                           Icons.settings_outlined, 'Settings', '/settings'),
+                      _buildSidebarItem(Icons.workspace_premium_outlined,
+                          'Subscription', SubscriptionUpgradePage.path),
                       _buildSidebarItem(Icons.notifications_outlined,
                           'Notifications', '/notification'),
                       const SizedBox(height: 16),

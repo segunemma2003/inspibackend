@@ -32,6 +32,7 @@ import 'package:flutter_app/resources/pages/terms_of_service_page.dart';
 import 'package:flutter_app/resources/pages/following_page.dart';
 import 'package:flutter_app/resources/pages/search_users_page.dart';
 import 'package:flutter_app/resources/pages/post_management_page.dart';
+import 'package:flutter_app/resources/pages/subscription_upgrade_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import 'package:flutter_app/app/services/auth_service.dart';
 
@@ -83,12 +84,12 @@ appRouter() => nyRoutes((router) {
         router.add(TermsOfServicePage.path);
         router.add(SearchUsersPage.path);
         router.add(PostManagementPage.path);
+        router.add(SubscriptionUpgradePage.path);
 
         router.add(
           (
             "/logout",
             (context) => FutureBuilder(
-
                 future: AuthService.instance
                     .logout()
                     .then((_) => Navigator.pushAndRemoveUntil(
@@ -117,4 +118,4 @@ appRouter() => nyRoutes((router) {
       router.add(SignUpPage.path);
       router.add(ForgotPasswordPage.path);
       router.add(PostDetailsPage.path);
-});
+    });

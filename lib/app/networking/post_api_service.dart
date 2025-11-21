@@ -18,7 +18,7 @@ class PostApiService extends NyApiService {
 
   @override
   String get baseUrl =>
-      getEnv('API_BASE_URL', defaultValue: 'http://38.180.244.178/api');
+      getEnv('API_BASE_URL', defaultValue: 'https://api.inspirtag.com/api');
 
   @override
   get interceptors => {
@@ -137,6 +137,7 @@ class PostApiService extends NyApiService {
     List<String>? tags,
     String? location,
     List<int>? taggedUsers,
+    bool? isAds,
   }) async {
     final rawResponse = await network<dynamic>(
       request: (request) => request.post("/posts", data: {
@@ -146,6 +147,7 @@ class PostApiService extends NyApiService {
         if (tags != null) "tags": tags,
         if (location != null) "location": location,
         if (taggedUsers != null) "tagged_users": taggedUsers,
+        if (isAds != null) "is_ads": isAds,
       }),
     );
 
@@ -446,6 +448,7 @@ class PostApiService extends NyApiService {
     Map<String, dynamic>? mediaMetadata,
     String? thumbnailPath,
     List<int>? taggedUsers,
+    bool? isAds,
   }) async {
     try {
       final rawResponse = await network<dynamic>(
@@ -459,6 +462,7 @@ class PostApiService extends NyApiService {
           if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
           if (taggedUsers != null && taggedUsers.isNotEmpty)
             'tagged_users': taggedUsers,
+          if (isAds != null) 'is_ads': isAds,
         }),
       );
 

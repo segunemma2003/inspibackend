@@ -24,31 +24,24 @@ import '/app/networking/api_service.dart';
 
 final Map<Type, dynamic> modelDecoders = {
   Map<String, dynamic>: (data) => Map<String, dynamic>.from(data),
-
   List<User>: (data) =>
       List.from(data).map((json) => User.fromJson(json)).toList(),
   User: (data) => User.fromJson(data),
-
   List<Post>: (data) =>
       List.from(data).map((json) => Post.fromJson(json)).toList(),
   Post: (data) => Post.fromJson(data),
-
   List<Tag>: (data) =>
       List.from(data).map((json) => Tag.fromJson(json)).toList(),
   Tag: (data) => Tag.fromJson(data),
-
   List<BusinessAccount>: (data) =>
       List.from(data).map((json) => BusinessAccount.fromJson(json)).toList(),
   BusinessAccount: (data) => BusinessAccount.fromJson(data),
-
   List<Booking>: (data) =>
       List.from(data).map((json) => Booking.fromJson(json)).toList(),
   Booking: (data) => Booking.fromJson(data),
-
   List<Notification>: (data) =>
       List.from(data).map((json) => Notification.fromJson(json)).toList(),
   Notification: (data) => Notification.fromJson(data),
-
   List<Category>: (data) =>
       List.from(data).map((json) => Category.fromJson(json)).toList(),
   Category: (data) => Category.fromJson(data),
@@ -64,7 +57,6 @@ final Map<Type, dynamic> modelDecoders = {
 
 final Map<Type, dynamic> apiDecoders = {
   ApiService: () => ApiService(),
-
   AuthApiService: AuthApiService(),
   UserApiService: UserApiService(),
   PostApiService: PostApiService(),
@@ -83,5 +75,4 @@ final Map<Type, dynamic> apiDecoders = {
 |-------------------------------------------------------------------------- */
 final Map<Type, dynamic> controllers = {
   HomeController: () => HomeController(),
-
 };

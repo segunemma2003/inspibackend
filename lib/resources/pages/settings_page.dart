@@ -3,6 +3,7 @@ import 'package:nylo_framework/nylo_framework.dart';
 
 import '../../app/networking/auth_api_service.dart';
 import '../../app/services/auth_service.dart';
+import 'subscription_upgrade_page.dart';
 
 class SettingsPage extends NyStatefulWidget {
   static RouteView path = ("/settings", (_) => SettingsPage());
@@ -27,15 +28,10 @@ class _SettingsPageState extends NyPage<SettingsPage> {
       body: SafeArea(
         child: Column(
           children: [
-
             _buildHeader(),
-
             const SizedBox(height: 20),
-
             _buildLogoSection(),
-
             const SizedBox(height: 30),
-
             Expanded(
               child: _buildSettingsContent(),
             ),
@@ -51,7 +47,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-
           GestureDetector(
             onTap: () {
               routeTo('/base');
@@ -62,7 +57,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               color: Colors.black,
             ),
           ),
-
           Text(
             'SETTINGS',
             style: TextStyle(
@@ -71,7 +65,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               color: Colors.black,
             ),
           ),
-
           SizedBox(width: 24),
         ],
       ),
@@ -81,16 +74,13 @@ class _SettingsPageState extends NyPage<SettingsPage> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-
         Image.asset(
           'logo.png',
           width: 60,
           height: 60,
           fit: BoxFit.contain,
         ).localAsset(),
-
         const SizedBox(height: 8),
-
         RichText(
           text: TextSpan(
             children: [
@@ -132,7 +122,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: 24.0),
       children: [
-
         _buildSection(
           'Account',
           Icons.person_outline,
@@ -142,6 +131,12 @@ class _SettingsPageState extends NyPage<SettingsPage> {
               'Edit Profile',
               'Update your personal information',
               () => routeTo('/dashboard/edit-profile'),
+            ),
+            _buildSettingItem(
+              Icons.workspace_premium_outlined,
+              'Subscription',
+              'Upgrade to professional plan',
+              () => routeTo(SubscriptionUpgradePage.path),
             ),
             _buildSettingItem(
               Icons.security_outlined,
@@ -157,9 +152,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 24),
-
         _buildSection(
           'Notifications',
           Icons.notifications_outlined,
@@ -180,9 +173,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 24),
-
         _buildSection(
           'App Settings',
           Icons.settings_outlined,
@@ -210,9 +201,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 24),
-
         _buildSection(
           'Legal & Policies',
           Icons.gavel_outlined,
@@ -255,9 +244,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 24),
-
         _buildSection(
           'Support',
           Icons.help_outline,
@@ -289,9 +276,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 32),
-
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(16),
@@ -330,9 +315,7 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ),
         ),
-
         SizedBox(height: 20),
-
         _buildSection(
           'Danger Zone',
           Icons.warning_amber_outlined,
@@ -346,7 +329,6 @@ class _SettingsPageState extends NyPage<SettingsPage> {
             ),
           ],
         ),
-
         SizedBox(height: 40),
       ],
     );

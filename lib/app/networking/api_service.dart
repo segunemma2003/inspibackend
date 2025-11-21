@@ -20,7 +20,7 @@ class ApiService extends NyApiService {
 
   @override
   String get baseUrl =>
-      getEnv('API_BASE_URL', defaultValue: 'http://38.180.244.178/api');
+      getEnv('API_BASE_URL', defaultValue: 'https://api.inspirtag.com/api');
 
   @override
   get interceptors => {

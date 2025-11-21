@@ -19,6 +19,11 @@ class Post extends Model {
   bool? isLiked;
   bool? isSaved;
   DateTime? createdAt;
+  // Ads and analytics fields
+  bool? isAds; // Whether post is an ad (visible to everyone)
+  int? viewsCount; // Total views
+  int? impressionsCount; // Total impressions
+  int? reachCount; // Total reach
   User? user;
   Category? category;
   List<Tag>? tags;
@@ -46,6 +51,10 @@ class Post extends Model {
     isSaved = data['is_saved'];
     createdAt =
         data['created_at'] != null ? DateTime.parse(data['created_at']) : null;
+    isAds = data['is_ads'] ?? false;
+    viewsCount = data['views_count'] ?? 0;
+    impressionsCount = data['impressions_count'] ?? 0;
+    reachCount = data['reach_count'] ?? 0;
     user = data['user'] != null ? User.fromJson(data['user']) : null;
     category =
         data['category'] != null ? Category.fromJson(data['category']) : null;
@@ -78,6 +87,10 @@ class Post extends Model {
       "is_liked": isLiked,
       "is_saved": isSaved,
       "created_at": createdAt?.toIso8601String(),
+      "is_ads": isAds,
+      "views_count": viewsCount,
+      "impressions_count": impressionsCount,
+      "reach_count": reachCount,
       "user": user?.toJson(),
       "category": category?.toJson(),
       "tags": tags?.map((tag) => tag.toJson()).toList(),
