@@ -674,7 +674,7 @@ class _FeedState extends NyState<Feed> {
               ),
             ),
 
-          if (displayPost.mediaUrl != null)
+          if (displayPost.getMediaUrls().isNotEmpty)
             Stack(
               children: [
                 ClipRRect(

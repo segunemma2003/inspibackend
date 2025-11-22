@@ -7,7 +7,8 @@ class Post extends Model {
   int? userId;
   int? categoryId;
   String? caption;
-  String? mediaUrl;
+  String? mediaUrl; // Deprecated: Use mediaUrls instead. Kept for backward compatibility
+  List<String>? mediaUrls; // New: Array of media URLs
   String? mediaType;
   String? thumbnailUrl;
   String? location;
@@ -38,7 +39,21 @@ class Post extends Model {
     userId = data['user_id'];
     categoryId = data['category_id'];
     caption = data['caption'];
-    mediaUrl = data['media_url'];
+    
+    // Handle media_url as either array (new format) or string (old format)
+    final mediaUrlData = data['media_url'];
+    if (mediaUrlData != null) {
+      if (mediaUrlData is List) {
+        // New format: array of URLs
+        mediaUrls = mediaUrlData.map((url) => url.toString()).toList();
+        mediaUrl = mediaUrls!.isNotEmpty ? mediaUrls!.first : null; // Backward compatibility
+      } else {
+        // Old format: single URL string
+        mediaUrl = mediaUrlData.toString();
+        mediaUrls = [mediaUrl!]; // Convert to array for consistency
+      }
+    }
+    
     mediaType = data['media_type'];
     thumbnailUrl = data['thumbnail_url'];
     location = data['location'];
@@ -68,6 +83,29 @@ class Post extends Model {
         : null;
   }
 
+  // Helper method to get all media URLs as a list (handles both old and new formats)
+  List<String> getMediaUrls() {
+    if (mediaUrls != null && mediaUrls!.isNotEmpty) {
+      return mediaUrls!;
+    }
+    if (mediaUrl != null && mediaUrl!.isNotEmpty) {
+      return [mediaUrl!];
+    }
+    return [];
+  }
+
+  // Helper method to check if post has multiple media
+  bool hasMultipleMedia() {
+    final urls = getMediaUrls();
+    return urls.length > 1;
+  }
+
+  // Helper method to get first media URL (for backward compatibility)
+  String? getFirstMediaUrl() {
+    final urls = getMediaUrls();
+    return urls.isNotEmpty ? urls.first : null;
+  }
+
   @override
   toJson() {
     return {
@@ -75,7 +113,7 @@ class Post extends Model {
       "user_id": userId,
       "category_id": categoryId,
       "caption": caption,
-      "media_url": mediaUrl,
+      "media_url": mediaUrls ?? (mediaUrl != null ? [mediaUrl!] : <String>[]),
       "media_type": mediaType,
       "thumbnail_url": thumbnailUrl,
       "location": location,

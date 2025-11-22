@@ -141,7 +141,7 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          if (post.mediaUrl != null)
+          if (post.getMediaUrls().isNotEmpty)
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(8)),

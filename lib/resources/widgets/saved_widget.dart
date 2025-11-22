@@ -157,22 +157,34 @@ class _SavedState extends NyState<Saved> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: post.user?.profilePicture != null
-                      ? NetworkImage(post.user!.profilePicture!)
-                      : null,
-                  backgroundColor: const Color(0xFF9ACD32),
-                  child: post.user?.profilePicture == null
-                      ? Text(
-                          post.user?.fullName?.substring(0, 1).toUpperCase() ??
-                              'U',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
+                InkWell(
+                  onTap: () {
+                    if (post.user?.id != null) {
+                      print('👤 SavedWidget: Navigating to user profile with ID: ${post.user!.id}');
+                      SmartMediaWidget.pauseAllVideos();
+                      routeTo('/user-profile', data: {'userId': post.user!.id});
+                    } else {
+                      print('❌ SavedWidget: User ID is null, cannot navigate to profile');
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: post.user?.profilePicture != null
+                        ? NetworkImage(post.user!.profilePicture!)
+                        : null,
+                    backgroundColor: const Color(0xFF9ACD32),
+                    child: post.user?.profilePicture == null
+                        ? Text(
+                            post.user?.fullName?.substring(0, 1).toUpperCase() ??
+                                'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -231,7 +243,7 @@ class _SavedState extends NyState<Saved> {
             ),
           ),
 
-          if (post.mediaUrl != null)
+          if (post.getMediaUrls().isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: SmartMediaWidget(

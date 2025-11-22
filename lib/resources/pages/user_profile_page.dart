@@ -825,10 +825,10 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: post.mediaUrl != null
-                    ? (post.mediaType == 'video'
+                child: post.getFirstMediaUrl() != null
+                    ? (post.mediaType == 'video' || post.mediaType == 'mixed'
                         ? Image.network(
-                            post.thumbnailUrl ?? post.mediaUrl!,
+                            post.thumbnailUrl ?? post.getFirstMediaUrl()!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
@@ -839,7 +839,7 @@ class _UserProfilePageState extends NyPage<UserProfilePage> {
                             },
                           )
                         : Image.network(
-                            post.mediaUrl!,
+                            post.getFirstMediaUrl()!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(

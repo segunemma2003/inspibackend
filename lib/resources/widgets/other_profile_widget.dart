@@ -493,10 +493,10 @@ class _OtherProfileState extends NyState<OtherProfile> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: post.mediaUrl != null
-                    ? (post.mediaType == 'video'
+                child: post.getFirstMediaUrl() != null
+                    ? (post.mediaType == 'video' || post.mediaType == 'mixed'
                         ? Image.network(
-                            post.thumbnailUrl ?? post.mediaUrl!,
+                            post.thumbnailUrl ?? post.getFirstMediaUrl()!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
@@ -507,7 +507,7 @@ class _OtherProfileState extends NyState<OtherProfile> {
                             },
                           )
                         : Image.network(
-                            post.mediaUrl!,
+                            post.getFirstMediaUrl()!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(

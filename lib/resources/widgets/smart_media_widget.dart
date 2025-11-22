@@ -29,36 +29,58 @@ class SmartMediaWidget extends StatefulWidget {
 }
 
 class _SmartMediaWidgetState extends State<SmartMediaWidget> {
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-  bool _isVideoPlaying = false;
+  final Map<int, VideoPlayerController?> _videoControllers = {};
+  final Map<int, bool> _videoInitialized = {};
+  final Map<int, bool> _videoPlaying = {};
+  final Map<int, bool> _hasError = {};
+  int _currentPage = 0;
   bool _isVisible = false;
-  bool _hasError = false;
 
   static final Set<VideoPlayerController> _allVideoControllers =
       <VideoPlayerController>{};
 
+  List<String> get _mediaUrls => widget.post.getMediaUrls();
+
   @override
   void initState() {
     super.initState();
-    _initializeVideoIfNeeded();
+    _initializeAllVideos();
+  }
+
+  @override
+  void didUpdateWidget(SmartMediaWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id) {
+      _disposeAllVideos();
+      _initializeAllVideos();
+    }
   }
 
   @override
   void dispose() {
-    if (_videoController != null) {
-      _videoController!.pause();
-      _unregisterVideoController(_videoController!);
-      _videoController!.dispose();
-    }
+    _disposeAllVideos();
     super.dispose();
+  }
+
+  void _disposeAllVideos() {
+    _videoControllers.forEach((index, controller) {
+      if (controller != null) {
+        controller.pause();
+        _unregisterVideoController(controller);
+        controller.dispose();
+      }
+    });
+    _videoControllers.clear();
+    _videoInitialized.clear();
+    _videoPlaying.clear();
+    _hasError.clear();
   }
 
   static void pauseAllVideos() {
     print(
         '🎥 SmartMediaWidget: Pausing all videos globally (${_allVideoControllers.length} controllers)');
     for (var controller in _allVideoControllers) {
-      if (controller != null && controller.value.isInitialized) {
+      if (controller.value.isInitialized) {
         print(
             '🎥 SmartMediaWidget: Pausing controller: ${controller.hashCode}');
         controller.pause();
@@ -78,46 +100,68 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
         '🎥 SmartMediaWidget: Unregistered controller: ${controller.hashCode} (total: ${_allVideoControllers.length})');
   }
 
-  void _initializeVideoIfNeeded() {
-    if (_isVideo() && !_isVideoInitialized) {
-      _videoController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.post.mediaUrl!),
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true,
-          allowBackgroundPlayback: false,
-        ),
-      );
-
-      _videoController!.setLooping(true);
-
-      _registerVideoController(_videoController!);
-
-      _videoController!.initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _isVideoInitialized = true;
-          });
-        }
-      }).catchError((error) {
-        print('Video initialization error: $error');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-          });
-        }
-      });
+  void _initializeAllVideos() {
+    for (int i = 0; i < _mediaUrls.length; i++) {
+      if (_isVideoUrl(_mediaUrls[i])) {
+        _videoInitialized[i] = false;
+        _videoPlaying[i] = false;
+        _hasError[i] = false;
+        _initializeVideo(i, _mediaUrls[i]);
+      }
     }
   }
 
-  bool _isVideo() {
-    final mediaType = widget.post.mediaType?.toLowerCase();
-    final mediaUrl = widget.post.mediaUrl?.toLowerCase();
+  void _initializeVideo(int index, String url) {
+    if (_videoControllers[index] != null) return;
 
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+
+    controller.setLooping(true);
+    _videoControllers[index] = controller;
+    _registerVideoController(controller);
+
+    controller.initialize().then((_) {
+      if (mounted) {
+        setState(() {
+          _videoInitialized[index] = true;
+        });
+        // Auto-play if visible and is current page
+        if (_isVisible && _currentPage == index) {
+          _playVideo(index);
+        }
+      }
+    }).catchError((error) {
+      print('Video initialization error for index $index: $error');
+      if (mounted) {
+        setState(() {
+          _hasError[index] = true;
+        });
+      }
+    });
+  }
+
+  bool _isVideoUrl(String url) {
+    final lowerUrl = url.toLowerCase();
+    final mediaType = widget.post.mediaType?.toLowerCase();
+    
     return mediaType == 'video' ||
-        mediaUrl?.contains('.mp4') == true ||
-        mediaUrl?.contains('.mov') == true ||
-        mediaUrl?.contains('.avi') == true ||
-        mediaUrl?.contains('.webm') == true;
+        mediaType == 'mixed' ||
+        lowerUrl.contains('.mp4') ||
+        lowerUrl.contains('.mov') ||
+        lowerUrl.contains('.avi') ||
+        lowerUrl.contains('.webm') ||
+        lowerUrl.contains('.mkv');
+  }
+
+  bool _isVideo(int index) {
+    if (index >= _mediaUrls.length) return false;
+    return _isVideoUrl(_mediaUrls[index]);
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
@@ -130,111 +174,164 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
         });
       }
 
-      if (_isVideo() && _isVideoInitialized) {
-        if (isVisible) {
-          _playVideo();
-        } else {
-          _pauseVideo();
+      // Pause all videos first
+      for (int i = 0; i < _mediaUrls.length; i++) {
+        if (_isVideo(i)) {
+          _pauseVideo(i);
         }
       }
+
+      // Play video on current page if visible
+      if (isVisible && _isVideo(_currentPage)) {
+        _playVideo(_currentPage);
+      }
     }
   }
 
-  void pauseVideo() {
-    if (_isVideo() && _isVideoInitialized && _videoController != null) {
-      print('🎥 SmartMediaWidget: Force pausing video');
-      _videoController!.pause();
+  void _playVideo(int index) {
+    final controller = _videoControllers[index];
+    if (controller != null && !_videoPlaying[index]! && _videoInitialized[index]!) {
+      controller.play();
       if (mounted) {
         setState(() {
-          _isVideoPlaying = false;
+          _videoPlaying[index] = true;
         });
       }
     }
   }
 
-  void forcePauseVideo() {
-    print('🎥 SmartMediaWidget: forcePauseVideo called');
-    pauseVideo();
-  }
-
-  void _playVideo() {
-    if (_videoController != null && !_isVideoPlaying) {
-      _videoController!.play();
+  void _pauseVideo(int index) {
+    final controller = _videoControllers[index];
+    if (controller != null && _videoPlaying[index] == true) {
+      controller.pause();
       if (mounted) {
         setState(() {
-          _isVideoPlaying = true;
+          _videoPlaying[index] = false;
         });
       }
     }
   }
 
-  void _pauseVideo() {
-    if (_videoController != null && _isVideoPlaying) {
-      _videoController!.pause();
-      setState(() {
-        _isVideoPlaying = false;
-      });
-    }
-  }
-
-  void _toggleVideoPlayback() {
-    if (_isVideoPlaying) {
-      _pauseVideo();
+  void _toggleVideoPlayback(int index) {
+    if (_videoPlaying[index] == true) {
+      _pauseVideo(index);
     } else {
-      _playVideo();
+      _playVideo(index);
     }
   }
 
-  void _onVideoTap() {
-    print('🎥 SmartMediaWidget: Video tapped, isPlaying: $_isVideoPlaying');
+  void _onPageChanged(int page) {
+    // Pause current video
+    if (_isVideo(_currentPage)) {
+      _pauseVideo(_currentPage);
+    }
 
-    print('🎥 SmartMediaWidget: Toggling video playback');
-    _toggleVideoPlayback();
+    setState(() {
+      _currentPage = page;
+    });
+
+    // Play new page video if visible
+    if (_isVisible && _isVideo(page)) {
+      _playVideo(page);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.post.mediaUrl == null) {
+    final mediaUrls = _mediaUrls;
+    
+    if (mediaUrls.isEmpty) {
       return _buildErrorWidget('No media available');
     }
 
+    // Single media - use existing behavior for backward compatibility
+    if (mediaUrls.length == 1) {
+      return VisibilityDetector(
+        key: Key('media_${widget.post.id}_0'),
+        onVisibilityChanged: _onVisibilityChanged,
+        child: _isVideo(0)
+            ? _buildVideoWidget(0, mediaUrls[0])
+            : _buildImageWidget(0, mediaUrls[0]),
+      );
+    }
+
+    // Multiple media - use carousel
     return VisibilityDetector(
       key: Key('media_${widget.post.id}'),
       onVisibilityChanged: _onVisibilityChanged,
-      child: _isVideo() ? _buildVideoWidget() : _buildImageWidget(),
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              itemCount: mediaUrls.length,
+              onPageChanged: _onPageChanged,
+              controller: PageController(),
+              itemBuilder: (context, index) {
+                return _isVideo(index)
+                    ? _buildVideoWidget(index, mediaUrls[index])
+                    : _buildImageWidget(index, mediaUrls[index]);
+              },
+            ),
+          ),
+          // Page indicator dots
+          if (mediaUrls.length > 1)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  mediaUrls.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentPage == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildVideoWidget() {
-    if (_hasError) {
+  Widget _buildVideoWidget(int index, String url) {
+    if (_hasError[index] == true) {
       return _buildErrorWidget('Failed to load video');
     }
 
-    if (!_isVideoInitialized) {
-      return _buildVideoThumbnail();
+    final controller = _videoControllers[index];
+    final isInitialized = _videoInitialized[index] == true;
+    final isPlaying = _videoPlaying[index] == true;
+
+    if (!isInitialized || controller == null) {
+      return _buildVideoThumbnail(index, url);
     }
 
     return GestureDetector(
-      onTap: _onVideoTap,
+      onTap: () => _toggleVideoPlayback(index),
       child: Stack(
         alignment: Alignment.center,
         children: [
-
           Container(
             height: widget.height ?? 400,
             width: widget.width ?? double.infinity,
             color: Colors.black,
             child: FittedBox(
-              fit: BoxFit.cover,
+              fit: widget.fit,
               child: SizedBox(
-                width: _videoController!.value.size.width,
-                height: _videoController!.value.size.height,
-                child: VideoPlayer(_videoController!),
+                width: controller.value.size.width,
+                height: controller.value.size.height,
+                child: VideoPlayer(controller),
               ),
             ),
           ),
-
-          if (!_isVideoPlaying)
+          if (!isPlaying)
             Container(
               height: widget.height ?? 400,
               width: widget.width ?? double.infinity,
@@ -247,7 +344,6 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
                 ),
               ),
             ),
-
           Positioned(
             bottom: 12,
             right: 12,
@@ -258,7 +354,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                _formatDuration(_videoController!.value.duration),
+                _formatDuration(controller.value.duration),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -272,8 +368,11 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     );
   }
 
-  Widget _buildVideoThumbnail() {
-    if (widget.post.thumbnailUrl != null) {
+  Widget _buildVideoThumbnail(int index, String url) {
+    // Try to get thumbnail from metadata or use first video thumbnail
+    final thumbnailUrl = widget.post.thumbnailUrl;
+    
+    if (thumbnailUrl != null && index == 0) {
       return Container(
         height: widget.height ?? 400,
         width: widget.width ?? double.infinity,
@@ -281,13 +380,12 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
           alignment: Alignment.center,
           children: [
             CachedNetworkImage(
-              imageUrl: widget.post.thumbnailUrl!,
-              fit: BoxFit.cover,
+              imageUrl: thumbnailUrl,
+              fit: widget.fit,
               height: widget.height ?? 400,
               width: widget.width ?? double.infinity,
               placeholder: (context, url) => _buildLoadingWidget(),
-              errorWidget: (context, url, error) =>
-                  _buildErrorWidget('Failed to load thumbnail'),
+              errorWidget: (context, url, error) => _buildLoadingWidget(),
               maxHeightDiskCache: 1920,
               maxWidthDiskCache: 1080,
             ),
@@ -308,24 +406,22 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     return _buildLoadingWidget();
   }
 
-  Widget _buildImageWidget() {
+  Widget _buildImageWidget(int index, String url) {
     return GestureDetector(
       onTap: widget.onExpand,
       child: Container(
         height: widget.height ?? 400,
         width: widget.width ?? double.infinity,
         child: CachedNetworkImage(
-          imageUrl: widget.post.mediaUrl!,
-          fit: BoxFit.cover,
+          imageUrl: url,
+          fit: widget.fit,
           height: widget.height ?? 400,
           width: widget.width ?? double.infinity,
           placeholder: (context, url) => _buildLoadingWidget(),
           errorWidget: (context, url, error) =>
               _buildErrorWidget('Failed to load image'),
-
           maxHeightDiskCache: 1920,
           maxWidthDiskCache: 1080,
-
           filterQuality: FilterQuality.high,
         ),
       ),

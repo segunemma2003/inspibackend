@@ -698,7 +698,7 @@ class _ProfileState extends NyState<Profile> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: post.mediaUrl != null
+            child: post.getMediaUrls().isNotEmpty
                 ? Stack(
                     fit: StackFit.expand,
                     children: [

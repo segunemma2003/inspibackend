@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 import '/app/models/post.dart';
 import '/app/models/user.dart';
+import '/app/models/category.dart';
 import '/app/networking/post_api_service.dart';
 import '/app/networking/user_api_service.dart';
+import '/app/networking/category_api_service.dart';
 import '/resources/widgets/smart_media_widget.dart';
+import '/bootstrap/helpers.dart';
 
 class PostDetailsPage extends NyStatefulWidget {
   static RouteView path = ("/post-details", (_) => PostDetailsPage());
@@ -18,6 +21,7 @@ class PostDetailsPage extends NyStatefulWidget {
 class _PostDetailsPageState extends NyPage<PostDetailsPage> {
   Post? _post;
   User? _currentUser;
+  List<Category> _categories = [];
   bool _isLoading = true;
   bool _isDeleting = false;
 
@@ -40,6 +44,14 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
             '👤 PostDetailsPage: Can delete: ${_currentUser?.id == _post?.user?.id}');
       }
 
+      // Load categories to match colors
+      final categories = await api<CategoryApiService>(
+        (request) => request.getCategories(),
+      );
+      if (categories != null) {
+        _categories = categories;
+      }
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -53,6 +65,41 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
         });
       }
     }
+  }
+
+  Color _getCategoryColor(Category? category) {
+    if (category == null) {
+      return const Color(0xFFFF69B4); // Default pink
+    }
+
+    // First try to use the category's color property if it exists
+    if (category.color != null && category.color!.isNotEmpty) {
+      try {
+        return ThemeColor.fromHex(category.color!);
+      } catch (e) {
+        print(
+            '⚠️ PostDetailsPage: Failed to parse category color: ${category.color}');
+      }
+    }
+
+    // Fall back to matching with feed widget's color logic
+    // Feed widget uses these colors in order (excluding 'ALL')
+    final categoryColors = [
+      Color(0xFF00C3F1), // #00C3F1
+      Color(0xFFFD4CC0), // #FD4CC0
+      Color(0xFFFFCF02), // #FFCF02
+      Color(0xFFB5DA64), // #B5DA64
+    ];
+
+    // Find the category index in the categories list
+    final categoryIndex =
+        _categories.indexWhere((cat) => cat.id == category.id);
+    if (categoryIndex != -1) {
+      return categoryColors[categoryIndex % categoryColors.length];
+    }
+
+    // If category not found in list, use hash-based color selection
+    return categoryColors[category.id.hashCode.abs() % categoryColors.length];
   }
 
   Future<void> _deletePost() async {
@@ -169,16 +216,26 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
         ),
         actions: [
           if (_currentUser?.id == _post?.user?.id)
-            IconButton(
-              icon: _isDeleting
-                  ? const SizedBox(
+            _isDeleting
+                ? IconButton(
+                    onPressed: null,
+                    icon: SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.delete, color: Colors.red),
-              onPressed: _isDeleting ? null : _deletePost,
-            ),
+                    ),
+                  )
+                : Text("Delete").onTap(() => _deletePost()),
+          // IconButton(
+          //   icon: _isDeleting
+          //       ? const SizedBox(
+          //           width: 20,
+          //           height: 20,
+          //           child: CircularProgressIndicator(strokeWidth: 2),
+          //         )
+          //       : const Icon(Icons.delete, color: Colors.red),
+          //   onPressed: _isDeleting ? null : _deletePost,
+          // ),
         ],
       ),
       body: SingleChildScrollView(
@@ -189,23 +246,40 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundImage: _post!.user?.profilePicture != null
-                        ? NetworkImage(_post!.user!.profilePicture!)
-                        : null,
-                    backgroundColor: const Color(0xFF9ACD32),
-                    child: _post!.user?.profilePicture == null
-                        ? Text(
-                            _post!.user?.name?.substring(0, 1).toUpperCase() ??
-                                'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          )
-                        : null,
+                  InkWell(
+                    onTap: () {
+                      if (_post!.user?.id != null) {
+                        print(
+                            '👤 PostDetailsPage: Navigating to user profile with ID: ${_post!.user!.id}');
+                        SmartMediaWidget.pauseAllVideos();
+                        routeTo('/user-profile',
+                            data: {'userId': _post!.user!.id});
+                      } else {
+                        print(
+                            '❌ PostDetailsPage: User ID is null, cannot navigate to profile');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(25),
+                    child: CircleAvatar(
+                      radius: 25,
+                      backgroundImage: _post!.user?.profilePicture != null
+                          ? NetworkImage(_post!.user!.profilePicture!)
+                          : null,
+                      backgroundColor: const Color(0xFF9ACD32),
+                      child: _post!.user?.profilePicture == null
+                          ? Text(
+                              _post!.user?.name
+                                      ?.substring(0, 1)
+                                      .toUpperCase() ??
+                                  'U',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -236,7 +310,7 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF69B4),
+                        color: _getCategoryColor(_post!.category),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -251,7 +325,7 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                 ],
               ),
             ),
-            if (_post!.mediaUrl != null)
+            if (_post!.getMediaUrls().isNotEmpty)
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
