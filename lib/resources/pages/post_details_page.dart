@@ -217,25 +217,30 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
         actions: [
           if (_currentUser?.id == _post?.user?.id)
             _isDeleting
-                ? IconButton(
-                    onPressed: null,
-                    icon: SizedBox(
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
                     ),
                   )
-                : Text("Delete").onTap(() => _deletePost()),
-          // IconButton(
-          //   icon: _isDeleting
-          //       ? const SizedBox(
-          //           width: 20,
-          //           height: 20,
-          //           child: CircularProgressIndicator(strokeWidth: 2),
-          //         )
-          //       : const Icon(Icons.delete, color: Colors.red),
-          //   onPressed: _isDeleting ? null : _deletePost,
-          // ),
+                : TextButton(
+                    onPressed: _deletePost,
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.w600),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                    ),
+                  ),
         ],
       ),
       body: SingleChildScrollView(
@@ -282,9 +287,10 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  Flexible(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _post!.user?.fullName ??
@@ -305,23 +311,6 @@ class _PostDetailsPageState extends NyPage<PostDetailsPage> {
                       ],
                     ),
                   ),
-                  if (_post!.category != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getCategoryColor(_post!.category),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _post!.category!.name ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

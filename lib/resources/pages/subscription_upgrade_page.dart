@@ -25,7 +25,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
   bool _isPurchasing = false;
   List<ProductDetails> _products = [];
   List<SubscriptionPlan> _plans = [];
-  Map<String, ProductDetails> _productMap = {}; // Maps apple_product_id to ProductDetails
+  Map<String, ProductDetails> _productMap =
+      {}; // Maps apple_product_id to ProductDetails
   User? _currentUser;
   SubscriptionPlan? _selectedPlan;
   Map<String, dynamic>? _subscriptionStatus;
@@ -161,7 +162,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
 
     // Get all apple_product_id values from plans
     final Set<String> productIds = _plans
-        .where((plan) => plan.appleProductId != null && plan.appleProductId!.isNotEmpty)
+        .where((plan) =>
+            plan.appleProductId != null && plan.appleProductId!.isNotEmpty)
         .map((plan) => plan.appleProductId!)
         .toSet();
 
@@ -245,7 +247,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
       if (_selectedPlan != null) {
         // Upgrade to selected plan with Apple Pay receipt
         print('📱 Sending receipt to backend for validation...');
-        print('📱 Selected Plan: ${_selectedPlan!.name} (${_selectedPlan!.appleProductId})');
+        print(
+            '📱 Selected Plan: ${_selectedPlan!.name} (${_selectedPlan!.appleProductId})');
 
         final response = await api<SubscriptionApiService>(
           (request) => request.upgradeToProfessional(appleReceipt: receiptData),
@@ -451,7 +454,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
                       final index = entry.key;
                       final plan = entry.value;
                       return Padding(
-                        padding: EdgeInsets.only(bottom: index < _plans.length - 1 ? 20 : 0),
+                        padding: EdgeInsets.only(
+                            bottom: index < _plans.length - 1 ? 20 : 0),
                         child: _buildPlanCard(plan: plan),
                       );
                     }),
@@ -514,18 +518,21 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
   Widget _buildPlanCard({required SubscriptionPlan plan}) {
     final isSelected = _selectedPlan?.id == plan.id;
     final isDisabled = _isAlreadySubscribed;
-    final product = plan.appleProductId != null
-        ? _productMap[plan.appleProductId]
-        : null;
-    
+    final product =
+        plan.appleProductId != null ? _productMap[plan.appleProductId] : null;
+
     // Get price from App Store product if available, otherwise use plan price
     String priceText = '';
     if (product != null) {
       priceText = product.price;
     } else if (plan.price != null) {
-      final currencySymbol = plan.currency == 'GBP' ? '£' : 
-                             plan.currency == 'USD' ? '\$' : 
-                             plan.currency == 'EUR' ? '€' : '';
+      final currencySymbol = plan.currency == 'GBP'
+          ? '£'
+          : plan.currency == 'USD'
+              ? '\$'
+              : plan.currency == 'EUR'
+                  ? '€'
+                  : '';
       priceText = '$currencySymbol${plan.price!.toStringAsFixed(2)}';
     } else {
       priceText = 'Price not available';
@@ -535,9 +542,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
     final features = plan.features ?? [];
 
     // Determine color based on plan
-    Color planColor = plan.isDefault == true 
-        ? AppColors.primaryPink 
-        : AppColors.primaryBlue;
+    Color planColor =
+        plan.isDefault == true ? AppColors.primaryPink : AppColors.primaryBlue;
 
     return GestureDetector(
       onTap: isDisabled
@@ -736,7 +742,8 @@ class _SubscriptionUpgradePageState extends NyPage<SubscriptionUpgradePage> {
                             } else if (product == null) {
                               showToast(
                                 title: "Error",
-                                description: "This plan is not available for purchase.",
+                                description:
+                                    "This plan is not available for purchase.",
                                 style: ToastNotificationStyleType.danger,
                               );
                             } else {

@@ -20,16 +20,21 @@ class Upload extends StatefulWidget {
 
 class _UploadState extends NyState<Upload> {
 
-  PlatformFile? _selectedFile;
+  PlatformFile? _selectedFile; // Keep for backward compatibility/single file preview
+  List<PlatformFile> _selectedFiles = []; // New: Support multiple files
+  int _currentPreviewIndex = 0; // Track which file is currently being previewed
   bool _isUploading = false;
   bool _isUploadComplete = false;
   bool _showLoadingOverlay = false;
-  String? _uploadedFileUrl;
+  String? _uploadedFileUrl; // Keep for single file
+  List<String> _uploadedFileUrls = []; // New: Support multiple file paths
   double _uploadProgress = 0.0;
   String _uploadStatus = '';
+  int _currentUploadingFileIndex = 0; // Track which file is currently uploading
 
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  final PageController _pageController = PageController();
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _captionController = TextEditingController();
@@ -53,6 +58,7 @@ class _UploadState extends NyState<Upload> {
     _locationController.dispose();
     _tagsController.dispose();
     _disposeVideoController();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -81,7 +87,7 @@ class _UploadState extends NyState<Upload> {
         Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            child: _selectedFile == null
+            child: _selectedFiles.isEmpty
                 ? _buildInitialUploadView()
                 : _buildFilePreviewAndForm(),
           ),
@@ -155,8 +161,11 @@ class _UploadState extends NyState<Upload> {
             onPressed: () {
               setState(() {
                 _selectedFile = null;
+                _selectedFiles.clear();
+                _currentPreviewIndex = 0;
                 _isUploadComplete = false;
                 _uploadedFileUrl = null;
+                _uploadedFileUrls.clear();
                 _uploadProgress = 0.0;
                 _uploadStatus = '';
                 _captionController.clear();
@@ -186,7 +195,7 @@ class _UploadState extends NyState<Upload> {
   }
 
   Widget _buildFilePreview() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_selectedFiles.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -197,17 +206,150 @@ class _UploadState extends NyState<Upload> {
         borderRadius: BorderRadius.circular(12),
         color: Colors.grey[100],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: _isImageFile(_selectedFile!)
-            ? Image.file(
-                File(_selectedFile!.path!),
-                fit: BoxFit.contain,
-                width: double.infinity,
-              )
-            : _buildVideoPreview(),
+      child: Stack(
+        children: [
+          // PageView for swiping between files
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _selectedFiles.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPreviewIndex = index;
+                  _selectedFile = _selectedFiles[index];
+                });
+                _initializeVideoPlayer(_selectedFiles[index]);
+              },
+              itemBuilder: (context, index) {
+                final file = _selectedFiles[index];
+                return _buildSingleFilePreview(file);
+              },
+            ),
+          ),
+          // Remove button overlay
+          if (_selectedFiles.length > 1)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => _removeFile(_currentPreviewIndex),
+                  tooltip: 'Remove this file',
+                ),
+              ),
+            ),
+          // File counter indicator
+          if (_selectedFiles.length > 1)
+            Positioned(
+              bottom: 8,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _selectedFiles.length,
+                  (index) => Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentPreviewIndex == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  Widget _buildSingleFilePreview(PlatformFile file) {
+    if (_isImageFile(file)) {
+      return Image.file(
+        File(file.path!),
+        fit: BoxFit.contain,
+        width: double.infinity,
+      );
+    } else {
+      // For videos, show preview if it's the current file being viewed
+      final isCurrentFile = _selectedFiles.indexOf(file) == _currentPreviewIndex;
+      if (isCurrentFile && _selectedFile?.path == file.path) {
+        return _buildVideoPreview();
+      } else {
+        // Show placeholder for other videos
+        return Container(
+          width: double.infinity,
+          height: 300,
+          color: Colors.black87,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.videocam, color: Colors.white, size: 48),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  file.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeFile(int index) {
+    if (index < 0 || index >= _selectedFiles.length) return;
+
+    setState(() {
+      _selectedFiles.removeAt(index);
+      
+      // Adjust preview index
+      if (_selectedFiles.isEmpty) {
+        _selectedFile = null;
+        _currentPreviewIndex = 0;
+        _disposeVideoController();
+      } else {
+        // If we removed the last item, go to previous
+        if (_currentPreviewIndex >= _selectedFiles.length) {
+          _currentPreviewIndex = _selectedFiles.length - 1;
+        }
+        _selectedFile = _selectedFiles[_currentPreviewIndex];
+        _initializeVideoPlayer(_selectedFiles[_currentPreviewIndex]);
+        
+        // Update page controller if needed
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentPreviewIndex,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+      
+      _uploadStatus = _selectedFiles.isEmpty
+          ? 'No files selected'
+          : '${_selectedFiles.length} file${_selectedFiles.length > 1 ? 's' : ''} selected';
+    });
   }
 
   Widget _buildVideoPreview() {
@@ -339,10 +481,10 @@ class _UploadState extends NyState<Upload> {
   }
 
   Widget _buildStatusIndicator() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_selectedFiles.isEmpty) return const SizedBox.shrink();
 
-    final fileSize = _selectedFile!.size;
-    final fileSizeMB = fileSize / (1024 * 1024);
+    final totalSize = _selectedFiles.fold<int>(0, (sum, file) => sum + file.size);
+    final totalSizeMB = totalSize / (1024 * 1024);
 
     IconData statusIcon;
     Color statusColor;
@@ -363,25 +505,36 @@ class _UploadState extends NyState<Upload> {
       statusColor = Colors.green[700]!;
       bgColor = Colors.green[50]!;
       borderColor = Colors.green[200]!;
-      statusText =
-          'File uploaded successfully! Fill in the details to create your post.';
+      if (_selectedFiles.length == 1) {
+        statusText = 'File uploaded successfully! Fill in the details to create your post.';
+      } else {
+        statusText = '${_selectedFiles.length} files uploaded successfully! Fill in the details to create your post.';
+      }
     } else if (_isUploading) {
-
       statusIcon = Icons.upload_file;
       statusColor = Colors.orange[700]!;
       bgColor = Colors.orange[50]!;
       borderColor = Colors.orange[200]!;
-      statusText = _uploadStatus.isNotEmpty
-          ? _uploadStatus
-          : 'Uploading file to cloud storage...';
+      if (_selectedFiles.length > 1) {
+        statusText = _uploadStatus.isNotEmpty
+            ? _uploadStatus
+            : 'Uploading file ${_currentUploadingFileIndex + 1} of ${_selectedFiles.length} to cloud storage...';
+      } else {
+        statusText = _uploadStatus.isNotEmpty
+            ? _uploadStatus
+            : 'Uploading file to cloud storage...';
+      }
     } else {
 
       statusIcon = Icons.cloud_upload_outlined;
       statusColor = Colors.teal[700]!;
       bgColor = Colors.teal[50]!;
       borderColor = Colors.teal[200]!;
-      statusText =
-          'File selected (${fileSizeMB.toStringAsFixed(1)} MB). Ready to upload to cloud.';
+      if (_selectedFiles.length == 1) {
+        statusText = 'File selected (${totalSizeMB.toStringAsFixed(1)} MB). Ready to upload to cloud.';
+      } else {
+        statusText = '${_selectedFiles.length} files selected (${totalSizeMB.toStringAsFixed(1)} MB total). Ready to upload to cloud.';
+      }
     }
 
     return Container(
@@ -493,7 +646,7 @@ class _UploadState extends NyState<Upload> {
   }
 
   Widget _buildUploadButton() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_selectedFiles.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -1090,27 +1243,46 @@ class _UploadState extends NyState<Upload> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.media,
-        allowMultiple: false,
+        allowMultiple: true, // Enable multiple file selection
         allowedExtensions: null,
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = result.files.single;
+      if (result != null && result.files.isNotEmpty) {
+        var files = result.files.where((f) => f.path != null).toList();
+        
+        if (files.isEmpty) {
+          showToast(title: 'Error', description: 'No valid files selected');
+          return;
+        }
+
+        // Limit to 10 files max
+        if (files.length > 10) {
+          showToast(
+            title: 'Warning',
+            description: 'Maximum 10 files allowed. Only first 10 will be used.',
+          );
+          files = files.take(10).toList();
+        }
 
         setState(() {
-          _selectedFile = file;
-          _uploadStatus = 'File selected';
+          _selectedFiles = files;
+          _selectedFile = files.first; // Keep first file for preview compatibility
+          _currentPreviewIndex = 0; // Start at first file
+          _uploadStatus = '${files.length} file${files.length > 1 ? 's' : ''} selected';
+          _uploadedFileUrls = []; // Reset uploaded URLs
+          _isUploadComplete = false;
         });
 
-        await _initializeVideoPlayer(file);
+        // Initialize video player for first file if it's a video
+        if (files.isNotEmpty) {
+          await _initializeVideoPlayer(files.first);
+        }
 
-        print('📁 Selected file: ${file.name}');
-        print(
-            '📁 File size: ${file.size} bytes (${(file.size / 1024 / 1024).toStringAsFixed(2)} MB)');
-        print('📁 File extension: ${file.extension}');
-        print('📁 File path: ${file.path}');
+        print('📁 Selected ${files.length} file(s)');
+        for (var file in files) {
+          print('📁 - ${file.name} (${(file.size / 1024 / 1024).toStringAsFixed(2)} MB)');
+        }
       } else {
-
         print('📁 File picking cancelled');
       }
     } catch (e) {
@@ -1125,23 +1297,98 @@ class _UploadState extends NyState<Upload> {
   }
 
   Future<void> _uploadFile() async {
-    if (_selectedFile == null) return;
+    if (_selectedFiles.isEmpty) return;
 
     setState(() {
       _isUploading = true;
       _uploadProgress = 0.0;
       _uploadStatus = 'Preparing upload...';
+      _uploadedFileUrls = [];
+      _currentUploadingFileIndex = 0;
     });
 
     try {
-      final fileSize = _selectedFile!.size;
-      final fileSizeMB = fileSize / (1024 * 1024);
+      print('📤 Upload: Starting upload for ${_selectedFiles.length} file(s)');
 
-      print('📁 File: ${_selectedFile!.name}');
-      print('📁 Size: ${fileSizeMB.toStringAsFixed(2)} MB');
-      print('📤 Upload: Using presigned URL upload for all files');
+      // Step 1: Get all presigned URLs first (in parallel for better performance)
+      setState(() {
+        _uploadStatus = 'Getting upload URLs for all files...';
+      });
 
-      await _uploadWithPresignedUrl();
+      final List<Map<String, dynamic>> uploadDataList = [];
+      
+      // Get all presigned URLs
+      for (int i = 0; i < _selectedFiles.length; i++) {
+        final file = _selectedFiles[i];
+        setState(() {
+          _uploadStatus = 'Getting upload URL for file ${i + 1} of ${_selectedFiles.length}...';
+        });
+
+        final uploadUrlResponse = await api<PostApiService>(
+          (request) => request.getUploadUrl(
+            filename: file.name,
+            contentType: _getContentType(file),
+            fileSize: file.size,
+          ),
+        );
+
+        if (uploadUrlResponse == null || uploadUrlResponse['success'] != true) {
+          throw Exception('Failed to get upload URL for file ${i + 1}: ${file.name}');
+        }
+
+        uploadDataList.add({
+          'file': file,
+          'uploadData': uploadUrlResponse['data'],
+          'fileIndex': i,
+        });
+      }
+
+      print('✅ Upload: Got ${uploadDataList.length} presigned URLs');
+
+      // Step 2: Upload all files sequentially (to avoid overwhelming the network)
+      for (int i = 0; i < uploadDataList.length; i++) {
+        final item = uploadDataList[i];
+        final file = item['file'] as PlatformFile;
+        final uploadData = item['uploadData'] as Map<String, dynamic>;
+        final fileIndex = item['fileIndex'] as int;
+
+        setState(() {
+          _currentUploadingFileIndex = fileIndex;
+          _uploadStatus = 'Uploading file ${fileIndex + 1} of ${_selectedFiles.length}: ${file.name}';
+        });
+
+        print('📤 Upload: File ${fileIndex + 1}/${_selectedFiles.length}: ${file.name}');
+        
+        final uploadMethod = uploadData['upload_method'] ?? 'direct';
+        final filePath = uploadData['file_path'] as String;
+
+        if (uploadMethod == 'chunked') {
+          await _uploadChunkedFileToS3(file, filePath, fileIndex);
+        } else {
+          await _uploadDirectToS3ForFile(file, uploadData, fileIndex);
+        }
+
+        // Add file path to uploaded URLs list
+        setState(() {
+          _uploadedFileUrls.add(filePath);
+          _uploadProgress = (fileIndex + 1) / _selectedFiles.length;
+        });
+
+        print('✅ Upload: File ${fileIndex + 1} uploaded: $filePath');
+      }
+
+      setState(() {
+        _isUploadComplete = true;
+        _uploadStatus = 'All files uploaded successfully!';
+        _uploadProgress = 1.0;
+      });
+
+      print('✅ Upload: All ${_selectedFiles.length} file(s) uploaded successfully!');
+      showToast(
+        title: 'Success',
+        description: '${_selectedFiles.length} file(s) uploaded successfully!',
+        style: ToastNotificationStyleType.success,
+      );
     } catch (e) {
       print('❌ Upload: Upload failed: $e');
       setState(() {
@@ -1149,7 +1396,7 @@ class _UploadState extends NyState<Upload> {
         _uploadStatus = 'Upload failed';
       });
 
-      String errorMessage = 'Failed to upload file';
+      String errorMessage = 'Failed to upload files';
       if (e.toString().contains('network')) {
         errorMessage = 'Network error. Please check your connection';
       } else if (e.toString().contains('timeout')) {
@@ -1161,6 +1408,110 @@ class _UploadState extends NyState<Upload> {
         description: errorMessage,
         style: ToastNotificationStyleType.danger,
       );
+    }
+  }
+
+  // This method is now deprecated - presigned URLs are fetched in _uploadFile()
+  // Keeping for backward compatibility if needed
+
+  Future<void> _uploadDirectToS3ForFile(PlatformFile file, Map<String, dynamic> uploadData, int fileIndex) async {
+    final uploadUrl = uploadData['upload_url'].toString();
+    final fileObj = File(file.path!);
+    final contentType = uploadData['content_type'] ?? _getContentType(file);
+
+    setState(() {
+      _uploadStatus = 'Uploading file ${fileIndex + 1} to cloud storage...';
+    });
+
+    final bytes = await fileObj.readAsBytes();
+    
+    // Update progress during upload
+    final baseProgress = fileIndex / _selectedFiles.length;
+    setState(() {
+      _uploadProgress = baseProgress + 0.3 / _selectedFiles.length; // 30% of this file's progress
+    });
+
+    final request = http.Request('PUT', Uri.parse(uploadUrl));
+    request.headers['Content-Type'] = contentType;
+    request.bodyBytes = bytes;
+
+    final streamedResponse = await request.send().timeout(
+      const Duration(minutes: 5),
+      onTimeout: () {
+        throw TimeoutException('Upload timed out');
+      },
+    );
+
+    setState(() {
+      _uploadProgress = baseProgress + 0.9 / _selectedFiles.length; // 90% of this file's progress
+    });
+
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('S3 upload failed with status ${response.statusCode}');
+    }
+
+    setState(() {
+      _uploadProgress = baseProgress + 1.0 / _selectedFiles.length; // 100% of this file's progress
+    });
+  }
+
+  Future<void> _uploadChunkedFileToS3(PlatformFile file, String filePath, int fileIndex) async {
+    const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+    final totalChunks = (file.size / chunkSize).ceil();
+
+    final chunkedResponse = await api<PostApiService>(
+      (request) => request.getChunkedUploadUrl(
+        filename: file.name,
+        contentType: _getContentType(file),
+        totalSize: file.size,
+        chunkSize: chunkSize,
+      ),
+    );
+
+    if (chunkedResponse == null || chunkedResponse['success'] != true) {
+      throw Exception('Failed to get chunked upload URLs');
+    }
+
+    final chunkData = chunkedResponse['data'];
+    final chunkUrls = chunkData['chunk_urls'] as List;
+    final fileObj = File(file.path!);
+    final baseProgress = fileIndex / _selectedFiles.length;
+
+    for (int i = 0; i < totalChunks; i++) {
+      final chunkStart = i * chunkSize;
+      final chunkEnd = (i + 1) * chunkSize > file.size
+          ? file.size
+          : (i + 1) * chunkSize;
+
+      final chunk = fileObj.readAsBytesSync().sublist(chunkStart, chunkEnd);
+      final chunkUrl = chunkUrls[i]['upload_url'];
+
+      setState(() {
+        _uploadStatus = 'Uploading file ${fileIndex + 1}, chunk ${i + 1} of $totalChunks...';
+        _uploadProgress = baseProgress + ((i + 1) / totalChunks) / _selectedFiles.length;
+      });
+
+      final request = http.Request('PUT', Uri.parse(chunkUrl));
+      request.headers['Content-Type'] = _getContentType(file);
+      request.bodyBytes = chunk;
+
+      final response = await request.send();
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to upload chunk ${i + 1}');
+      }
+    }
+
+    final completeResponse = await api<PostApiService>(
+      (request) => request.completeChunkedUpload(
+        filePath: filePath,
+        totalChunks: totalChunks,
+      ),
+    );
+
+    if (completeResponse == null || completeResponse['success'] != true) {
+      throw Exception('Failed to complete chunked upload');
     }
   }
 
@@ -1443,7 +1794,7 @@ class _UploadState extends NyState<Upload> {
       return;
     }
 
-    if (!_isUploadComplete || _uploadedFileUrl == null) {
+    if (!_isUploadComplete || _uploadedFileUrls.isEmpty) {
       showToast(
         title: 'Error',
         description: 'File upload not completed',
@@ -1465,7 +1816,8 @@ class _UploadState extends NyState<Upload> {
           .toList();
 
       print('📝 Upload: Creating post from S3...');
-      print('📝 Upload: File path: $_uploadedFileUrl');
+      print('📝 Upload: File paths: $_uploadedFileUrls');
+      print('📝 Upload: Number of files: ${_uploadedFileUrls.length}');
       print(
           '📝 Upload: Category: ${_selectedCategory!.name} (ID: ${_selectedCategory!.id})');
       print('📝 Upload: Caption: ${_captionController.text.trim()}');
@@ -1473,7 +1825,13 @@ class _UploadState extends NyState<Upload> {
       print('📝 Upload: Location: ${_locationController.text.trim()}');
 
       print('🔵 REQUEST: createPostFromS3()');
-      print('  - filePath: $_uploadedFileUrl');
+      if (_uploadedFileUrls.length == 1) {
+        // Single file - use filePath for backward compatibility
+        print('  - filePath: ${_uploadedFileUrls.first}');
+      } else {
+        // Multiple files - use filePaths
+        print('  - filePaths: $_uploadedFileUrls');
+      }
       print('  - caption: ${_captionController.text.trim()}');
       print(
           '  - categoryId: ${_selectedCategory!.id} (${_selectedCategory!.name})');
@@ -1481,9 +1839,30 @@ class _UploadState extends NyState<Upload> {
       print(
           '  - location: ${_locationController.text.trim().isNotEmpty ? _locationController.text.trim() : 'Not provided'}');
 
-      final response = await api<PostApiService>(
-        (request) => request.createPostFromS3(
-          filePath: _uploadedFileUrl!,
+      // Call createPostFromS3 with appropriate parameters
+      Map<String, dynamic>? response;
+      
+      if (_uploadedFileUrls.length == 1) {
+        // Single file - use filePath
+        response = await api<PostApiService>(
+          (request) => request.createPostFromS3(
+            filePath: _uploadedFileUrls.first,
+            caption: _captionController.text.trim(),
+            categoryId: _selectedCategory!.id!,
+            tags: tags.isNotEmpty ? tags : null,
+            location: _locationController.text.trim().isNotEmpty
+                ? _locationController.text.trim()
+                : null,
+            taggedUsers: _taggedUsers.map((user) => user['id'] as int).toList(),
+          ),
+        );
+      } else {
+        // Multiple files - call directly on service instance
+        final service = PostApiService(buildContext: context);
+        // Call with filePaths parameter
+        // ignore: no_named_parameter
+        response = await service.createPostFromS3(
+          filePaths: _uploadedFileUrls,
           caption: _captionController.text.trim(),
           categoryId: _selectedCategory!.id!,
           tags: tags.isNotEmpty ? tags : null,
@@ -1491,8 +1870,8 @@ class _UploadState extends NyState<Upload> {
               ? _locationController.text.trim()
               : null,
           taggedUsers: _taggedUsers.map((user) => user['id'] as int).toList(),
-        ),
-      );
+        );
+      }
 
       print('🟢 RESPONSE: createPostFromS3()');
       print(

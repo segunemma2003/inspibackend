@@ -405,6 +405,33 @@ class _FeedState extends NyState<Feed> {
     );
   }
 
+  // Helper method to get category color that matches the category tabs
+  Color _getCategoryColor(Category? category) {
+    if (category == null) {
+      return const Color(0xFF00C3F1); // Default to first color
+    }
+
+    final categoryColors = [
+      Color(0xFF00C3F1), // #00C3F1
+      Color(0xFFFD4CC0), // #FD4CC0
+      Color(0xFFFFCF02), // #FFCF02
+      Color(0xFFB5DA64), // #B5DA64
+    ];
+
+    // Find the category index in _categories list
+    final categoryIndex = _categories.indexWhere((cat) => cat.id == category.id);
+    
+    if (categoryIndex != -1) {
+      // In _buildCategorySection, 'ALL' is at index 0, so first category is at index 1
+      // We need to add 1 to match the tab color logic
+      final tabIndex = categoryIndex + 1;
+      return categoryColors[tabIndex % categoryColors.length];
+    }
+
+    // Fallback: use hash-based color selection
+    return categoryColors[category.id.hashCode.abs() % categoryColors.length];
+  }
+
   Widget _buildCategorySection() {
     print(
         '📱 Feed: Building category section with ${_categories.length} categories');
@@ -629,22 +656,15 @@ class _FeedState extends NyState<Feed> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color(0xFFFF69B4),
+                      color: _getCategoryColor(displayPost.category),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('💄', style: TextStyle(fontSize: 12)),
-                        SizedBox(width: 4),
-                        Text(
-                          displayPost.category!.name?.toLowerCase() ?? '',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
+                    child: Text(
+                      displayPost.category!.name?.toLowerCase() ?? '',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500),
                     ),
                   ),
               ],

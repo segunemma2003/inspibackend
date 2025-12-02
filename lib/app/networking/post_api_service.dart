@@ -440,30 +440,43 @@ class PostApiService extends NyApiService {
   }
 
   Future<Map<String, dynamic>?> createPostFromS3({
-    required String filePath,
+    String? filePath,
+    List<String>? filePaths,
     String? caption,
     required int categoryId,
     List<String>? tags,
     String? location,
     Map<String, dynamic>? mediaMetadata,
     String? thumbnailPath,
+    List<String?>? thumbnailPaths,
     List<int>? taggedUsers,
     bool? isAds,
   }) async {
     try {
+      // Validate that either filePath or filePaths is provided
+      if (filePath == null && (filePaths == null || filePaths.isEmpty)) {
+        throw Exception('Either filePath or filePaths must be provided');
+      }
+
+      // Build request data
+      final requestData = <String, dynamic>{
+        if (filePath != null) 'file_path': filePath,
+        if (filePaths != null && filePaths.isNotEmpty) 'file_paths': filePaths,
+        if (caption != null) 'caption': caption,
+        'category_id': categoryId,
+        if (tags != null && tags.isNotEmpty) 'tags': tags,
+        if (location != null) 'location': location,
+        if (mediaMetadata != null) 'media_metadata': mediaMetadata,
+        if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+        if (thumbnailPaths != null && thumbnailPaths.isNotEmpty)
+          'thumbnail_paths': thumbnailPaths,
+        if (taggedUsers != null && taggedUsers.isNotEmpty)
+          'tagged_users': taggedUsers,
+        if (isAds != null) 'is_ads': isAds,
+      };
+
       final rawResponse = await network<dynamic>(
-        request: (request) => request.post("/posts/create-from-s3", data: {
-          'file_path': filePath,
-          if (caption != null) 'caption': caption,
-          'category_id': categoryId,
-          if (tags != null && tags.isNotEmpty) 'tags': tags,
-          if (location != null) 'location': location,
-          if (mediaMetadata != null) 'media_metadata': mediaMetadata,
-          if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
-          if (taggedUsers != null && taggedUsers.isNotEmpty)
-            'tagged_users': taggedUsers,
-          if (isAds != null) 'is_ads': isAds,
-        }),
+        request: (request) => request.post("/posts/create-from-s3", data: requestData),
       );
 
       if (rawResponse == null) return null;
@@ -528,6 +541,106 @@ class PostApiService extends NyApiService {
       return response;
     } catch (e) {
       print('❌ Error in createPostFromS3: $e');
+      rethrow;
+    }
+  }
+
+  /// Helper method to create a post with multiple media files
+  /// This method uploads multiple files and creates a post with all of them
+  Future<Map<String, dynamic>?> createPostWithMultipleMedia({
+    required List<File> files,
+    required void Function(double) onProgress,
+    String? caption,
+    required int categoryId,
+    List<String>? tags,
+    String? location,
+    Map<String, dynamic>? mediaMetadata,
+    List<String?>? thumbnailPaths,
+    List<int>? taggedUsers,
+    bool? isAds,
+  }) async {
+    try {
+      final filePaths = <String>[];
+      final List<String?> thumbnailPathsList = thumbnailPaths ?? [];
+
+      // Upload all files
+      for (int i = 0; i < files.length; i++) {
+        final file = files[i];
+        final fileSize = await file.length();
+        final fileName = file.path.split('/').last;
+        final fileExtension = fileName.split('.').last.toLowerCase();
+        final mimeType = _getMimeType(fileExtension);
+
+        print('🌐 Uploading file ${i + 1}/${files.length}: $fileName');
+
+        final uploadUrlResponse = await getUploadUrl(
+          filename: fileName,
+          contentType: mimeType,
+          fileSize: fileSize,
+        );
+
+        if (uploadUrlResponse == null || !uploadUrlResponse['success']) {
+          throw Exception(
+              'Failed to get upload URL for file ${i + 1}: ${uploadUrlResponse?['message'] ?? 'Unknown error'}');
+        }
+
+        final uploadData = uploadUrlResponse['data'];
+        final uploadMethod = uploadData['upload_method'];
+        final filePath = uploadData['file_path'] as String;
+
+        if (uploadMethod == 'direct') {
+          final uploadUrl = uploadData['upload_url'] as String;
+          await _uploadToS3(
+            file: file,
+            uploadUrl: uploadUrl,
+            contentType: mimeType,
+            onProgress: (progress) {
+              // Calculate overall progress across all files
+              final overallProgress =
+                  (i / files.length) + (progress / files.length);
+              onProgress(overallProgress.clamp(0.0, 1.0));
+            },
+          );
+        } else if (uploadMethod == 'chunked') {
+          final chunkSize = uploadData['recommended_chunk_size'] as int? ??
+              5 * 1024 * 1024; // Default 5MB
+          await _uploadInChunks(
+            file: file,
+            filePath: filePath,
+            chunkSize: chunkSize,
+            contentType: mimeType,
+            onProgress: (progress) {
+              // Calculate overall progress across all files
+              final overallProgress =
+                  (i / files.length) + (progress / files.length);
+              onProgress(overallProgress.clamp(0.0, 1.0));
+            },
+          );
+        } else {
+          throw Exception('Unknown upload method: $uploadMethod');
+        }
+
+        filePaths.add(filePath);
+      }
+
+      print('🌐 All files uploaded, creating post with ${filePaths.length} media files...');
+
+      // Create post with all file paths
+      return await createPostFromS3(
+        filePaths: filePaths,
+        caption: caption,
+        categoryId: categoryId,
+        tags: tags,
+        location: location,
+        mediaMetadata: mediaMetadata,
+        thumbnailPaths: thumbnailPathsList.isNotEmpty
+            ? thumbnailPathsList
+            : null,
+        taggedUsers: taggedUsers,
+        isAds: isAds,
+      );
+    } catch (e) {
+      print('❌ Error in createPostWithMultipleMedia: $e');
       rethrow;
     }
   }

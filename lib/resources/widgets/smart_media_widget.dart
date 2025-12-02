@@ -149,7 +149,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   bool _isVideoUrl(String url) {
     final lowerUrl = url.toLowerCase();
     final mediaType = widget.post.mediaType?.toLowerCase();
-    
+
     return mediaType == 'video' ||
         mediaType == 'mixed' ||
         lowerUrl.contains('.mp4') ||
@@ -190,7 +190,9 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
 
   void _playVideo(int index) {
     final controller = _videoControllers[index];
-    if (controller != null && !_videoPlaying[index]! && _videoInitialized[index]!) {
+    if (controller != null &&
+        !_videoPlaying[index]! &&
+        _videoInitialized[index]!) {
       controller.play();
       if (mounted) {
         setState(() {
@@ -239,7 +241,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   @override
   Widget build(BuildContext context) {
     final mediaUrls = _mediaUrls;
-    
+
     if (mediaUrls.isEmpty) {
       return _buildErrorWidget('No media available');
     }
@@ -259,10 +261,11 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
     return VisibilityDetector(
       key: Key('media_${widget.post.id}'),
       onVisibilityChanged: _onVisibilityChanged,
-      child: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
+      child: SizedBox(
+        height: widget.height ?? 400,
+        child: Stack(
+          children: [
+            PageView.builder(
               itemCount: mediaUrls.length,
               onPageChanged: _onPageChanged,
               controller: PageController(),
@@ -272,30 +275,32 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
                     : _buildImageWidget(index, mediaUrls[index]);
               },
             ),
-          ),
-          // Page indicator dots
-          if (mediaUrls.length > 1)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  mediaUrls.length,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _currentPage == index
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.4),
+            // Page indicator dots - overlay at bottom
+            if (mediaUrls.length > 1)
+              Positioned(
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    mediaUrls.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentPage == index
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.4),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -371,7 +376,7 @@ class _SmartMediaWidgetState extends State<SmartMediaWidget> {
   Widget _buildVideoThumbnail(int index, String url) {
     // Try to get thumbnail from metadata or use first video thumbnail
     final thumbnailUrl = widget.post.thumbnailUrl;
-    
+
     if (thumbnailUrl != null && index == 0) {
       return Container(
         height: widget.height ?? 400,

@@ -139,8 +139,8 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
       margin: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-
           if (post.getMediaUrls().isNotEmpty)
             ClipRRect(
               borderRadius:
@@ -152,13 +152,12 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
                 fit: BoxFit.cover,
               ),
             ),
-
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-
                 if (post.caption != null && post.caption!.isNotEmpty)
                   Text(
                     post.caption!,
@@ -166,9 +165,7 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                 const SizedBox(height: 8),
-
                 Row(
                   children: [
                     Icon(Icons.favorite, size: 16, color: Colors.red),
@@ -185,9 +182,7 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
                     const SizedBox(width: 16),
                   ],
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   'Posted ${_formatDate(post.createdAt)}',
                   style: TextStyle(
@@ -195,20 +190,22 @@ class _PostManagementPageState extends NyPage<PostManagementPage> {
                     color: Colors.grey[600],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showDeleteConfirmation(post),
-                    icon: const Icon(Icons.delete, size: 18),
-                    label: const Text('Delete Post'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: () => _showDeleteConfirmation(post),
+                      icon: const Icon(Icons.delete, size: 20),
+                      color: Colors.red,
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

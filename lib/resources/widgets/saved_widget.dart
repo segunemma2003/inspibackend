@@ -19,9 +19,7 @@ class _SavedState extends NyState<Saved> {
       body: SafeArea(
         child: Column(
           children: [
-
             _buildHeader(),
-
             Expanded(
               child: NyPullToRefresh.separated(
                 child: (BuildContext context, dynamic data) {
@@ -86,7 +84,6 @@ class _SavedState extends NyState<Saved> {
           const Spacer(),
           IconButton(
             onPressed: () {
-
               setState(() {});
             },
             icon: const Icon(Icons.refresh),
@@ -152,7 +149,6 @@ class _SavedState extends NyState<Saved> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -160,11 +156,13 @@ class _SavedState extends NyState<Saved> {
                 InkWell(
                   onTap: () {
                     if (post.user?.id != null) {
-                      print('👤 SavedWidget: Navigating to user profile with ID: ${post.user!.id}');
+                      print(
+                          '👤 SavedWidget: Navigating to user profile with ID: ${post.user!.id}');
                       SmartMediaWidget.pauseAllVideos();
                       routeTo('/user-profile', data: {'userId': post.user!.id});
                     } else {
-                      print('❌ SavedWidget: User ID is null, cannot navigate to profile');
+                      print(
+                          '❌ SavedWidget: User ID is null, cannot navigate to profile');
                     }
                   },
                   borderRadius: BorderRadius.circular(20),
@@ -176,7 +174,9 @@ class _SavedState extends NyState<Saved> {
                     backgroundColor: const Color(0xFF9ACD32),
                     child: post.user?.profilePicture == null
                         ? Text(
-                            post.user?.fullName?.substring(0, 1).toUpperCase() ??
+                            post.user?.fullName
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
                                 'U',
                             style: const TextStyle(
                               color: Colors.white,
@@ -242,7 +242,6 @@ class _SavedState extends NyState<Saved> {
               ],
             ),
           ),
-
           if (post.getMediaUrls().isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -253,7 +252,6 @@ class _SavedState extends NyState<Saved> {
                 fit: BoxFit.cover,
               ),
             ),
-
           if (post.caption != null && post.caption!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
@@ -262,25 +260,6 @@ class _SavedState extends NyState<Saved> {
                 style: const TextStyle(fontSize: 16),
               ),
             ),
-
-          if (post.tags != null && post.tags!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Wrap(
-                spacing: 8,
-                children: post.tags!
-                    .map((tag) => Chip(
-                          label: Text('#$tag'),
-                          backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                          labelStyle: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 12,
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ),
-
           if (post.location != null && post.location!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -386,7 +365,6 @@ class _SavedState extends NyState<Saved> {
           post.likesCount = response['data']['likes_count'] ?? oldLikesCount;
         });
       } else {
-
         setState(() {
           post.isLiked = wasLiked;
           post.likesCount = oldLikesCount;
